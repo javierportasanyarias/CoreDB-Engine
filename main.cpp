@@ -118,6 +118,7 @@ int main(){
    std::string re2 = "";
    std::string re3 = "";
    std::string re4 = "";
+   //Pequeño cambio para probsr push desde termux
 
 
    while(cond1){
