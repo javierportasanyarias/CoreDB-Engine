@@ -119,6 +119,7 @@ int main(){
    std::string re3 = "";
    std::string re4 = "";
    //Pequeño cambio para probsr push desde termux
+   // Cambio realizado desde otro dispositivo
 
 
    while(cond1){
