@@ -34,9 +34,11 @@ namespace textUtils {
 
    std::string borrar_espacios_principio(const std::string& input);
 
-   std::string borrar_espacios_final(std::string& input);
+   void borrar_espacios_final(std::string& input);
 
-   simpleLinkedList crear_lista_tokens(std::string& input);
+   simpleLinkedList* crear_lista_tokens(const std::string& input);
+
+   simpleLinkedList* procesar_texto_pipeline(std::string& input);
 };
 
 # endif
