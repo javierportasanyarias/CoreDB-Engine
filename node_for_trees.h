@@ -17,7 +17,7 @@ class NodeType2{
       bool is_primary;
       std::vector<NodeType2*> hijos;
 
-      NodeType2(): is_primary(false){};
+      NodeType2();
 };
 
 class NodeType1{
@@ -28,7 +28,7 @@ class NodeType1{
       std::vector<NodeType2*> hijos;
       table tb_struct;  
 
-      NodeType1(): alias(""){};
+      NodeType1();
 };
 
 //using Valor = std::variant<int, float, std::string>;
@@ -50,7 +50,7 @@ class FromNode{
       std::string nombre;
       std::string alias;
 
-      FromNode(): nombre(""), alias(""){};
+      FromNode();
 };
 
 class ItemNode {
@@ -58,7 +58,7 @@ class ItemNode {
       std::string nombre;
       std::string alias;
 
-      ItemNode(): nombre(""), alias(""){};
+      ItemNode();
 };
 
 class SelectNode {
@@ -71,70 +71,18 @@ class QueryNode {
       SelectNode* nodo_select;
       FromNode* nodo_from;
 
-      QueryNode(): nodo_select(nullptr), nodo_from(nullptr){};
+      QueryNode();
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Métodos de los árboles:
 
 /////////////////////////////////////////
 // Metodos para visualizar árboles:
-void recursive_tree_print(NodeType2* nodo_ptr){
-   if(!nodo_ptr){
-      return;
-   };
-   if(nodo_ptr->is_primary){
-      std::cout<<(nodo_ptr->name_campo)<<" "<<(nodo_ptr->tipo)<<" PRIMARY KEY"<<std::endl;
-   }else {
-      std::cout<<(nodo_ptr->name_campo)<<" "<<(nodo_ptr->tipo)<<std::endl;
-   };
-   for(int i = 0; i<(*nodo_ptr).hijos.size(); i++){
-      //std::cout<<nodo_ptr->name_campo<<std::endl;
-      recursive_tree_print((nodo_ptr->hijos)[i]);
-   };
-};
+void recursive_tree_print(NodeType2* nodo_ptr);
 
-void recursive_tree_print(NodeType1* nodo_ptr){
-   if(!nodo_ptr){
-      return;
-   };
-   if(nodo_ptr->alias != ""){
-      std::cout<<nodo_ptr->nombre_tabla<<" "<<nodo_ptr->alias<<std::endl;
-   }else {
-       std::cout<<nodo_ptr->nombre_tabla<<std::endl;
-   };
-   for(int i = 0; i<(*nodo_ptr).hijos.size(); i++){
-      //std::cout<<nodo_ptr->nombre_tabla<<std::endl;
-      recursive_tree_print((nodo_ptr->hijos)[i]);
-   };
-};
+void recursive_tree_print(NodeType1* nodo_ptr);
 
-void insert_data_node_print(NodeType3* nodo){
-
-	std::cout<<"Nombre de la tabla en la que se inserta: ";
-	std::cout<<nodo->nombre_tabla<<std::endl;
-
-	// Imprimimos las columnas:
-	if((nodo->columnas).size() != 0){
-	   std::cout<<"Columnas a insertar: ";
-	   for(int i = 0; i<(nodo->columnas).size(); i++){
-              std::cout<<(nodo->columnas)[i]<<" ";
-
-	   };
-	   std::cout<<std::endl;
-	}else{
-           std::cout<<"No se han especificado las columnas"<<std::endl;
-	};
-
-	// Imprimimos los valores:
-	for(int i = 0; i<(nodo->filas).size(); i++){
-	   std::vector<std::string> fila_current = (nodo->filas)[i];
-           std::cout<<"Valores de la fila "<<i+1<<" : ";
-	   for(int j= 0; j<(fila_current).size(); j++){
-              std::cout<<fila_current[j]<<" ";
-	   };
-           std::cout<<std::endl;
-	};
-};
+void insert_data_node_print(NodeType3* nodo);
 
 
 /////////////////////////////////////////
@@ -148,20 +96,9 @@ class tree_for_schema{
    public:
       NodeType1*  root;
 
-      tree_for_schema(): root(nullptr){};
+      tree_for_schema();
 
-      void imprimir_arbol(){
-         recursive_tree_print(root);
-      };
-
-      //void constrir_arbol(simpleLinkedList lista){
-
-      //   NodeType1* nodo_padre = new NodeType1;
-      //   NodeLista1 cabeza = *(lista.head);
-      //   nodo_padre = aux_ddl_tree_1(cabeza);
-      //   root = nodo_padre;
-      //};
-
+      void imprimir_arbol();
 
 };
 

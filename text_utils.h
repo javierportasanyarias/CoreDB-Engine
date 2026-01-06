@@ -8,7 +8,7 @@
 namespace textUtils {
    std::string espaciar_texto(std::string input);
 
-
+   // Nodo para la lista enlaza simple de tokens:
    class NodeLista1{
 
       public:
@@ -21,7 +21,7 @@ namespace textUtils {
 
       public:
       NodeLista1* head;
-      NodeLista1* tail;
+      NodeLista1* tail; // Se podrá elimniar en el futuro ?
 
       simpleLinkedList(): head(nullptr), tail(nullptr){};
 
@@ -34,9 +34,11 @@ namespace textUtils {
 
    std::string borrar_espacios_principio(const std::string& input);
 
-   std::string borrar_espacios_final(std::string& input);
+   void borrar_espacios_final(std::string& input);
 
-   simpleLinkedList crear_lista_tokens(std::string& input);
+   simpleLinkedList* crear_lista_tokens(const std::string& input);
+
+   simpleLinkedList* procesar_texto_pipeline(std::string& input);
 };
 
 # endif

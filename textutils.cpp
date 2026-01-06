@@ -130,8 +130,8 @@ std::string textUtils::borrar_espacios_principio(const std::string& input){
     return result;
 };
 
-std::string textUtils::borrar_espacios_final(std::string& input) {
-    if (input.empty()) return input;
+void textUtils::borrar_espacios_final(std::string& input) {
+    if (input.empty()) return;
 
     int i = static_cast<int>(input.size()) - 1; // índice del último carácter
 
@@ -142,20 +142,19 @@ std::string textUtils::borrar_espacios_final(std::string& input) {
 
     // Devuelve la subcadena sin los espacios del final
     input = input.substr(0, i + 1);
-    return input;
 };
 
-textUtils::simpleLinkedList textUtils::crear_lista_tokens(std::string& input){
+textUtils::simpleLinkedList* textUtils::crear_lista_tokens(const std::string& input){
 
    std::string* buffer = new std::string("");
-   textUtils::simpleLinkedList lista;
+   textUtils::simpleLinkedList* lista = new textUtils::simpleLinkedList;
    for(int i = 0; i<input.size(); i++){
       //*buffer += input[i];
       if(input[i] == ' '){
          if(*buffer == "CREATE" || *buffer == "PRIMARY" || *buffer == "INSERT"){
             *buffer += input[i];
          }else {
-            lista.add_node(*buffer);
+            lista->add_node(*buffer);
             *buffer = "";
          };
 }else{
@@ -164,4 +163,13 @@ textUtils::simpleLinkedList textUtils::crear_lista_tokens(std::string& input){
    };
 
    return lista;
+};
+
+textUtils::simpleLinkedList* textUtils::procesar_texto_pipeline(std::string& input){
+
+   input = espaciar_texto(input);
+   input = borrar_espacios_repetidos(input);
+   input = borrar_espacios_principio(input);
+   borrar_espacios_final(input);
+   return crear_lista_tokens(input);
 };
