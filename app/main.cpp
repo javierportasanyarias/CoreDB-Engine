@@ -1,14 +1,20 @@
 #include <iostream>
 #include <string>
 #include <vector>
+// #include "text_manipulation/text_utils.h"
 #include "text_utils.h"
+// #include "planning_execution/execution_planning.h"
 #include "execution_planning.h"
+// #include "nodes_for_trees/node_for_trees.h"
 #include "node_for_trees.h"
+// #include "text_manipulation/process_tokens.h"
 #include "process_tokens.h"
 // #include "data_struct.h"
-#include "plan_execution.h"
+// #include "execution/execution.h"
+#include "execution.h"
 #include <variant>
 #include <unordered_map>
+// #include "globals/globals.h"
 #include "globals.h"
 
 int main(){
