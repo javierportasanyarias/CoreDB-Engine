@@ -16,7 +16,7 @@
 ///
 ///
 // Tipos de datos admitidos en el esquema:
-dataType transform_str_to_datatype(std::string input);
+dataType transform_str_to_datatype(const std::string& input);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// PARA RELLENAR LAS TABLAS:
@@ -38,6 +38,10 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr);
 void mostrar_consulta_v1(QueryNode*& nodo_root);
 
 
-void mostrar_consulta_v2(QueryNode* nodo_root);
+void mostrar_tabla_query(QueryNode* nodo_root);
+
+////////////////////////////////////////////////////////////////
+// ELIMINACIÓN:
+void liberar_tabla(table* tb);
 
 #endif

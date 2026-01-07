@@ -38,7 +38,7 @@ namespace execPlan {
             queueNode1* pop_front_node();
 
             // Función para imprimir todos los nodos de la cola y su tipo:
-            void printNodeTypes();
+            void printNodeTypes() const;
 
 
             // Funcion para ejecutar la cola:

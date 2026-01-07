@@ -13,7 +13,7 @@
 ///
 ///
 // Tipos de datos admitidos en el esquema:
-dataType transform_str_to_datatype(std::string input){
+dataType transform_str_to_datatype(const std::string& input){
 
       if (input == "INT"){
          return dataType::INT;
@@ -30,8 +30,6 @@ dataType transform_str_to_datatype(std::string input){
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// PARA RELLENAR LAS TABLAS:
-
-
 
 
 void fill_table_with_values_v4(NodeType3* nodo_ptr) {
@@ -60,12 +58,9 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
     std::cout << "Tabla encontrada, pasamos a insertar valores:\n";
 
     // Definimos la lista de columnas para iterar
-    std::vector<std::string> columnas_list_bucle;
-    if (nodo_ptr->columnas.empty()) {
-        columnas_list_bucle = tb_recup->metadata_ptr->column_names;
-    } else {
-        columnas_list_bucle = nodo_ptr->columnas;
-    };
+
+   const std::vector<std::string>& columnas_list_bucle = nodo_ptr->columnas.empty() ? tb_recup->metadata_ptr->column_names : nodo_ptr->columnas;
+
 
     std::cout << "BUCLE DE INSERCION:\n";
 
@@ -75,7 +70,7 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
         for (int j = 0; j < fila.size(); j++) {
             std::cout << "fila " << i + 1 << " columna Num " << j + 1 << "\n";
             // Insertamos directamente en la tabla del diccionario
-            tb_recup->data_ptr->columns[columnas_list_bucle[j]].push_back(fila[j]);
+            tb_recup->data_ptr->columns[columnas_list_bucle[j]].push_back(std::move(fila[j]));
         };
     };
 };
@@ -88,10 +83,11 @@ void recursive_metadata_fill_lv2(NodeType2* nodo_ptr, table* tb_created){
       return;
    };
    // Rellenamos los datos del campo a tratar:
-   ((*(tb_created->metadata_ptr)).column_names).push_back(nodo_ptr->name_campo);
-  ((*(tb_created->metadata_ptr)).column_types).push_back(transform_str_to_datatype(nodo_ptr->tipo));
+   auto& metadata = *tb_created->metadata_ptr;
+   (metadata.column_names).push_back(std::move(nodo_ptr->name_campo));
+  (metadata.column_types).push_back(transform_str_to_datatype(nodo_ptr->tipo));
    if(nodo_ptr->is_primary){
-      ((*(tb_created->metadata_ptr)).primary_list).push_back(true);
+      (metadata.primary_list).push_back(true);
    };
    // Estos nodos no rienen hijos
    return;
@@ -100,8 +96,6 @@ void recursive_metadata_fill_lv2(NodeType2* nodo_ptr, table* tb_created){
 void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
 
    // Creamos un struct de la tabla:
-   //extern std::unordered_map<std::string, table> global_table_dict; 
-   //table tb_created = global_table_dict[nodo_ptr->nombre_tabla];
    table* tb_created = global_table_dict[nodo_ptr->nombre_tabla];
    if(!nodo_ptr){
       return;
@@ -124,20 +118,57 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
 ///////////////////////////////////////////////////////////////
 // MOSTRAR TABLA:
 
-void mostrar_consulta_v1(QueryNode*& nodo_root){
-   std::cout<<std::endl;
-   // Mostramos las columnas a mostrar:
-   for(int i = 0; i<(nodo_root->nodo_select->items).size(); i++){
+// Función auxiliar que imprime los valores de la tabla (TODOS LOS VALORES):
+void aux_table_values_print(const auto& columns_buffer, const std::vector<std::string>& col_list, int n_filas){
+   for(int j = 0; j < n_filas; j++){                                              
+      for(int i = 0; i< col_list.size(); i++){
+         auto& col = columns_buffer.at(col_list[i]);                                                                   
+         auto& cell = (col)[j];
 
-      std::cout<<"aaa"<<std::endl;
-      //std::cout<<" | "<<(nodo_root->nodo_select)->items[i].nombre;
-
+         std::visit([](auto&& val){
+         std::cout << " | "<<val;}, cell);
+      };
+      std::cout<<" | "<<std::endl;
    };
-   std::cout<<" | "<<std::endl;
 };
 
+// Función auxiliar que imprime los valores de la tabla (SE ESPECIFICÓ LISTA DE COLUMNAS EN EL SELECT):
+void aux_table_values_print(const auto& columns_buffer, const std::vector<ItemNode>& col_list, int n_filas){
+   for(int j = 0; j < n_filas; j++){                                              
+      for(int i = 0; i< col_list.size(); i++){
+         auto& col = columns_buffer.at(col_list[i].nombre);                                                                   
+         auto& cell = (col)[j];
 
-void mostrar_consulta_v2(QueryNode* nodo_root){
+         std::visit([](auto&& val){
+         std::cout << " | "<<val;}, cell);
+      };
+      std::cout<<" | "<<std::endl;
+   };
+};
+
+// Función auxiliar para imprimir la tabla: PARA TODAS LAS COLUMNAS:
+void imprimir_tabla(const auto& columns_buffer, const std::vector<std::string>& col_list, int n_filas){
+   // Imprimios los nombres de las columnas:
+   for(int  i = 0; i<col_list.size(); i++){
+      std::cout<<" | "<<col_list[i];
+   };
+   std::cout<<" | "<<std::endl;
+   // Imprimimos los valores:
+   aux_table_values_print(columns_buffer, col_list, n_filas);
+};
+
+// impresión de toda la tabla, pero habiendo seleccionado clumnas
+void imprimir_tabla(QueryNode*& nodo_root, const auto& columns_buffer, const std::vector<ItemNode>& col_list, int n_filas){
+   // Imprimios los nombres de las columnas:
+       for(int i = 0; i<(nodo_root->nodo_select->items).size(); i++){
+         std::cout<<" | "<<(nodo_root->nodo_select)->items[i].nombre;
+       };
+       std::cout<<" | "<<std::endl;
+   // Imprimimos los valores:
+   aux_table_values_print(columns_buffer, col_list, n_filas);
+};
+
+void mostrar_tabla_query(QueryNode* nodo_root){
     std::cout << std::endl;
 
     //recuperamos el nombre de la tabla
@@ -145,63 +176,34 @@ void mostrar_consulta_v2(QueryNode* nodo_root){
 
     if (nodo_root->nodo_select == nullptr) {
        // La lista no existe o está vacía:
-	    std::cout<<"La lista de columnas esta vacia"<<std::endl;
+	    std::cout<<"La lista de columnas esta vacia (Se ha hecho Seelct *)"<<std::endl;
 	
-       std::vector<std::string> col_list;
-       col_list = (global_table_dict[nombre_tabla]->metadata_ptr)->column_names;
-       for(int i = 0; i<col_list.size(); i++){
-          std::cout<<" | "<<col_list[i];
-       };
-       std::cout<<" | "<<std::endl;
-       // Hallamos antes el numero de filas:
-       int n_filas;
-       n_filas = ((global_table_dict[nombre_tabla]->data_ptr->columns)[col_list[0]]).size();
-       // Ahora mostramos los valores:
-       //for(int i = 0; i< col_list.size(); i++){
-       for(int j = 0; j < n_filas; j++){
-          for(int i = 0; i< col_list.size(); i++){
-		  //std::cout<<" | "<<((global_table_dict[nombre_tabla]->data_ptr->columns)[col_list[i]])[j];
-	  //std::cout<<" | "<<std::endl;
-	  //
-	     auto& cell = (global_table_dict[nombre_tabla]
-                ->data_ptr
-                ->columns[col_list[i]])[j];
+       // Guardamos en memoria valores del diccionario accedidos con regularidad:
+       const std::vector<std::string>& col_list = (global_table_dict[nombre_tabla]->metadata_ptr)->column_names;
+       const auto& columns_buffer = global_table_dict[nombre_tabla]->data_ptr->columns;
 
-             std::visit([](auto&& val){
-             std::cout << " | "<<val;}, cell);
-          };
-          std::cout<<" | "<<std::endl;
-      };
+       int n_filas = (columns_buffer.at(col_list[0])).size();
+       imprimir_tabla(columns_buffer, col_list, n_filas);
     } else {
-       for(int i = 0; i<(nodo_root->nodo_select->items).size(); i++){
-
-       //std::cout<<"aaa"<<std::endl;
-       std::cout<<" | "<<(nodo_root->nodo_select)->items[i].nombre;
-
-       };
-       std::cout<<" | "<<std::endl;
-
-
-
 
        //Ahora imprimimos los valores:
-       std::vector<ItemNode> col_list;
-       col_list = (nodo_root->nodo_select->items);
+       const std::vector<ItemNode>& col_list = (nodo_root->nodo_select->items);
+       const auto& columns_buffer = global_table_dict[nombre_tabla]->data_ptr->columns;
        // Hallamos antes el numero de filas:
-       int n_filas;
-        n_filas = ((global_table_dict[nombre_tabla]->data_ptr->columns)[col_list[0].nombre]).size();   
+       int n_filas = (columns_buffer.at(col_list[0].nombre)).size();   
         std::cout<<"N filas en el else: "<<n_filas<<std::endl;
-        // Ahora mostramos los valores:                                       
-        //for(int i = 0; i< col_list.size(); i++){
-       for(int j = 0; j < n_filas; j++){                                              
-         for(int i = 0; i< col_list.size(); i++){                                                                   
-            auto& cell = (global_table_dict[nombre_tabla]->data_ptr->columns[col_list[i].nombre])[j];
-
-             std::visit([](auto&& val){
-             std::cout << " | "<<val;}, cell);
-          };
-          std::cout<<" | "<<std::endl;
-      };
+       imprimir_tabla(nodo_root, columns_buffer, col_list, n_filas);
    };
+};
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Eliminación de tablas:
+void liberar_tabla(table* tb){
+    if (!tb) return;
+    delete tb->metadata_ptr;
+    tb->metadata_ptr = nullptr;
+    delete tb->data_ptr;
+    tb->data_ptr = nullptr;
+    delete tb;
 };

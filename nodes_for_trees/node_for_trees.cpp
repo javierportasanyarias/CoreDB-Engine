@@ -27,7 +27,7 @@ QueryNode::QueryNode(): nodo_select(nullptr), nodo_from(nullptr){};
 
 /////////////////////////////////////////
 // Metodos para visualizar árboles:
-void recursive_tree_print(NodeType2* nodo_ptr){
+void recursive_tree_print(const NodeType2* nodo_ptr){
    if(!nodo_ptr){
       return;
    };
@@ -36,13 +36,12 @@ void recursive_tree_print(NodeType2* nodo_ptr){
    }else {
       std::cout<<(nodo_ptr->name_campo)<<" "<<(nodo_ptr->tipo)<<std::endl;
    };
-   for(int i = 0; i<(*nodo_ptr).hijos.size(); i++){
-      //std::cout<<nodo_ptr->name_campo<<std::endl;
-      recursive_tree_print((nodo_ptr->hijos)[i]);
+   for (auto* hijo : nodo_ptr->hijos) {
+      recursive_tree_print(hijo);
    };
 };
 
-void recursive_tree_print(NodeType1* nodo_ptr){
+void recursive_tree_print(const NodeType1* nodo_ptr){
    if(!nodo_ptr){
       return;
    };
@@ -51,18 +50,13 @@ void recursive_tree_print(NodeType1* nodo_ptr){
    }else {
        std::cout<<nodo_ptr->nombre_tabla<<std::endl;
    };
-   for(int i = 0; i<(*nodo_ptr).hijos.size(); i++){
-      //std::cout<<nodo_ptr->nombre_tabla<<std::endl;
-      recursive_tree_print((nodo_ptr->hijos)[i]);
+   for (auto* hijo : nodo_ptr->hijos) {
+      recursive_tree_print(hijo);
    };
 };
 
-void insert_data_node_print(NodeType3* nodo){
-
-	std::cout<<"Nombre de la tabla en la que se inserta: ";
-	std::cout<<nodo->nombre_tabla<<std::endl;
-
-	// Imprimimos las columnas:
+// Funciones auxiliares a la impresión de columnas:
+void imprimir_columnas(const NodeType3*& nodo){
 	if((nodo->columnas).size() != 0){
 	   std::cout<<"Columnas a insertar: ";
 	   for(int i = 0; i<(nodo->columnas).size(); i++){
@@ -73,16 +67,31 @@ void insert_data_node_print(NodeType3* nodo){
 	}else{
            std::cout<<"No se han especificado las columnas"<<std::endl;
 	};
+};
+
+void imptimir_valores(const NodeType3*& nodo){
+
+	for(int i = 0; i<(nodo->filas).size(); i++){
+	   const std::vector<std::string>& fila_current = (nodo->filas)[i];
+      std::cout<<"Valores de la fila "<<i+1<<" : ";
+         for(int j= 0; j<(fila_current).size(); j++){
+               std::cout<<fila_current[j]<<" ";
+         };
+      std::cout<<std::endl;
+	};
+};
+
+// Esta función es puramente auxiliar:
+void insert_data_node_print(const NodeType3* nodo){
+
+	std::cout<<"Nombre de la tabla en la que se inserta: ";
+	std::cout<<nodo->nombre_tabla<<std::endl;
+
+	// Imprimimos las columnas:
+	imprimir_columnas(nodo);
 
 	// Imprimimos los valores:
-	for(int i = 0; i<(nodo->filas).size(); i++){
-	   std::vector<std::string> fila_current = (nodo->filas)[i];
-           std::cout<<"Valores de la fila "<<i+1<<" : ";
-	   for(int j= 0; j<(fila_current).size(); j++){
-              std::cout<<fila_current[j]<<" ";
-	   };
-           std::cout<<std::endl;
-	};
+	imptimir_valores(nodo);
 };
 
 

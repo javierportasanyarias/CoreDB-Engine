@@ -22,12 +22,12 @@ struct table_metadata {
     std::vector<dataType> column_types;
     std::vector<bool> primary_list;
 
-    table_metadata() 
-        : name(""),
-          column_names(),
-          column_types(),
-          primary_list()
-    {}
+    //table_metadata() 
+    //    : name(""),
+    //      column_names(),
+    //      column_types(),
+    //      primary_list()
+    //{};
 };
 
 using Values = std::variant<int, float, bool, std::string>;

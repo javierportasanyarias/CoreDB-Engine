@@ -78,11 +78,11 @@ class QueryNode {
 
 /////////////////////////////////////////
 // Metodos para visualizar árboles:
-void recursive_tree_print(NodeType2* nodo_ptr);
+void recursive_tree_print(const NodeType2* nodo_ptr);
 
-void recursive_tree_print(NodeType1* nodo_ptr);
+void recursive_tree_print(const NodeType1* nodo_ptr);
 
-void insert_data_node_print(NodeType3* nodo);
+void insert_data_node_print(const NodeType3* nodo);
 
 
 /////////////////////////////////////////

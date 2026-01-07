@@ -42,13 +42,13 @@ execPlan::queueNode1* execPlan::Queue::pop_front_node() {
     } else {
         first_ptr = first_ptr->nxt_node_queue;
         first_ptr->prv_node_queue = nullptr;
-    }
+    };
     removed->nxt_node_queue = removed->prv_node_queue = nullptr;
     return removed;
-}
+};
 
 // Función para imprimir todos los nodos de la cola y su tipo:
-void execPlan::Queue::printNodeTypes() {
+void execPlan::Queue::printNodeTypes() const{
     queueNode1* current = first_ptr;
     int index = 0;
 
@@ -58,17 +58,19 @@ void execPlan::Queue::printNodeTypes() {
         // Comprobamos qué tipo de puntero contiene el variant:
         if (std::holds_alternative<NodeType1*>(current->nodePtr)) {
             std::cout << "NodeType1" << std::endl;
-recursive_tree_print(std::get<NodeType1*>(current->nodePtr));
+            const NodeType1* nodo_puntero = std::get<NodeType1*>(current->nodePtr);
+            recursive_tree_print(nodo_puntero);
         } else if (std::holds_alternative<NodeType2*>(current->nodePtr)) {
             std::cout << "NodeType2";
         } else if (std::holds_alternative<NodeType3*>(current->nodePtr)) {
             std::cout << "NodeType3"<<std::endl;
-    insert_data_node_print(std::get<NodeType3*>(current->nodePtr));
-    } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
+            const NodeType3* nodo_puntero = std::get<NodeType3*>(current->nodePtr);
+            insert_data_node_print(nodo_puntero);
+        } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
             std::cout << "QueryNode"<<std::endl;
         } else {
             std::cout << "Tipo desconocido";
-        }
+        };
 
         std::cout << std::endl;
         current = current->nxt_node_queue;
@@ -83,16 +85,18 @@ recursive_tree_print(std::get<NodeType1*>(current->nodePtr));
 // Funcion para ejecutar la cola:
 //
 void execPlan::Queue::execute_queue_tasks(){
+
     int index = 0;
-        execPlan::queueNode1* c_q_n = new execPlan::queueNode1;
-    c_q_n = first_ptr;
+    execPlan::queueNode1* c_q_n = first_ptr; // Sin crear nada con new
+
     std::cout << "Nodo " << index << ": ";
     while(c_q_n){
-        NodeVariant nodoVariant = c_q_n->nodePtr;
+        //NodeVariant nodoVariant = c_q_n->nodePtr;
             if (std::holds_alternative<NodeType1*>(c_q_n->nodePtr)) {
                 std::cout << "NodeType1: Ejecutamos creacion de tabla" << std::endl;
-        NodeType1* nodo;
-        nodo = std::get<NodeType1*>(nodoVariant);
+        //NodeType1* nodo;
+        //nodo = std::get<NodeType1*>(nodoVariant);
+        NodeType1* nodo = std::get<NodeType1*>(c_q_n->nodePtr);  // Directo desde el variant
         recursive_metadata_fill_lv1(nodo);
         } else if (std::holds_alternative<NodeType2*>(c_q_n->nodePtr)) {                                                                              
             std::cout << "Nos encontramos al ejecutar un: NodeType2";
@@ -100,15 +104,17 @@ void execPlan::Queue::execute_queue_tasks(){
             else if (std::holds_alternative<NodeType3*>(c_q_n->nodePtr)) {                                                                              
                 std::cout << "NodeType3: Ejecutamos insercion de datos"<<std::endl;
 
-        NodeType3* nodo;
-                nodo = std::get<NodeType3*>(nodoVariant);
+        //NodeType3* nodo;
+        //nodo = std::get<NodeType3*>(nodoVariant);
+        NodeType3* nodo = std::get<NodeType3*>(c_q_n->nodePtr);  // Directo desde el variant
         fill_table_with_values_v4(nodo);
         } else if(std::holds_alternative<QueryNode*>(c_q_n->nodePtr)) {
         std::cout<<"Ejecutamos la consulta: "<<std::endl;
 
-        QueryNode* nodo;
-        nodo = std::get<QueryNode*>(nodoVariant);
-        mostrar_consulta_v2(nodo);
+        //QueryNode* nodo;
+        //nodo = std::get<QueryNode*>(nodoVariant);
+        QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
+        mostrar_tabla_query(nodo);
             } else {
                 std::cout << "Tipo desconocido de nodo para operar";
             };
