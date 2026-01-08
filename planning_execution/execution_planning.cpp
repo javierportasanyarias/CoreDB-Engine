@@ -30,8 +30,8 @@ void execPlan::Queue::add_node_to_queue(queueNode1* node_queue_to_add) {
         last_ptr->nxt_node_queue = node_queue_to_add;
         node_queue_to_add->prv_node_queue = last_ptr;
         last_ptr = node_queue_to_add;
-    }
-}
+    };
+};
 
 // saca del frente y devuelve el nodo (no lo borra)
 execPlan::queueNode1* execPlan::Queue::pop_front_node() {
@@ -81,6 +81,85 @@ void execPlan::Queue::printNodeTypes() const{
         std::cout << "(La cola está vacía)\n";
 };
 
+/////////////////////////////////////////////////////////////////////////
+
+// Función sobrecargada auxiliar para eliminar el contenido de los nodos de la cola de ejecución:
+
+
+void aux_delete_que_node_content(QueryNode* nodo){
+
+    // Este nodo es especial, porque en vez de tener hijos en un vector, cada "hijo" está en una variable concreta y con nombre
+    delete nodo->nodo_select;
+    nodo->nodo_select = nullptr;
+    delete nodo->nodo_from;
+    nodo->nodo_from = nullptr;
+
+    // Ya podemos eliminar el nodo:
+    delete nodo;
+    //nodo = nullptr;
+};
+
+
+void aux_delete_que_node_content(NodeType3* nodo){
+
+    // Este nodo es uno solo, no tiene hijos ni otros nodos enlazadas, tan sólo es una estructura de datos
+
+    // Ya podemos eliminar el nodo:
+    delete nodo;
+    //nodo = nullptr;
+};
+
+
+void aux_delete_que_node_content(NodeType2* nodo){
+
+    // Acción para recorrer sus hijos:
+    
+    // No hacemos nada porque suponemos que este tipo de nodos no tienen hijos
+
+    // Ya podemos eliminar el nodo:
+    delete nodo;
+    //nodo = nullptr;
+
+};
+
+
+void aux_delete_que_node_content(NodeType1* nodo){
+
+    // Acción para recorrer sus hijos:
+    for (auto& nodo_hijo_ptr : nodo->hijos) {
+        aux_delete_que_node_content(nodo_hijo_ptr);
+    };
+    // Ya podemos eliminar el nodo:
+    delete nodo;
+    nodo = nullptr;
+};
+
+////////////////////////////////////////////////////////////////////////
+// Función auxiliar para elimimnar nodos de la cola:
+void execPlan::Queue::delete_current_queue_node(queueNode1* nodo_cola_a_eliminar) {
+
+    if (!nodo_cola_a_eliminar) return;
+    std::visit(
+        [](auto* nodo_ptr) {
+            aux_delete_que_node_content(nodo_ptr);
+            nodo_ptr = nullptr; 
+        },
+        nodo_cola_a_eliminar->nodePtr
+    );
+    delete nodo_cola_a_eliminar;
+};
+
+////////////////////////////////////////////////////////////////////////
+//Función para eliminar la cola entera:
+void execPlan::delete_task_queue(execPlan::Queue* cola){
+    delete cola->first_ptr;
+    cola->first_ptr = nullptr;
+    delete cola->last_ptr;
+    cola->last_ptr = nullptr;
+    delete cola;
+
+};
+
 
 // Funcion para ejecutar la cola:
 //
@@ -121,9 +200,16 @@ void execPlan::Queue::execute_queue_tasks(){
         std::cout<<"Operacion terminada"<<std::endl;
         index++;
         std::cout<<std::endl;
-            c_q_n = c_q_n->nxt_node_queue;
+        c_q_n = c_q_n->nxt_node_queue;
+        // Ahora eliminamos el nodo que acabamos de ejecutar:
+        execPlan::Queue::delete_current_queue_node(c_q_n->prv_node_queue);
+        c_q_n->prv_node_queue = nullptr;
     };
     if (index == 0){                                                         
         std::cout << "(La cola está vacía)\n";
     };
+    // Una vez terminado debemos ejecutar de nuevo la eliminación del último nodo a parte:
+    execPlan::Queue::delete_current_queue_node(c_q_n);
+    c_q_n = nullptr;
+
 };

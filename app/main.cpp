@@ -16,6 +16,7 @@
 #include <unordered_map>
 // #include "globals/globals.h"
 #include "globals.h"
+#include "logging.h"
 
 int main(){
 
@@ -27,10 +28,14 @@ int main(){
    //Pequeño cambio para probsr push desde termux
    // Cambio realizado desde otro dispositivo
 
+   // Fijamos el nivel de logs a debug:
+   Logger::level = LogLevel::DEBUG;
+
 
    while(cond1){
 
       std::cout<<"\n> ";
+      //Logger::log(LogLevel::DEBUG, "");
       std::getline(std::cin, input);
 
       // Condicion de salida:
@@ -45,33 +50,44 @@ int main(){
       textUtils::simpleLinkedList* lista1 = new textUtils::simpleLinkedList;
       lista1 = textUtils::procesar_texto_pipeline(input);
       lista1->add_node("EOS");
-      lista1->print_list();
-      std::cout<<std::endl;
-      std::cout<<std::endl;
+      if(Logger::level == LogLevel::DEBUG){
+         lista1->print_list();
+      };
+      Logger::log(LogLevel::DEBUG, "");
+      Logger::log(LogLevel::DEBUG, "");
 
 	 // Construimos la cola de ejecucion:
-	 std::cout<<"Construimos la cola de ejecucion:"<<std::endl;                                                                                  
+    Logger::log(LogLevel::DEBUG, "Construimos la cola de ejecucion:");
+	 //std::cout<<"Construimos la cola de ejecucion:"<<std::endl;                                                                                  
     execPlan::Queue* excec_queue = new execPlan::Queue;                   
     excec_queue = procesar_lista_tokens(*lista1);
 
-	 std::cout<<std::endl;                                                 
-    std::cout<<std::endl;
-    std::cout<<std::endl;
+	 Logger::log(LogLevel::DEBUG, "");
+    Logger::log(LogLevel::DEBUG, "");
+    Logger::log(LogLevel::DEBUG, "");
+    
+    if(Logger::level == LogLevel::DEBUG){
+	   excec_queue->printNodeTypes();
+    };
 
-	 excec_queue->printNodeTypes();
-
-	 std::cout<<std::endl;
+	 Logger::log(LogLevel::DEBUG, "");
 
 	 // Ejecutamos la cola de ejecucion:
-	 std::cout<<"Ejecutamos la cola de tareas: "<<std::endl;                                                                                     
+    Logger::log(LogLevel::DEBUG, "Construimos la cola de ejecucion:");
+	 //std::cout<<"Ejecutamos la cola de tareas: "<<std::endl;                                                                                     
     excec_queue->execute_queue_tasks();
+    // Eliminamos la cola de tareas una vez ejecutada:
+    execPlan::delete_task_queue(excec_queue);
+    excec_queue = nullptr;
 	 
-	 std::cout<<std::endl;                                                 
-    std::cout<<std::endl;
-    std::cout<<std::endl;
+	 Logger::log(LogLevel::DEBUG, "");                                                 
+    Logger::log(LogLevel::DEBUG, "");
+    Logger::log(LogLevel::DEBUG, "");
 
 
    };
+
+   Logger::log(LogLevel::DEBUG, "Terminada TODA LA EJECUCION");
 
    return 0;
 };

@@ -7,6 +7,7 @@
 #include "globals.h"
 #include <variant>
 #include "execution.h"
+#include "logging.h"
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -119,40 +120,75 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
 // MOSTRAR TABLA:
 
 // Función auxiliar que imprime los valores de la tabla (TODOS LOS VALORES):
-void aux_table_values_print(const auto& columns_buffer, const std::vector<std::string>& col_list, int n_filas){
-   for(int j = 0; j < n_filas; j++){                                              
-      for(int i = 0; i< col_list.size(); i++){
-         auto& col = columns_buffer.at(col_list[i]);                                                                   
-         auto& cell = (col)[j];
+void aux_table_values_print(const auto& columns_buffer, const std::vector<std::string>& col_list, int n_filas) {
+    for (int j = 0; j < n_filas; j++) {
+        std::string fila; // acumulamos toda la fila en un string
+        for (int i = 0; i < col_list.size(); i++) {
+            auto& col = columns_buffer.at(col_list[i]);
+            auto& cell = col[j];
 
-         std::visit([](auto&& val){
-         std::cout << " | "<<val;}, cell);
-      };
-      std::cout<<" | "<<std::endl;
-   };
+            // Convertimos el valor a string usando std::visit
+            std::visit([&fila](auto&& val) {
+                using T = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    fila += " | " + val;
+                } else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>) {
+                    fila += " | " + std::to_string(val);
+                } else {
+                    // Ignoramos otros tipos como bool
+                    fila += " | "; // opcional: dejar columna vacía
+                }
+            }, cell);
+        }
+
+        fila += " |"; // final de fila
+        Logger::log(LogLevel::OUTPUT, fila, false); // imprimimos la fila sin flush automático
+        std::cout << std::endl; // flush controlado
+    }
 };
+
+
 
 // Función auxiliar que imprime los valores de la tabla (SE ESPECIFICÓ LISTA DE COLUMNAS EN EL SELECT):
-void aux_table_values_print(const auto& columns_buffer, const std::vector<ItemNode>& col_list, int n_filas){
-   for(int j = 0; j < n_filas; j++){                                              
-      for(int i = 0; i< col_list.size(); i++){
-         auto& col = columns_buffer.at(col_list[i].nombre);                                                                   
-         auto& cell = (col)[j];
+void aux_table_values_print(const auto& columns_buffer, const std::vector<ItemNode>& col_list, int n_filas) {
+    for (int j = 0; j < n_filas; j++) {
+        std::string fila; // acumulamos toda la fila en un string
+        for (int i = 0; i < col_list.size(); i++) {
+            auto& col = columns_buffer.at(col_list[i].nombre);
+            auto& cell = col[j];
 
-         std::visit([](auto&& val){
-         std::cout << " | "<<val;}, cell);
-      };
-      std::cout<<" | "<<std::endl;
-   };
+            // Convertimos el valor a string usando std::visit
+            std::visit([&fila](auto&& val) {
+                using T = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    fila += " | " + val;
+                } else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>) {
+                    fila += " | " + std::to_string(val);
+                } else {
+                    // Ignoramos bool u otros tipos no deseados
+                    fila += " | ";
+                }
+            }, cell);
+        }
+
+        fila += " |"; // final de fila
+        Logger::log(LogLevel::OUTPUT, fila, false); // imprimimos la fila sin flush automático
+        std::cout << std::endl; // flush controlado manualmente
+    }
 };
+
+
 
 // Función auxiliar para imprimir la tabla: PARA TODAS LAS COLUMNAS:
 void imprimir_tabla(const auto& columns_buffer, const std::vector<std::string>& col_list, int n_filas){
    // Imprimios los nombres de las columnas:
    for(int  i = 0; i<col_list.size(); i++){
-      std::cout<<" | "<<col_list[i];
+      //std::cout<<" | "<<col_list[i];
+      Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
+      Logger::log(LogLevel::OUTPUT, col_list[i], false);
    };
-   std::cout<<" | "<<std::endl;
+   //std::cout<<" | "<<std::endl;
+   Logger::log(LogLevel::OUTPUT, " | ", false);
    // Imprimimos los valores:
    aux_table_values_print(columns_buffer, col_list, n_filas);
 };
@@ -161,9 +197,12 @@ void imprimir_tabla(const auto& columns_buffer, const std::vector<std::string>& 
 void imprimir_tabla(QueryNode*& nodo_root, const auto& columns_buffer, const std::vector<ItemNode>& col_list, int n_filas){
    // Imprimios los nombres de las columnas:
        for(int i = 0; i<(nodo_root->nodo_select->items).size(); i++){
-         std::cout<<" | "<<(nodo_root->nodo_select)->items[i].nombre;
+         //std::cout<<" | "<<(nodo_root->nodo_select)->items[i].nombre;
+         Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
+         Logger::log(LogLevel::OUTPUT, (nodo_root->nodo_select)->items[i].nombre, false);
        };
-       std::cout<<" | "<<std::endl;
+       //std::cout<<" | "<<std::endl;
+       Logger::log(LogLevel::OUTPUT, " | ", false);
    // Imprimimos los valores:
    aux_table_values_print(columns_buffer, col_list, n_filas);
 };
