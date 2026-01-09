@@ -20,6 +20,7 @@ public:
                 case LogLevel::INFO:  std::cout << "[INFO] "; break;
                 case LogLevel::WARN:  std::cout << "[WARN] "; break;
                 case LogLevel::ERROR: std::cout << "[ERROR] "; break;
+		default: break;
             };
         };
         std::cout << msg;
@@ -37,6 +38,7 @@ public:
                 case LogLevel::INFO:  std::cout << "[INFO] "; break;
                 case LogLevel::WARN:  std::cout << "[WARN] "; break;
                 case LogLevel::ERROR: std::cout << "[ERROR] "; break;
+	        default: break;
             };
         };
         std::cout << msg;
