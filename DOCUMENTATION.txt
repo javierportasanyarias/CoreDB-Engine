@@ -4,7 +4,8 @@ g++ -std=c++20 `
   -Inodes_for_trees `
   -Itext_manipulation `
   -Iglobals `
-  -I"data structure" `
+  -I"data_structure" `
+  -Ilog `
   app/main.cpp `
   execution/execution.cpp `
   planning_execution/execution_planning.cpp `
