@@ -56,20 +56,25 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
         tb_recup->data_ptr = new table_data;
     };
 
-    std::cout << "Tabla encontrada, pasamos a insertar valores:\n";
+    //std::cout << "Tabla encontrada, pasamos a insertar valores:\n";
+    Logger::log(LogLevel::DEBUG, "Tabla encontrada, pasamos a insertar valores:\n", false);
 
     // Definimos la lista de columnas para iterar
 
    const std::vector<std::string>& columnas_list_bucle = nodo_ptr->columnas.empty() ? tb_recup->metadata_ptr->column_names : nodo_ptr->columnas;
 
 
-    std::cout << "BUCLE DE INSERCION:\n";
+    //std::cout << "BUCLE DE INSERCION:\n";
+    Logger::log(LogLevel::DEBUG, "BUCLE DE INSERCION:\n", false);
 
     // Iteramos por las filas de datos a insertar
     for (int i = 0; i < nodo_ptr->filas.size(); i++) {
         const std::vector<std::string>& fila = nodo_ptr->filas[i];
         for (int j = 0; j < fila.size(); j++) {
-            std::cout << "fila " << i + 1 << " columna Num " << j + 1 << "\n";
+            Logger::log(LogLevel::DEBUG, "fila ", false);
+            Logger::log(LogLevel::DEBUG, i + 1, false, false);
+            Logger::log(LogLevel::DEBUG, " columna Num ", false, false);
+            Logger::log(LogLevel::DEBUG, j + 1, true, false);
             // Insertamos directamente en la tabla del diccionario
             tb_recup->data_ptr->columns[columnas_list_bucle[j]].push_back(std::move(fila[j]));
         };
@@ -108,7 +113,6 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
    ((*(tb_created->metadata_ptr)).name) = nodo_ptr->nombre_tabla;
    // Recorremos los hijos:N_
    for(int i = 0; i<(*nodo_ptr).hijos.size(); i++){
-      //std::cout<<nodo_ptr->nombre_tabla<<std::endl;
       recursive_metadata_fill_lv2((nodo_ptr->hijos)[i], tb_created);
    };
    //global_table_dict[nodo_ptr->nombre_tabla] = tb_created;
@@ -143,7 +147,7 @@ void aux_table_values_print(const auto& columns_buffer, const std::vector<std::s
 
         fila += " |"; // final de fila
         Logger::log(LogLevel::OUTPUT, fila, false); // imprimimos la fila sin flush automático
-        std::cout << std::endl; // flush controlado
+        Logger::flush();
     }
 };
 
@@ -173,7 +177,8 @@ void aux_table_values_print(const auto& columns_buffer, const std::vector<ItemNo
 
         fila += " |"; // final de fila
         Logger::log(LogLevel::OUTPUT, fila, false); // imprimimos la fila sin flush automático
-        std::cout << std::endl; // flush controlado manualmente
+        Logger::log(LogLevel::OUTPUT, "", false);
+        Logger::flush();
     }
 };
 
@@ -188,7 +193,7 @@ void imprimir_tabla(const auto& columns_buffer, const std::vector<std::string>& 
       Logger::log(LogLevel::OUTPUT, col_list[i], false);
    };
    //std::cout<<" | "<<std::endl;
-   Logger::log(LogLevel::OUTPUT, " | ", false);
+   Logger::log(LogLevel::OUTPUT, " | ", true);
    // Imprimimos los valores:
    aux_table_values_print(columns_buffer, col_list, n_filas);
 };
@@ -202,20 +207,21 @@ void imprimir_tabla(QueryNode*& nodo_root, const auto& columns_buffer, const std
          Logger::log(LogLevel::OUTPUT, (nodo_root->nodo_select)->items[i].nombre, false);
        };
        //std::cout<<" | "<<std::endl;
-       Logger::log(LogLevel::OUTPUT, " | ", false);
+       Logger::log(LogLevel::OUTPUT, " | ", true);
    // Imprimimos los valores:
    aux_table_values_print(columns_buffer, col_list, n_filas);
 };
 
 void mostrar_tabla_query(QueryNode* nodo_root){
-    std::cout << std::endl;
+    // std::cout << std::endl;
+    Logger::flush();
 
     //recuperamos el nombre de la tabla
     std::string nombre_tabla = nodo_root->nodo_from->nombre;
 
     if (nodo_root->nodo_select == nullptr) {
        // La lista no existe o está vacía:
-	    std::cout<<"La lista de columnas esta vacia (Se ha hecho Seelct *)"<<std::endl;
+        Logger::log(LogLevel::DEBUG, "La lista de columnas esta vacia (Se ha hecho Select *)");
 	
        // Guardamos en memoria valores del diccionario accedidos con regularidad:
        const std::vector<std::string>& col_list = (global_table_dict[nombre_tabla]->metadata_ptr)->column_names;
@@ -230,7 +236,9 @@ void mostrar_tabla_query(QueryNode* nodo_root){
        const auto& columns_buffer = global_table_dict[nombre_tabla]->data_ptr->columns;
        // Hallamos antes el numero de filas:
        int n_filas = (columns_buffer.at(col_list[0].nombre)).size();   
-        std::cout<<"N filas en el else: "<<n_filas<<std::endl;
+        Logger::log(LogLevel::DEBUG, "N filas en el else: ", false);
+        Logger::log(LogLevel::DEBUG, n_filas, true, false);
+
        imprimir_tabla(nodo_root, columns_buffer, col_list, n_filas);
    };
 };

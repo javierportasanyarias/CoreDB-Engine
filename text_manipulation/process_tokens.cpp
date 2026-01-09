@@ -12,6 +12,7 @@
 // #include "globals/globals.h"
 #include "globals.h"
 #include "process_tokens.h"
+#include "logging.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DEFINIMOS LAS FUNCIONES AUXILIARES:
@@ -133,9 +134,13 @@ void aux_iterative_value_filler(textUtils::NodeLista1*& c_l_n, std::vector<std::
 
     while(c_l_n->val != ")" && c_l_n->val != "EOS" && c_l_n->val != ";"){
         if(c_l_n->val != ","){
-	    std::cout<<"Insertamos el valor: ";
-	    std::cout<<c_l_n->val<<" ";
-	    std::cout<<"en el vector"<<std::endl;
+	    // std::cout<<"Insertamos el valor: ";
+        Logger::log(LogLevel::DEBUG, "Insertamos el valor: ", false, true);
+	    // std::cout<<c_l_n->val<<" ";
+        Logger::log(LogLevel::DEBUG, c_l_n->val, false, false);
+        Logger::log(LogLevel::DEBUG, " ", false, false);
+	    // std::cout<<"en el vector"<<std::endl;
+        Logger::log(LogLevel::DEBUG, "en el vector", true, false);
             vector_fila.push_back(std::move(c_l_n->val));
         };
         // Avanzamos en el bucle:
@@ -153,12 +158,15 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
             // Declaramos un nuevo vector:
             std::vector<std::string> vector_fila;
             // Llamamos a la función auxiliar
-	    std::cout<<"Entramos en donde se insertan los valores: "<<
-std::endl;
+	    // std::cout<<"Entramos en donde se insertan los valores: "<<std::endl;
+        Logger::log(LogLevel::DEBUG, "Entramos en donde se insertan los valores: ");
+        
             aux_iterative_value_filler(c_l_n, vector_fila);
-            std::cout<<"Insertamos el vector en el vector de vectores:"<<std::endl;
+            // std::cout<<"Insertamos el vector en el vector de vectores:"<<std::endl;
+            Logger::log(LogLevel::DEBUG, "Insertamos el vector en el vector de vectores:");
             (nodo->filas).push_back(std::move(vector_fila));
-	    std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
+	    // std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
+        Logger::log(LogLevel::DEBUG, "Ya fue insertado el vector en el vector de vectores");
         };
         // Avanzamos en el bucle:
         c_l_n = c_l_n->nxt_node;
@@ -167,8 +175,10 @@ std::endl;
     if(c_l_n->val == ")"){
         c_l_n = c_l_n->nxt_node;
     };
-    std::cout<<"Hemos terminado de crear eo nodo de insertar valores con un valor del nodo: ";
-    std::cout<<c_l_n->val<<std::endl;
+    // std::cout<<"Hemos terminado de crear eo nodo de insertar valores con un valor del nodo: ";
+    Logger::log(LogLevel::DEBUG, "Hemos terminado de crear eo nodo de insertar valores con un valor del nodo: ", false, true);
+    // std::cout<<c_l_n->val<<std::endl;
+    Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 };
 
 // FUNCIONES PARA INSERTAR VALORES:
@@ -209,15 +219,19 @@ void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtil
     if(c_l_n->val == "VALUES"){
         c_l_n = c_l_n->nxt_node;
     } else{
-        std::cout<<"Este es el valor del nodo que ha dado este error: ";
-        std::cout<<c_l_n->val<<std::endl;
+        // std::cout<<"Este es el valor del nodo que ha dado este error: ";
+        Logger::log(LogLevel::DEBUG, "Este es el valor del nodo que ha dado este error: ", false, true);
+        // std::cout<<c_l_n->val<<std::endl;
+        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
         throw std::runtime_error("Se esperaba 'VALUES' despues de definir las columnas");
     };
 
     // Ahora insertamos los valores:
-    std::cout<<"Insertamos los valores:"<<std::endl;
+    // std::cout<<"Insertamos los valores:"<<std::endl;
+    Logger::log(LogLevel::DEBUG, "Insertamos los valores:");
     insert_row_values_in_node(nodo, c_l_n);
-    std::cout<<"SE HA SALIDO DE LA FUNCION 'insert_row_values_in_node'"<<std::endl;
+    // std::cout<<"SE HA SALIDO DE LA FUNCION 'insert_row_values_in_node'"<<std::endl;
+    Logger::log(LogLevel::DEBUG, "SE HA SALIDO DE LA FUNCION 'insert_row_values_in_node'");
 
     // Creamos y rellenamos el nodo de la cola
     execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
@@ -227,7 +241,8 @@ void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtil
 
     excec_queue->add_node_to_queue(excec_queue_node);
 
-    std::cout<<"SALIMOS DE LA FUNCION: 'procesar_lista_para_insertar_valores'"<<std::endl;
+    // std::cout<<"SALIMOS DE LA FUNCION: 'procesar_lista_para_insertar_valores'"<<std::endl;
+    Logger::log(LogLevel::DEBUG, "SALIMOS DE LA FUNCION: 'procesar_lista_para_insertar_valores'");
     
     return;
 
@@ -256,7 +271,8 @@ void aux_col_consulta(QueryNode*& nodo_consulta, textUtils::NodeLista1*& c_l_n){
 void procesar_lista_para_consulta(execPlan::Queue* excec_queue, textUtils::NodeLista1*& c_l_n){
 
    // Avanzamos uno:
-   std::cout<<"IINCIAMOS LA CREACION DEL ARBOL DE CONSULTA"<<std::endl;
+   // std::cout<<"IINCIAMOS LA CREACION DEL ARBOL DE CONSULTA"<<std::endl;
+   Logger::log(LogLevel::DEBUG, "IINCIAMOS LA CREACION DEL ARBOL DE CONSULTA");
    c_l_n = c_l_n->nxt_node;
    QueryNode* nodo_consulta = new QueryNode;
 
@@ -287,7 +303,8 @@ void procesar_lista_para_consulta(execPlan::Queue* excec_queue, textUtils::NodeL
 
     excec_queue->add_node_to_queue(excec_queue_node);
 
-    std::cout<<"Se ha adicionado la consulta al arbol"<<std::endl;
+    // std::cout<<"Se ha adicionado la consulta al arbol"<<std::endl;
+    Logger::log(LogLevel::DEBUG, "Se ha adicionado la consulta al arbol");
 
    return;
 };
@@ -303,14 +320,18 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
 
     while(c_l_n->val != "EOS"){
 
-        std::cout<<"Valor del token: ";
-        std::cout<<c_l_n->val<<std::endl;
+        // std::cout<<"Valor del token: ";
+        Logger::log(LogLevel::DEBUG, "Valor del token: ", false, true);
+        // std::cout<<c_l_n->val<<std::endl;
+        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 
         if(c_l_n->val == "CREATE TABLE"){
-            std::cout<<"Procedemos a definir el esquema:"<<std::endl;
+            // std::cout<<"Procedemos a definir el esquema:"<<std::endl;
+            Logger::log(LogLevel::DEBUG, "Procedemos a definir el esquema:");
             procesar_lista_para_definir_esquema(excec_queue, c_l_n);
         } else if(c_l_n->val == "INSERT INTO"){
-            std::cout<<"Procedemos a insertar valores:"<<std::endl;
+            // std::cout<<"Procedemos a insertar valores:"<<std::endl;
+            Logger::log(LogLevel::DEBUG, "Procedemos a insertar valores:");
             procesar_lista_para_insertar_valores(excec_queue, c_l_n);
         } else if(c_l_n->val == "SELECT"){
             procesar_lista_para_consulta(excec_queue, c_l_n);
@@ -318,7 +339,8 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
     
         // Ahora, si encontramos un ";" avanzamos un nodo adicinoal en la lista de tokens:
         if(c_l_n->val == ";"){
-            std::cout<<"saltamos los valores ';' :"<<std::endl;
+            // std::cout<<"saltamos los valores ';' :"<<std::endl;
+            Logger::log(LogLevel::DEBUG, "saltamos los valores ';' :");
             c_l_n = c_l_n->nxt_node;
         };
 

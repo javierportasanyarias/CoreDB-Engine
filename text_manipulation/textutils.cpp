@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cctype>  // para std::isspace
+#include "logging.h"
 
 std::string textUtils::espaciar_texto(std::string input){
 
@@ -63,20 +64,25 @@ while(current_node->nxt_node){
 
 void textUtils::simpleLinkedList::print_list() {
    if (!head) {
-      std::cout << "(empty list)" << std::endl;
+      // std::cout << "(empty list)" << std::endl;
+      Logger::log(LogLevel::DEBUG, "(empty list)");
       return;
    };
 
    textUtils::NodeLista1* current_node = head;
-   std::cout << current_node->val;  // imprime el primer nodo
+   // std::cout << current_node->val;  // imprime el primer nodo
+   Logger::log(LogLevel::DEBUG, current_node->val);
 
    // Recorre e imprime el resto con el separador ->
    while (current_node->nxt_node) {
       current_node = current_node->nxt_node;
-      std::cout << "->" << current_node->val;
+      // std::cout << "->" << current_node->val;
+      Logger::log(LogLevel::DEBUG, "->", false, false);
+      Logger::log(LogLevel::DEBUG, current_node->val, false, false);
    };
 
-   std::cout << std::endl;
+   // std::cout << std::endl;
+   Logger::flush();
 };
 
 std::string textUtils::borrar_espacios_repetidos(const std::string& input){

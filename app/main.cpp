@@ -34,8 +34,7 @@ int main(){
 
    while(cond1){
 
-      std::cout<<"\n> ";
-      //Logger::log(LogLevel::DEBUG, "");
+      Logger::log(LogLevel::DEBUG, "\n> ", false, false);
       std::getline(std::cin, input);
 
       // Condicion de salida:
@@ -53,36 +52,34 @@ int main(){
       if(Logger::level == LogLevel::DEBUG){
          lista1->print_list();
       };
-      Logger::log(LogLevel::DEBUG, "");
-      Logger::log(LogLevel::DEBUG, "");
+      Logger::log(LogLevel::DEBUG, "", true, false);
+      Logger::log(LogLevel::DEBUG, "", true, false);
 
 	 // Construimos la cola de ejecucion:
-    Logger::log(LogLevel::DEBUG, "Construimos la cola de ejecucion:");
-	 //std::cout<<"Construimos la cola de ejecucion:"<<std::endl;                                                                                  
+    Logger::log(LogLevel::DEBUG, "Construimos la cola de ejecucion:");                                                                              
     execPlan::Queue* excec_queue = new execPlan::Queue;                   
     excec_queue = procesar_lista_tokens(*lista1);
 
-	 Logger::log(LogLevel::DEBUG, "");
-    Logger::log(LogLevel::DEBUG, "");
-    Logger::log(LogLevel::DEBUG, "");
+	 Logger::log(LogLevel::DEBUG, "", true, false);
+    Logger::log(LogLevel::DEBUG, "", true, false);
+    Logger::log(LogLevel::DEBUG, "", true, false);
     
     if(Logger::level == LogLevel::DEBUG){
 	   excec_queue->printNodeTypes();
     };
 
-	 Logger::log(LogLevel::DEBUG, "");
+	 Logger::log(LogLevel::DEBUG, "", true, false);
 
 	 // Ejecutamos la cola de ejecucion:
-    Logger::log(LogLevel::DEBUG, "Construimos la cola de ejecucion:");
-	 //std::cout<<"Ejecutamos la cola de tareas: "<<std::endl;                                                                                     
+    Logger::log(LogLevel::DEBUG, "Ejecutamos la cola de tareas: ");                                                                                   
     excec_queue->execute_queue_tasks();
     // Eliminamos la cola de tareas una vez ejecutada:
     execPlan::delete_task_queue(excec_queue);
     excec_queue = nullptr;
 	 
-	 Logger::log(LogLevel::DEBUG, "");                                                 
-    Logger::log(LogLevel::DEBUG, "");
-    Logger::log(LogLevel::DEBUG, "");
+	 Logger::log(LogLevel::DEBUG, "", true, false);                                                
+    Logger::log(LogLevel::DEBUG, "", true, false);
+    Logger::log(LogLevel::DEBUG, "", true, false);
 
 
    };

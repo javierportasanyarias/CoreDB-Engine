@@ -7,6 +7,7 @@
 // #include "execution/execution.h"
 #include "execution.h"
 #include "execution_planning.h"
+#include "logging.h"
 
 ///////////////////////////////////////////////////////////
 // Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
@@ -53,32 +54,42 @@ void execPlan::Queue::printNodeTypes() const{
     int index = 0;
 
     while (current != nullptr) {
-        std::cout << "Nodo " << index << ": ";
+        // std::cout << "Nodo " << index << ": ";
+        Logger::log(LogLevel::DEBUG,  "Nodo ", false, true);
+        Logger::log(LogLevel::DEBUG,  index, false, false);
+        Logger::log(LogLevel::DEBUG,  ": ", false, false);
 
         // Comprobamos qué tipo de puntero contiene el variant:
         if (std::holds_alternative<NodeType1*>(current->nodePtr)) {
-            std::cout << "NodeType1" << std::endl;
+            // std::cout << "NodeType1" << std::endl;
+            Logger::log(LogLevel::DEBUG,  "NodeType1", true, false);
             const NodeType1* nodo_puntero = std::get<NodeType1*>(current->nodePtr);
             recursive_tree_print(nodo_puntero);
         } else if (std::holds_alternative<NodeType2*>(current->nodePtr)) {
-            std::cout << "NodeType2";
+            // std::cout << "NodeType2";
+            Logger::log(LogLevel::DEBUG,  "NodeType2", true, false);
         } else if (std::holds_alternative<NodeType3*>(current->nodePtr)) {
-            std::cout << "NodeType3"<<std::endl;
+            // std::cout << "NodeType3"<<std::endl;
+            Logger::log(LogLevel::DEBUG,  "NodeType3", true, false);
             const NodeType3* nodo_puntero = std::get<NodeType3*>(current->nodePtr);
             insert_data_node_print(nodo_puntero);
         } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
-            std::cout << "QueryNode"<<std::endl;
+            // std::cout << "QueryNode"<<std::endl;
+            Logger::log(LogLevel::DEBUG,  "QueryNode", true, false);
         } else {
-            std::cout << "Tipo desconocido";
+            // std::cout << "Tipo desconocido";
+            Logger::log(LogLevel::DEBUG,  "Tipo desconocido", true, false);
         };
 
-        std::cout << std::endl;
+        // std::cout << std::endl;
+        Logger::flush();
         current = current->nxt_node_queue;
         index++;
     }
 
     if (index == 0)
-        std::cout << "(La cola está vacía)\n";
+        // std::cout << "(La cola está vacía)\n";
+        Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n");
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -168,45 +179,57 @@ void execPlan::Queue::execute_queue_tasks(){
     int index = 0;
     execPlan::queueNode1* c_q_n = first_ptr; // Sin crear nada con new
 
-    std::cout << "Nodo " << index << ": ";
+    // std::cout << "Nodo " << index << ": ";
+    Logger::log(LogLevel::DEBUG,  "Nodo ", false, true);
+    Logger::log(LogLevel::DEBUG,  index, false, false);
+    Logger::log(LogLevel::DEBUG,  ": ", false, false);
+    
     while(c_q_n){
         //NodeVariant nodoVariant = c_q_n->nodePtr;
             if (std::holds_alternative<NodeType1*>(c_q_n->nodePtr)) {
-                std::cout << "NodeType1: Ejecutamos creacion de tabla" << std::endl;
+                // std::cout << "NodeType1: Ejecutamos creacion de tabla" << std::endl;
+                Logger::log(LogLevel::DEBUG,  "NodeType1: Ejecutamos creacion de tabla", true, false);
         //NodeType1* nodo;
         //nodo = std::get<NodeType1*>(nodoVariant);
         NodeType1* nodo = std::get<NodeType1*>(c_q_n->nodePtr);  // Directo desde el variant
         recursive_metadata_fill_lv1(nodo);
         } else if (std::holds_alternative<NodeType2*>(c_q_n->nodePtr)) {                                                                              
-            std::cout << "Nos encontramos al ejecutar un: NodeType2";
+            // std::cout << "Nos encontramos al ejecutar un: NodeType2";
+            Logger::log(LogLevel::DEBUG,  "Nos encontramos al ejecutar un: NodeType2", false, false);
         }
             else if (std::holds_alternative<NodeType3*>(c_q_n->nodePtr)) {                                                                              
-                std::cout << "NodeType3: Ejecutamos insercion de datos"<<std::endl;
+                // std::cout << "NodeType3: Ejecutamos insercion de datos"<<std::endl;
+                Logger::log(LogLevel::DEBUG,  "NodeType3: Ejecutamos insercion de datos", true, false);
 
         //NodeType3* nodo;
         //nodo = std::get<NodeType3*>(nodoVariant);
         NodeType3* nodo = std::get<NodeType3*>(c_q_n->nodePtr);  // Directo desde el variant
         fill_table_with_values_v4(nodo);
         } else if(std::holds_alternative<QueryNode*>(c_q_n->nodePtr)) {
-        std::cout<<"Ejecutamos la consulta: "<<std::endl;
+        // std::cout<<"Ejecutamos la consulta: "<<std::endl;
+        Logger::log(LogLevel::DEBUG,  "Ejecutamos la consulta: ");
 
         //QueryNode* nodo;
         //nodo = std::get<QueryNode*>(nodoVariant);
         QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
         mostrar_tabla_query(nodo);
             } else {
-                std::cout << "Tipo desconocido de nodo para operar";
+                // std::cout << "Tipo desconocido de nodo para operar";
+                Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar", false, true);
             };
-        std::cout<<"Operacion terminada"<<std::endl;
+        // std::cout<<"Operacion terminada"<<std::endl;
+        Logger::log(LogLevel::DEBUG,  "Operacion terminada", false, true);
         index++;
-        std::cout<<std::endl;
+        // std::cout<<std::endl;
+        Logger::flush();
         c_q_n = c_q_n->nxt_node_queue;
         // Ahora eliminamos el nodo que acabamos de ejecutar:
         execPlan::Queue::delete_current_queue_node(c_q_n->prv_node_queue);
         c_q_n->prv_node_queue = nullptr;
     };
     if (index == 0){                                                         
-        std::cout << "(La cola está vacía)\n";
+        // std::cout << "(La cola está vacía)\n";
+        Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n", true, true);
     };
     // Una vez terminado debemos ejecutar de nuevo la eliminación del último nodo a parte:
     execPlan::Queue::delete_current_queue_node(c_q_n);
