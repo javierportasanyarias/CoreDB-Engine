@@ -2,10 +2,11 @@
 #define TESTS_1
 
 #include <string>
+#include <iostream>
 
 
 
-std::string define_tests(std::string& input);
+std::string define_test_1(std::string& input);
 
 
 #endif
