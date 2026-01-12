@@ -17,6 +17,7 @@
 // #include "globals/globals.h"
 #include "globals.h"
 #include "logging.h"
+#include "tests_1.h"
 
 int main(){
 
@@ -29,21 +30,20 @@ int main(){
    // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
-   Logger::level = LogLevel::DEBUG;
+   Logger::level = LogLevel::OUTPUT;
 
 
    while(cond1){
 
-      Logger::log(LogLevel::DEBUG, "\n> ", false, false);
+      Logger::log(LogLevel::OUTPUT, "\n> ", false, false);
       std::getline(std::cin, input);
 
       // Condicion de salida:
       if(input == "exit"){
          break;
       };
-      if(input == "default"){
-         input = "    CREATE    TABLE  t1    ( ID STRING PRIMARY KEY , Edad INT, Producto STRING) ; INSERT INTO t1 VALUES( 'Carlos', 49, 'Secadora'); INSERT INTO t1 VALUES( 'Andrea', 34, 'Lavadora'); INSERT INTO t1 ( ID, Edad, Producto) VALUES( 'Edu', 29, 'Plancha'); INSERT INTO t1 VALUES ('Cassandra', 47, 'Batidora'), ( 'Lucas', 19, 'Correa'); SELECT * FROM t1; SELECT ID, Producto FROM t1; ";
-      };
+      // Ahora una funcion ddcidira si deja intacto el input o dara codigo de testeo de forma automatica:
+      input = define_tests(input);
 
       // Ahora procesamos el texto:
       textUtils::simpleLinkedList* lista1 = new textUtils::simpleLinkedList;
@@ -77,7 +77,7 @@ int main(){
     execPlan::delete_task_queue(excec_queue);
     excec_queue = nullptr;
 	 
-	 Logger::log(LogLevel::DEBUG, "", true, false);                                                
+    Logger::log(LogLevel::DEBUG, "", true, false);                     
     Logger::log(LogLevel::DEBUG, "", true, false);
     Logger::log(LogLevel::DEBUG, "", true, false);
 

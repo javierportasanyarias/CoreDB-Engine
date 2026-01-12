@@ -222,17 +222,17 @@ void execPlan::Queue::execute_queue_tasks(){
         index++;
         // std::cout<<std::endl;
         Logger::flush();
-        c_q_n = c_q_n->nxt_node_queue;
+	execPlan::queueNode1* proximo_nodo = c_q_n->nxt_node_queue;
         // Ahora eliminamos el nodo que acabamos de ejecutar:
-        execPlan::Queue::delete_current_queue_node(c_q_n->prv_node_queue);
-        c_q_n->prv_node_queue = nullptr;
+        execPlan::Queue::delete_current_queue_node(c_q_n);
+        c_q_n = proximo_nodo;
     };
     if (index == 0){                                                         
         // std::cout << "(La cola está vacía)\n";
         Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n", true, true);
     };
     // Una vez terminado debemos ejecutar de nuevo la eliminación del último nodo a parte:
-    execPlan::Queue::delete_current_queue_node(c_q_n);
-    c_q_n = nullptr;
+    // execPlan::Queue::delete_current_queue_node(c_q_n);
+    // c_q_n = nullptr;
 
 };
