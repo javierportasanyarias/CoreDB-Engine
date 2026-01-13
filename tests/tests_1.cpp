@@ -7,7 +7,9 @@
 std::string write_bash_command(std::string& input){
 
    // std::string command ="cd .. && echo \"" + input + "\" | ./app/sql_app.exe";
-   std::string command ="cd ..";
+   // std::string command ="echo \"" + input + "\" | ./app/sql_app.exe";
+   std::string command = "printf \"" + input + "\\nexit\\n\" | ./app/sql_app.exe";
+   // std::string command ="cd ..";
    return command;
 };
 

@@ -8,7 +8,6 @@ g++ -std=c++20 \
   -Iglobals \
   -I"data_structure" \
   -Ilog \
-  -Itests \
   app/main.cpp \
   execution/execution.cpp \
   planning_execution/execution_planning.cpp \
@@ -17,5 +16,4 @@ g++ -std=c++20 \
   text_manipulation/textutils.cpp \
   globals/globals.cpp \
   log/logging.cpp \
-  tests/tests_1.cpp \
   -o app/sql_app.exe

@@ -17,33 +17,34 @@
 // #include "globals/globals.h"
 #include "globals.h"
 #include "logging.h"
-#include "tests_1.h"
 
 int main(){
 
    /////////////////////////////////////////////////////////////////
    // BUCLE DE EJECUCION:
 
-   bool cond1 = true;
    std::string input = "";
    //Pequeño cambio para probsr push desde termux
    // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
-   Logger::level = LogLevel::OUTPUT;
+   Logger::level = LogLevel::DEBUG;
 
 
-   while(cond1){
+   while(true){
+	
+      // if (!std::cin.good()) break;
 
       Logger::log(LogLevel::OUTPUT, "\n> ", false, false);
-      std::getline(std::cin, input);
+      if (!std::getline(std::cin, input)) {
+          break;
+      };
+      // std::getline(std::cin, input);
 
       // Condicion de salida:
       if(input == "exit"){
          break;
       };
-      // Ahora una funcion ddcidira si deja intacto el input o dara codigo de testeo de forma automatica:
-      input = define_tests(input);
 
       // Ahora procesamos el texto:
       textUtils::simpleLinkedList* lista1 = new textUtils::simpleLinkedList;

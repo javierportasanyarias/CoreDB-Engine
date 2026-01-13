@@ -309,6 +309,23 @@ void procesar_lista_para_consulta(execPlan::Queue* excec_queue, textUtils::NodeL
    return;
 };
 
+// Para eliminar tablas:
+void drop_table(execPlan::Queue* excec_queue, textUtils::NodeLista1*& table_nombre_ptr){
+  
+
+  std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre_ptr->val);
+    if(item_pair== global_table_dict.end()){
+        throw std::runtime_error("ERROR: La tabla "+ table_nombre_ptr->val +" no existe. No se puede eliminar");
+    };
+    // En caso de existir la clave procedemos a la eliminacion:
+    delete item_pair->second;
+    global_table_dict.erase(item_pair);
+    Logger::log(LogLevel::DEBUG, "Tabla "+ table_nombre_ptr->val+" eliminada");
+
+
+
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
 
@@ -335,6 +352,8 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
             procesar_lista_para_insertar_valores(excec_queue, c_l_n);
         } else if(c_l_n->val == "SELECT"){
             procesar_lista_para_consulta(excec_queue, c_l_n);
+	} else if(c_l_n->val == "DROP TABLE"){
+	    drop_table(excec_queue, c_l_n->nxt_node);
 	};
     
         // Ahora, si encontramos un ";" avanzamos un nodo adicinoal en la lista de tokens:

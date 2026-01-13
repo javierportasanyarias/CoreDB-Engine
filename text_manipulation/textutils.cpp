@@ -157,7 +157,7 @@ textUtils::simpleLinkedList* textUtils::crear_lista_tokens(const std::string& in
    for(int i = 0; i<input.size(); i++){
       //*buffer += input[i];
       if(input[i] == ' '){
-         if(*buffer == "CREATE" || *buffer == "PRIMARY" || *buffer == "INSERT"){
+         if(*buffer == "CREATE" || *buffer == "PRIMARY" || *buffer == "INSERT" || *buffer == "DROP"){
             *buffer += input[i];
          }else {
             lista->add_node(*buffer);
