@@ -76,6 +76,8 @@ void execPlan::Queue::printNodeTypes() const{
         } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
             // std::cout << "QueryNode"<<std::endl;
             Logger::log(LogLevel::DEBUG,  "QueryNode", true, false);
+        } else if (std::holds_alternative<DropTableNode*>(current->nodePtr)) {
+            Logger::log(LogLevel::DEBUG,  "DropTableNode", true, false);
         } else {
             // std::cout << "Tipo desconocido";
             Logger::log(LogLevel::DEBUG,  "Tipo desconocido", true, false);
