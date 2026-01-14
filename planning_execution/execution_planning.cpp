@@ -1,7 +1,7 @@
 #include <iostream>
 #include <variant>
 // #include "nodes_for_trees/node_for_trees.h"
-#include "node_for_trees.h"
+//#include "node_for_trees.h"
 // #include "globals/globals.h"
 #include "globals.h"
 // #include "execution/execution.h"
@@ -11,7 +11,7 @@
 
 ///////////////////////////////////////////////////////////
 // Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
-using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*>;
+//using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*, DropTableNode*>;
 
 execPlan::queueNode1::queueNode1(): nxt_node_queue(nullptr), prv_node_queue(nullptr){};
 
@@ -105,6 +105,13 @@ void aux_delete_que_node_content(QueryNode* nodo){
     delete nodo->nodo_from;
     nodo->nodo_from = nullptr;
 
+    // Ya podemos eliminar el nodo:
+    delete nodo;
+    //nodo = nullptr;
+};
+
+
+void aux_delete_que_node_content(DropTableNode* nodo){                                                                                                                    // Este nodo es uno solo, no tiene hijos ni otros nodos enlazadas, tan sólo es una estructura de datos                                                        
     // Ya podemos eliminar el nodo:
     delete nodo;
     //nodo = nullptr;
@@ -213,9 +220,11 @@ void execPlan::Queue::execute_queue_tasks(){
         //nodo = std::get<QueryNode*>(nodoVariant);
         QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
         mostrar_tabla_query(nodo);
-            } else {
+	}  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
+            Logger::log(LogLevel::DEBUG,  "Eliminamos una tabla: ");       
+        } else {
                 // std::cout << "Tipo desconocido de nodo para operar";
-                Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar", false, true);
+                Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");
             };
         // std::cout<<"Operacion terminada"<<std::endl;
         Logger::log(LogLevel::DEBUG,  "Operacion terminada", false, true);

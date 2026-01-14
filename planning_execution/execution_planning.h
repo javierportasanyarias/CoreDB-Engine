@@ -13,7 +13,7 @@
 namespace execPlan {
     ///////////////////////////////////////////////////////////
     // Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
-    using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*>;
+    using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*, DropTableNode*>;
     class queueNode1 {
         public:
             NodeVariant nodePtr;

@@ -73,6 +73,16 @@ class QueryNode {
 
       QueryNode();
 };
+////////////////////////////////////
+/// NODOS PARA ELIMINAR TABLAS:
+class DropTableNode {
+   public:
+      std::string nombre_tabla;
+
+      DropTableNode();
+      
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Métodos de los árboles:
 

@@ -42,10 +42,10 @@ void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtil
 void aux_col_consulta(QueryNode*& nodo_consulta, textUtils::NodeLista1*& c_l_n);
 
 // PARA DEFINIR LAS CONSULTAS:
-void procesar_lista_para_consulta(execPlan::Queue* excec_queue, textUtils::NodeLista1*& c_l_n);
+void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& c_l_n);
 
 // PARA ELIMINAR TABLAS:
-void drop_table(execPlan::Queue* excec_queue, textUtils::NodeLista1*& table_nombre_ptr);
+void drop_table(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nombre_ptr);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista);

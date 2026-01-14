@@ -268,7 +268,7 @@ void aux_col_consulta(QueryNode*& nodo_consulta, textUtils::NodeLista1*& c_l_n){
 };
 
 // PARA DEFINIR LAS CONSULTAS:
-void procesar_lista_para_consulta(execPlan::Queue* excec_queue, textUtils::NodeLista1*& c_l_n){
+void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& c_l_n){
 
    // Avanzamos uno:
    // std::cout<<"IINCIAMOS LA CREACION DEL ARBOL DE CONSULTA"<<std::endl;
@@ -310,19 +310,24 @@ void procesar_lista_para_consulta(execPlan::Queue* excec_queue, textUtils::NodeL
 };
 
 // Para eliminar tablas:
-void drop_table(execPlan::Queue* excec_queue, textUtils::NodeLista1*& table_nombre_ptr){
+void drop_table(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nombre_ptr){
+   table_nombre_ptr = table_nombre_ptr->nxt_node;
   
 
   std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre_ptr->val);
     if(item_pair== global_table_dict.end()){
         throw std::runtime_error("ERROR: La tabla "+ table_nombre_ptr->val +" no existe. No se puede eliminar");
     };
-    // En caso de existir la clave procedemos a la eliminacion:
-    delete item_pair->second;
-    global_table_dict.erase(item_pair);
-    Logger::log(LogLevel::DEBUG, "Tabla "+ table_nombre_ptr->val+" eliminada");
+    // En caso de existir la clave procedemos a crear un nodo de elimonacion de tabla:
+    DropTableNode* nodo_drop = new DropTableNode;
+    nodo_drop->nombre_tabla = table_nombre_ptr->val;
 
+   // Creamos y rellenamos el nodo de la cola
+    execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
+    excec_queue_node->nodePtr = nodo_drop;
 
+    // ñadimos el nodo de la cola a la cola:                                
+    excec_queue->add_node_to_queue(excec_queue_node);
 
 };
 
@@ -353,7 +358,9 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
         } else if(c_l_n->val == "SELECT"){
             procesar_lista_para_consulta(excec_queue, c_l_n);
 	} else if(c_l_n->val == "DROP TABLE"){
-	    drop_table(excec_queue, c_l_n->nxt_node);
+	    Logger::log(LogLevel::DEBUG, "<<<<<ELIMINACION DE LA TABLA >>>>>>: " + c_l_n->nxt_node->val);
+	    drop_table(excec_queue, c_l_n);
+	    Logger::log(LogLevel::DEBUG, "<<<<<TABLA PLANEADA PARA ELIMINAR >>>>>>: ");
 	};
     
         // Ahora, si encontramos un ";" avanzamos un nodo adicinoal en la lista de tokens:
@@ -364,7 +371,7 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
         };
 
         // Avanzamos si o si al siguienre nodo:
-        if(c_l_n->val != "CREATE TABLE" && c_l_n->val !="INSERT INTO" && c_l_n->val != "EOS" && c_l_n->val != "SELECT"){
+        if(c_l_n->val != "CREATE TABLE" && c_l_n->val !="INSERT INTO" && c_l_n->val != "EOS" && c_l_n->val != "SELECT" && c_l_n->val != "DROP TABLE"){
             c_l_n = c_l_n->nxt_node;
         };
     };

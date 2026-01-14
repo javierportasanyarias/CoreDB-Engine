@@ -23,6 +23,8 @@ ItemNode::ItemNode(): nombre(""), alias(""){};
 
 QueryNode::QueryNode(): nodo_select(nullptr), nodo_from(nullptr){};
 
+DropTableNode::DropTableNode(): nombre_tabla(""){};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Métodos de los árboles:
 
