@@ -50,4 +50,5 @@ void Logger::log(LogLevel msgLevel,
 
 void Logger::flush() {
     std::cout << std::endl;
+    std::cout.flush();
 }

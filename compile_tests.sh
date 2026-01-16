@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-g++ tests/tests_1.cpp -o tests/test_exe.exe
+# Antes: g++ tests/tests_1.cpp -o tests/test_exe.exe
+g++ tests/data_structs.cpp tests/tests_2.cpp -o tests/test_exe.exe

@@ -58,9 +58,9 @@ void ejecutar_proceso_hijo(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid){
     close(pipe_2[0]);
 
     dup2(pipe_1[0], STDIN_FILENO);
+    close(pipe_1[0]);
     dup2(pipe_2[1], STDOUT_FILENO);
 
-    close(pipe_1[0]);
     close(pipe_2[1]);
 
     // Ejecitamos el programa:
@@ -71,6 +71,33 @@ void ejecutar_proceso_hijo(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid){
 
 };
 
+//---------------------------------
+// -- FUNCIOBES AUXILARES DEL PADRE:
+void write_to_child(int (&pipe_in)[2], const std::string& cmd) {
+    std::string s = cmd + "\n";
+    write(pipe_in[1], s.c_str(), s.size());
+};
+
+std::string read_until_marker(int (&pipe_out)[2], const std::string& marker="__END__"){ 
+    std::string output;
+    char buf[4096];
+    ssize_t n;
+    int aux_count = 0;
+    while ((n = read(pipe_out[0], buf, sizeof(buf))) > 0) {
+        output.append(buf, n);
+	aux_count+= 1;
+        //std::cout<<aux_count<<output<<std::endl;
+	//if(aux_count==100){
+           //break;
+	//};
+        if (output.find(marker) != std::string::npos) break;
+    }
+    // Opcional: quitar el marcador del output
+    size_t pos = output.find(marker);
+    if (pos != std::string::npos) output.erase(pos);
+    return output;
+};
+
 
 void ejecutar_proceso_padre(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid, std::string& comando){
 
@@ -78,23 +105,35 @@ void ejecutar_proceso_padre(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid, std:
     close(pipe_2[1]);
 
     // Escribimos el comando:
-    std::string cmd1= comando + "\n";
-    write(pipe_1[1], cmd1.c_str(), cmd1.size());
+    std::string comando_1= comando + "\n";
 
     // Segundo input:
     std::string comando_2 = "    CREATE TABLE  t1    ( ID STRING PRIMARY KEY , Edad INT, Producto STRING) ; INSERT INTO t1 VALUES( 'Carlos', 49, 'Secadora'); INSERT INTO t1 VALUES( 'Andrea', 34, 'Lavadora'); INSERT INTO t1 ( ID, Edad, Producto) VALUES( 'Edu', 29, 'Plancha'); INSERT INTO t1 VALUES ('assandra', 47, 'Batidora'), ( 'Lucas', 19, 'Correa'); SELECT * FROM t1; SELECT ID, Producto FROM t1;  DROP TABLE t1  ;\n";
-    std::string output_2 = "";
-    write(pipe_1[1], comando_2.c_str(), comando_2.size());
-    close(pipe_1[1]);
+    std::string comando_3 = "exit\n";
     // Recibimos el input:                                            
-    std::string output_1 = "";                                        char buffer[2560];                                                ssize_t n;                                                                                                                          while ((n = read(pipe_2[0], buffer, sizeof(buffer))) > 0) {
-         output_1.append(buffer, n);
-        //if (output_1.find(">") != std::string::npos) break; // detectamos fin de salida                                                 
-    };                                                                std::cout<<output_1<<std::endl;
+    std::string output_1 = "";
+    write_to_child(pipe_1, comando_1);
+    output_1 = read_until_marker(pipe_2);
+    std::cout<<output_1<<std::endl;
+
+    std::cout<<"\n\nSEGUNDO COMANDO\n\n"<<std::endl;
+    std::cout.flush();
+
+
+    std::string output_2 = "";
+    write_to_child(pipe_1, comando_2);
+    output_2 = read_until_marker(pipe_2); 
+    std::cout<<output_2<<std::endl;
+
+    std::string output_3= ""; 
+    write_to_child(pipe_1, comando_3);
+    output_3 = read_until_marker(pipe_2);
+    std::cout<<output_3<<std::endl;
+
+    close(pipe_1[1]);
     close(pipe_2[0]);
 
     //waitpid(pid, nullptr, 0);
-
 
 };
 

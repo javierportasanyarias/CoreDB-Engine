@@ -310,7 +310,7 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
 };
 
 // Para eliminar tablas:
-void drop_table(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nombre_ptr){
+void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nombre_ptr){
    table_nombre_ptr = table_nombre_ptr->nxt_node;
   
 
@@ -359,7 +359,7 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
             procesar_lista_para_consulta(excec_queue, c_l_n);
 	} else if(c_l_n->val == "DROP TABLE"){
 	    Logger::log(LogLevel::DEBUG, "<<<<<ELIMINACION DE LA TABLA >>>>>>: " + c_l_n->nxt_node->val);
-	    drop_table(excec_queue, c_l_n);
+	    add_drop_table_node_to_queue(excec_queue, c_l_n); //Aqui no se elimina lq tabla
 	    Logger::log(LogLevel::DEBUG, "<<<<<TABLA PLANEADA PARA ELIMINAR >>>>>>: ");
 	};
     
