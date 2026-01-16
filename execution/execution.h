@@ -44,4 +44,6 @@ void mostrar_tabla_query(QueryNode* nodo_root);
 // ELIMINACIÓN:
 void liberar_tabla(table* tb);
 
+void drop_table_from_global_dict(DropTableNode*& nodo_ptr);
+
 #endif

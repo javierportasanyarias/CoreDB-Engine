@@ -223,7 +223,9 @@ void execPlan::Queue::execute_queue_tasks(){
         QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
         mostrar_tabla_query(nodo);
 	}  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
-            Logger::log(LogLevel::DEBUG,  "Eliminamos una tabla: ");       
+	    DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
+	    drop_table_from_global_dict(nodo);
+            Logger::log(LogLevel::DEBUG,  "Tabla eliminada: " + nodo->nombre_tabla);       
         } else {
                 // std::cout << "Tipo desconocido de nodo para operar";
                 Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");

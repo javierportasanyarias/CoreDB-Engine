@@ -28,7 +28,7 @@ int main(){
    // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
-   Logger::level = LogLevel::DEBUG;
+   Logger::level = LogLevel::OUTPUT;
 
 
    while(true){

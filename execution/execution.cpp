@@ -254,3 +254,11 @@ void liberar_tabla(table* tb){
     tb->data_ptr = nullptr;
     delete tb;
 };
+
+void drop_table_from_global_dict(DropTableNode*& nodo_ptr){
+
+    liberar_tabla(global_table_dict[nodo_ptr->nombre_tabla]);
+    //delete global_table_dict[nodo_ptr->nombre_tabla];
+    global_table_dict.erase(nodo_ptr->nombre_tabla);
+    
+};
