@@ -76,7 +76,8 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
             Logger::log(LogLevel::DEBUG, " columna Num ", false, false);
             Logger::log(LogLevel::DEBUG, j + 1, true, false);
             // Insertamos directamente en la tabla del diccionario
-            tb_recup->data_ptr->columns[columnas_list_bucle[j]].push_back(std::move(fila[j]));
+            // tb_recup->data_ptr->columns[columnas_list_bucle[j]].push_back(std::move(fila[j]));
+            tb_recup->data_ptr->columns[j].push_back(std::move(fila[j]));
         };
     };
 };
@@ -227,7 +228,8 @@ void mostrar_tabla_query(QueryNode* nodo_root){
        const std::vector<std::string>& col_list = (global_table_dict[nombre_tabla]->metadata_ptr)->column_names;
        const auto& columns_buffer = global_table_dict[nombre_tabla]->data_ptr->columns;
 
-       int n_filas = (columns_buffer.at(col_list[0])).size();
+       // int n_filas = (columns_buffer.at(col_list[0])).size();
+       int n_filas = (columns_buffer.at(0)).size();
        imprimir_tabla(columns_buffer, col_list, n_filas);
     } else {
 

@@ -18,6 +18,8 @@
 #include "globals.h"
 #include "logging.h"
 
+#include "disk_io.h"
+
 int main(){
 
    /////////////////////////////////////////////////////////////////
@@ -88,6 +90,11 @@ int main(){
     Logger::flush();
     Logger::log(LogLevel::OUTPUT, "__END__");
     //std::cout<<"__END__"<<std::endl;
+
+    Logger::log(LogLevel::DEBUG, "Escribimos los datos del diccionario global en disco: ");
+    write_dump();
+    Logger::log(LogLevel::DEBUG, "Tablas escritas en disco ");
+    Logger::flush();
     std::cout.flush();
 
 

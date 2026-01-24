@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 #include <variant>
-#include <unordered_map>
+//#include <unordered_map>
+#include <map>
 
 enum class dataType {
 
@@ -27,7 +28,7 @@ using Values = std::variant<int, float, bool, std::string>;
 struct table_data {
 
    //std::unordered_map<std::string, std::vector<Values>> columns;
-	std::vector<std::vector<Values>> columns;
+	std::map<std::string, std::vector<Values>> columns;
 };
 
 struct table {

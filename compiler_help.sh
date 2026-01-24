@@ -8,6 +8,7 @@ g++ -std=c++20 \
   -Iglobals \
   -I"data_structure" \
   -Ilog \
+  -I"disk_io" \
   app/main.cpp \
   execution/execution.cpp \
   planning_execution/execution_planning.cpp \
