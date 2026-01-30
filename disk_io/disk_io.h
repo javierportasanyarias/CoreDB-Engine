@@ -6,21 +6,53 @@
 #include <fstream>
 #include <string>
 #include "globals.h"
+#include <map>
+#include "logging.h"
 
 namespace disk_io {
 
-    // FUNCIÓN DE SINCRONIZACIÓN:
-    void write_dump(){
 
-        /*
-        Este método, una vez llamado, escribe todas las tablas, sobreescribiendo por defecto
-        */
+    void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<int>& buffer){
 
-        for (const auto& [table_name, table_ptr] : global_table_dict) {
-            // Escribimos tabla por tabla:
-            write_table(table_ptr);
+	// Creamos el buffer de los datos:
+        for(size_t i = 0; i < n_rows; i++) {
+            buffer[i] = std::get<int>(col_datos[i]);
+	};
 
-        };
+	out.write(reinterpret_cast<char*>(buffer.data()), n_rows * sizeof(int));
+    };
+
+
+    void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<float>& buffer){
+
+        // Creamos el buffer de los datos:
+        for(size_t i = 0; i < n_rows; i++) {
+            buffer[i] = std::get<float>(col_datos[i]);                                     };
+        out.write(reinterpret_cast<char*>(buffer.data()), n_rows * sizeof(float));
+    };
+
+
+    void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<uint8_t>& buffer){
+
+        // Creamos el buffer de los datos:
+        for (size_t k = 0; k < n_rows; k++){
+            buffer[k] = std::get<bool>(col_datos[k]) ? 1 : 0;
+	};
+        out.write(reinterpret_cast<char*>(buffer.data()), n_rows * sizeof(uint8_t));
+
+    };
+
+
+    void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos){
+
+        // Creamos el buffer de los datos:
+        for(size_t i = 0; i < n_rows; i++) {
+            const std::string& s = std::get<std::string>(col_datos[i]);
+	    uint32_t s_len = s.size();
+	    out.write(reinterpret_cast<char*>(&s_len), sizeof(uint32_t));
+	    out.write(s.data(), s_len);
+	};
+        
     };
 
 
@@ -49,7 +81,7 @@ namespace disk_io {
         for(uint32_t i=0; i<num_cols; i++){
             // -- Escribimos los datos de cada columna ---------------------
             // -- Escribimos el nombre:
-            std::string column_name = (table->table_metadata->column_names)[i];
+            std::string column_name = (tabla->metadata_ptr->column_names)[i];
             uint32_t size_column_name = column_name.size();
             out.write(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
             out.write(column_name.data(), size_column_name);
@@ -58,8 +90,9 @@ namespace disk_io {
             uint32_t col_type_disk = static_cast<uint32_t>(col_type);
             out.write(reinterpret_cast<char*>(&col_type_disk), sizeof(uint32_t));
             // -- Escribimos si es clave primaria:
-            bool column_is_key = (table->table_metadata->primary_list)[i];
-            out.write(column_is_key.data(), sizeof(uint8_t));
+            bool column_is_key = (tabla->metadata_ptr->primary_list)[i];
+	    uint8_t key_val = column_is_key ? 1 : 0;
+	    out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
         };
 
         // ============================================================
@@ -67,7 +100,52 @@ namespace disk_io {
         // ============================================================
 
         // Primero hallamos el número de instancias:
+	std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
+	// Antes de nada escrobiremos el numero de columnas:
+	out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
 
+	// Escribimos en un bucle las columnas:
+	for(uint32_t i=0; i<num_cols; i++){
+	   std::string column_name = (tabla->metadata_ptr->column_names)[i];
+	   // Primero, recuperamos el array de datos a escribir:
+	   std::vector<Values> col_datos = columnas.at(column_name);
+
+	   // Escribimos el tamaño del array: (n_rows es el tamaño del array a escribir en cada iteracion. nos sirve tsmbien para luego en write_buffer escribir elemento a elemento)
+	   uint32_t n_rows = col_datos.size(); 
+	   out.write(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
+
+           // Ahora operaremos en funcion del tipo de variable:
+	   dataType col_type = (tabla->metadata_ptr->column_types)[i];
+
+	   switch(col_type){
+               case dataType::INT: {
+		   std::vector<int> buffer(n_rows);
+		   write_buffer(out, n_rows, col_datos , buffer);
+		   break;
+	       };
+	       case dataType::FLOAT: {
+		   std::vector<float> buffer(n_rows);  
+		   write_buffer(out, n_rows, col_datos , buffer);
+                   break;
+	       };
+	       case dataType::STRING: {             
+		   write_buffer(out, n_rows, col_datos);
+                   break;
+	       };
+	       case dataType::BOOL: {                                                          std::vector<uint8_t> buffer(n_rows);
+		   write_buffer(out, n_rows, col_datos , buffer);
+                   break;
+		};
+		case dataType::UNKNOWN: {
+		   Logger::log(LogLevel::ERROR, "ERROR: Tipo de dato desconocido");
+		   break;
+		};
+
+	   };
+	
+
+	};
+	
 
         // Terminamos la escritura:
         out.close();
@@ -75,11 +153,19 @@ namespace disk_io {
     };
 
 
-    void write_table(table* tabla){
 
-        // leemos la tabla con sus metadatos:
+    // FUNCIÓN DE SINCRONIZACIÓN:
+    void write_dump(){
 
-        
+        /*
+        Este método, una vez llamado, escribe todas las tablas, sobreescribi        endo por defecto
+        */
+
+        for (const auto& [table_name, table_ptr] : global_table_dict) {
+            // Escribimos tabla por tabla:
+            write_table(table_ptr);
+
+        };
     };
 
 
