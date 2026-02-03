@@ -38,7 +38,7 @@ int main(){
       // if (!std::cin.good()) break;
 
       Logger::log(LogLevel::OUTPUT, "\n> ", false, false);
-      Logger::flush();
+      //Logger::flush();
       if (!std::getline(std::cin, input)) {
           break;
       };
@@ -49,6 +49,7 @@ int main(){
 	 Logger::log(LogLevel::DEBUG, "EXIT");
          break;
       };
+      //Logger::flush();
 
       // Ahora procesamos el texto:
       textUtils::simpleLinkedList* lista1 = new textUtils::simpleLinkedList;
@@ -61,7 +62,7 @@ int main(){
       Logger::log(LogLevel::DEBUG, "", true, false);
 
       // Construimos la cola de ejecucion:
-      Logger::flush();
+      //Logger::flush();
       Logger::log(LogLevel::DEBUG, "Construimos la cola de ejecucion:");                                                                              
     execPlan::Queue* excec_queue = new execPlan::Queue;                   
     excec_queue = procesar_lista_tokens(*lista1);
@@ -78,7 +79,7 @@ int main(){
 
 	 // Ejecutamos la cola de ejecucion:
     Logger::log(LogLevel::DEBUG, "Ejecutamos la cola de tareas: ");
-    Logger::flush();
+    //Logger::flush();
     excec_queue->execute_queue_tasks();
     // Eliminamos la cola de tareas una vez ejecutada:
     execPlan::delete_task_queue(excec_queue);
@@ -94,15 +95,13 @@ int main(){
     Logger::log(LogLevel::DEBUG, "Escribimos los datos del diccionario global en disco: ");
     disk_io::write_dump();
     Logger::log(LogLevel::DEBUG, "Tablas escritas en disco ");
+    Logger::log(LogLevel::DEBUG, "__END__", true, false);
     Logger::flush();
-    Logger::log(LogLevel::OUTPUT, "__END__");
-    //std::cout.flush();
 
 
    };
-
    Logger::log(LogLevel::DEBUG, "Terminada TODA LA EJECUCION");
-   Logger::log(LogLevel::DEBUG, "__END__");
+   //Logger::log(LogLevel::DEBUG, "__END__", true, false);
    Logger::flush();
 
    return 0;
