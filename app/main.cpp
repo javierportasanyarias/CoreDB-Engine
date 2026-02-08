@@ -30,7 +30,7 @@ int main(){
    // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
-   Logger::level = LogLevel::DEBUG;
+   Logger::level = LogLevel::OUTPUT;
 
 
    while(true){
@@ -95,7 +95,10 @@ int main(){
     Logger::log(LogLevel::DEBUG, "Escribimos los datos del diccionario global en disco: ");
     disk_io::write_dump();
     Logger::log(LogLevel::DEBUG, "Tablas escritas en disco ");
-    Logger::log(LogLevel::DEBUG, "__END__", true, false);
+    Logger::log(LogLevel::OUTPUT, "__END__", true, false);
+    std::cout<<"__END__"<<std::endl;
+    fflush(stdout);
+    std::cout.flush();
     Logger::flush();
 
 

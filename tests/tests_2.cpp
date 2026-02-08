@@ -21,9 +21,10 @@ void ejecutar_proceso_hijo(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid){
     close(pipe_2[0]);
 
     dup2(pipe_1[0], STDIN_FILENO);
-    close(pipe_1[0]);
+    //close(pipe_1[0]);
     dup2(pipe_2[1], STDOUT_FILENO);
 
+    close(pipe_1[0]);
     close(pipe_2[1]);
 
     // Ejecitamos el programa:
@@ -117,7 +118,8 @@ std::string read_until_marker_2(
 	//std::cout<<std::endl;
 	aux_c += 1;
 
-	if(aux_c == 1000){
+	if(aux_c == 100){
+	   std::cout<<"SE HA LLEGADO AL BREAK DE EMERGENCIA"<<std::endl;
            break;
         };
 	
@@ -155,6 +157,50 @@ std::string read_until_marker_2(
 };
 
 
+std::string read_until_marker_3(int (&pipe_out)[2], const std::string& marker="Carlos"){
+    std::string output;
+    char buf[2048];
+    ssize_t n;
+    int aux_count = 0;
+    bool cond1 = false;
+    while ((n = read(pipe_out[0], buf, sizeof(buf))) > 0) {
+	output.append(buf, n);
+        aux_count+= 1;
+        cond1 = find_string(output, marker);
+    };
+    std::cout<<output<<std::endl;
+    if(cond1){
+        std::cout<<std::endl;                                             std::cout<<"++++++++++++++++++++++++++"<<std::endl;
+        std::cout<<"Hemos encontrado: "<<marker<<std::endl;
+        std::cout<<"++++++++++++++++++++++++++"<<std::endl;
+        std::cout<<std::endl;                                             std::cout.flush();
+    }else {
+        std::cout<<std::endl;                                             std::cout<<"++++++++++++++++++++++++++"<<std::endl;
+        std::cout<<"NO se ha encontrado: "<<marker<<std::endl;            std::cout<<"++++++++++++++++++++++++++"<<std::endl;
+        std::cout<<std::endl;
+        std::cout.flush();
+        };
+    return output;
+};
+
+
+std::string read_until_marker_4(int (&pipe_out)[2], const std::string& marker="__END__"){                                                std::string output = "";
+    char buf[16];
+    ssize_t n;                                                        int aux_count = 0;
+    bool cond1 = false;                                               while ((n = read(pipe_out[0], &buf, sizeof(buf))) > 0) {
+        output.append(buf, n);                                            aux_count+= 1;
+	size_t posicion = output.find(marker);
+            if (posicion != std::string::npos) {
+		    std::cout<<"SE HA ENCINTRADO LA SUBSTRING"<<std::endl;
+		    std::cout.flush();
+		    break;
+	};
+
+    };
+    return output;
+};
+
+
 void ejecutar_proceso_padre(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid, FIFO*& fifo_obj){
 
     close(pipe_1[0]);
@@ -177,9 +223,9 @@ void ejecutar_proceso_padre(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid, FIFO
        std::cout.flush();
        output_1 = "";
        write_to_child(pipe_1, c_n_ptr->comando);
-       output_1 = read_until_marker_2(pipe_2);
-       //std::cout<<"Este es el output: "<<std::endl;
-       //std::cout<<output_1<<std::endl;
+       output_1 = read_until_marker_4(pipe_2);
+       std::cout<<"Este es el output: "<<std::endl;
+       std::cout<<output_1<<std::endl;
        c_n_ptr = c_n_ptr->nxt_node;
        std::cout.flush();
        c_1+=1;
@@ -239,6 +285,8 @@ int main()
        fifo_obj = define_test_1();
     } else if(input == "test2") {
        fifo_obj = define_test_2();
+    } else if(input == "test3"){
+       fifo_obj = define_test_3();
     };
 
     // Antiguo metodo:

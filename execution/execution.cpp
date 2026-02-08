@@ -248,7 +248,7 @@ void mostrar_tabla_query(QueryNode* nodo_root){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Eliminación de tablas:
-void liberar_tabla(table* tb){
+void liberar_tabla(table*& tb){
     if (!tb) return;
     delete tb->metadata_ptr;
     tb->metadata_ptr = nullptr;
@@ -260,6 +260,7 @@ void liberar_tabla(table* tb){
 void drop_table_from_global_dict(DropTableNode*& nodo_ptr){
 
     liberar_tabla(global_table_dict[nodo_ptr->nombre_tabla]);
+    global_table_dict[nodo_ptr->nombre_tabla] = nullptr;
     //delete global_table_dict[nodo_ptr->nombre_tabla];
     global_table_dict.erase(nodo_ptr->nombre_tabla);
     

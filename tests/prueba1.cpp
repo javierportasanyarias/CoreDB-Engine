@@ -37,8 +37,8 @@ bool find_string(std::string& cadena, const std::string& obj){
 
 int main(){
 
-   std::string cadena = "Se ha comido Carlos la empanada";
-   std::string obj = "Carlos ";
+   std::string cadena = "Se ha comido 'Carlos' la empanada";
+   std::string obj = "Carlos";
    bool booleano = find_string(cadena, obj);
 
    if(booleano){
