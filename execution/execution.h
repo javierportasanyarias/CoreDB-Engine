@@ -46,4 +46,6 @@ void liberar_tabla(table*& tb);
 
 void drop_table_from_global_dict(DropTableNode*& nodo_ptr);
 
+void sanitize_global_dict();
+
 #endif

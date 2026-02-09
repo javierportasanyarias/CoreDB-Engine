@@ -9,6 +9,8 @@
 #include "execution.h"
 #include "logging.h"
 
+#include <cctype> // Para isprint
+
 
 ///////////////////////////////////////////////////////////////////////
 ///
@@ -259,9 +261,58 @@ void liberar_tabla(table*& tb){
 
 void drop_table_from_global_dict(DropTableNode*& nodo_ptr){
 
-    liberar_tabla(global_table_dict[nodo_ptr->nombre_tabla]);
-    global_table_dict[nodo_ptr->nombre_tabla] = nullptr;
-    //delete global_table_dict[nodo_ptr->nombre_tabla];
-    global_table_dict.erase(nodo_ptr->nombre_tabla);
+    Logger::log(LogLevel::DEBUG, "Intentando borrar: [" + nodo_ptr->nombre_tabla + "]");
+    auto it = global_table_dict.find(nodo_ptr->nombre_tabla);
+    // Ahora vemos si estq vacio o no:
+    if(it == global_table_dict.end()){
+       // No existe la entrada:
+       Logger::log(LogLevel::DEBUG, "La tabla ya no existe. No la eliminaremos del diccionario"); 
+    }else{
+       Logger::log(LogLevel::DEBUG, "La tabla existe. Procedemos a eliminarla");
+       table* tabla = it->second;
+       global_table_dict.erase(nodo_ptr->nombre_tabla);
+       liberar_tabla(tabla);
+       tabla = nullptr;
+    };
     
 };
+// =================================
+// == ELIMNAR ENTRADAS NULAS:
+// =================================
+
+void sanitize_global_dict() {
+    auto it = global_table_dict.begin();
+    while (it != global_table_dict.end()) {
+        const std::string& nombre = it->first;
+        table* ptr = it->second;
+        bool eliminar = false;
+
+        // 1. Validación de Longitud
+        if (nombre.length() == 0) {
+            Logger::log(LogLevel::WARN, "Sanitizador: Nombre de longitud 0 detectado.");
+            eliminar = true;
+        }
+        // 2. Validación de Contenido (¿Es imprimible?)
+        else if (!std::isprint(static_cast<unsigned char>(nombre[0]))) {
+            Logger::log(LogLevel::WARN, "Sanitizador: Carácter no imprimible detectado en la clave.");
+            eliminar = true;
+        }
+        // 3. Validación de Puntero
+        else if (ptr == nullptr) {
+            Logger::log(LogLevel::WARN, "Sanitizador: Puntero nulo para tabla '" + nombre + "'.");
+            eliminar = true;
+        }
+
+        if (eliminar) {
+            // Importante: liberar la memoria del contenido si el puntero no es nulo
+            // pero la clave está corrupta, para evitar leaks.
+            if (ptr != nullptr) {
+                liberar_tabla(ptr);
+            }
+            it = global_table_dict.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+

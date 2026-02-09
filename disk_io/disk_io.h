@@ -59,12 +59,13 @@ namespace disk_io {
     // FUNCIÓN DE ESCRITURA:
     void write_table(table* tabla){
 	int a = 0;
-
+	if (!tabla) return;
+        Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table': ");
         // Path de los datos:
 	if(tabla->metadata_ptr){
-           Logger::log(LogLevel::OUTPUT, "SE HA ENCONTRADO LA TABLA");
+           Logger::log(LogLevel::DEBUG, "SE HA ENCONTRADO LA TABLA");
 	}else{
-           Logger::log(LogLevel::OUTPUT, "NO SE HA ENCONTRADO LA TABLA");
+           Logger::log(LogLevel::DEBUG, "NO SE HA ENCONTRADO LA TABLA");
 	};
         std::string nombre_tabla = tabla->metadata_ptr->name; // EL ERROR ESTA EN ESTA LINEA
         //std::string ruta_tabla = "data/" + nombre_tabla + ".bin";
@@ -162,7 +163,7 @@ namespace disk_io {
 
 
     // FUNCIÓN DE SINCRONIZACIÓN:
-    void write_dump(){
+    void write_dump_viejo(){
 
         /*
         Este método, una vez llamado, escribe todas las tablas, sobreescribi        endo por defecto
@@ -179,6 +180,34 @@ namespace disk_io {
 
         };
     };
+
+
+   void write_dump(){
+      Logger::log(LogLevel::DEBUG, "--- INICIO DIAGNÓSTICO DE DICCIONARIO ---");
+    Logger::log(LogLevel::DEBUG, "Total de entradas en global_table_dict: " + std::to_string(global_table_dict.size()));
+
+      // Primero vemos si el diccionario esta vacio o no:
+      if(global_table_dict.empty()){
+         Logger::log(LogLevel::DEBUG, "No escribiremos nada, el diccionario esta vacio");
+      }else{
+         //El diccionario tiene contenido:
+	 for (const auto& [table_name, table_ptr] : global_table_dict){
+	    std::string info_clave = "Clave encontrada: [" + table_name + "] | Longitud: " + std::to_string(table_name.length());
+        Logger::log(LogLevel::DEBUG, info_clave);
+
+            // Solo enviamos a escribir si la tabla existe:
+	    if (table_ptr != nullptr){
+	       // Escribimos la tabla:
+	       Logger::log(LogLevel::DEBUG, "ESCRIBIMOS LA TABLA: " + table_name);
+	       write_table(table_ptr);
+
+	    }else{
+               Logger::log(LogLevel::DEBUG, "ERROR: Se ha encontrado una entrada vacia para la tabla: " + table_name);
+	    };
+	 };
+      };
+
+   };
 
 
 

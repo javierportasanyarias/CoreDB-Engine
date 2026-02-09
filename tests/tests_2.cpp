@@ -44,7 +44,7 @@ void write_to_child(int (&pipe_in)[2], const std::string& cmd) {
 
 std::string read_until_marker(int (&pipe_out)[2], const std::string& marker="__END__"){ 
     std::string output;
-    char buf[128];
+    char buf[1024];
     ssize_t n;
     int aux_count = 0;
     bool cond1 = true;
@@ -59,8 +59,8 @@ std::string read_until_marker(int (&pipe_out)[2], const std::string& marker="__E
         //if (output.find(marker) != std::string::npos) break;
     }
     // Opcional: quitar el marcador del output
-    size_t pos = output.find(marker);
-    if (pos != std::string::npos) output.erase(pos);
+    //size_t pos = output.find(marker);
+    //if (pos != std::string::npos) output.erase(pos);
     return output;
 };
 
@@ -185,7 +185,7 @@ std::string read_until_marker_3(int (&pipe_out)[2], const std::string& marker="C
 
 
 std::string read_until_marker_4(int (&pipe_out)[2], const std::string& marker="__END__"){                                                std::string output = "";
-    char buf[16];
+    char buf[512];
     ssize_t n;                                                        int aux_count = 0;
     bool cond1 = false;                                               while ((n = read(pipe_out[0], &buf, sizeof(buf))) > 0) {
         output.append(buf, n);                                            aux_count+= 1;
@@ -219,7 +219,7 @@ void ejecutar_proceso_padre(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid, FIFO
        // Recibimos el input:
        std::cout<<"COMANDO: "<<c_1+1<<std::endl;
        std::cout.flush();
-       //std::cout<<"> "<<c_n_ptr->comando<<std::endl;
+       std::cout<<"> "<<c_n_ptr->comando<<std::endl;
        std::cout.flush();
        output_1 = "";
        write_to_child(pipe_1, c_n_ptr->comando);

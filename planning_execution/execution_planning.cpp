@@ -219,7 +219,10 @@ void execPlan::Queue::execute_queue_tasks(){
 	}  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
 	    DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
 	    drop_table_from_global_dict(nodo);
+
             Logger::log(LogLevel::DEBUG,  "Tabla eliminada: " + nodo->nombre_tabla);
+	    // Por si acaso hubiera entradas corruptas, las eliminamos del diccionario global:
+	    sanitize_global_dict();
 
         } else {
             Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");
