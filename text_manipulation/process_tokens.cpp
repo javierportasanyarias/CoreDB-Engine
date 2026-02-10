@@ -113,7 +113,10 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
     // Incluimosl nombre y el alias en el doccoonario:
     //extern std::unordered_map<std::string, table> global_table_dict;
     global_table_dict[nodo->nombre_tabla] = tb_created;
-    global_table_dict[nodo->alias] = tb_created;
+    // Sólo creamos la entrada del alias si este existe:
+    if(nodo->alias != ""){
+       global_table_dict[nodo->alias] = tb_created;
+    };
     
     return;
 };

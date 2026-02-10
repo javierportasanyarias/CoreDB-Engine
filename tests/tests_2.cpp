@@ -21,10 +21,10 @@ void ejecutar_proceso_hijo(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid){
     close(pipe_2[0]);
 
     dup2(pipe_1[0], STDIN_FILENO);
-    //close(pipe_1[0]);
+    close(pipe_1[0]);
     dup2(pipe_2[1], STDOUT_FILENO);
 
-    close(pipe_1[0]);
+    //close(pipe_1[0]);
     close(pipe_2[1]);
 
     // Ejecitamos el programa:
@@ -185,7 +185,7 @@ std::string read_until_marker_3(int (&pipe_out)[2], const std::string& marker="C
 
 
 std::string read_until_marker_4(int (&pipe_out)[2], const std::string& marker="__END__"){                                                std::string output = "";
-    char buf[512];
+    char buf[128];
     ssize_t n;                                                        int aux_count = 0;
     bool cond1 = false;                                               while ((n = read(pipe_out[0], &buf, sizeof(buf))) > 0) {
         output.append(buf, n);                                            aux_count+= 1;

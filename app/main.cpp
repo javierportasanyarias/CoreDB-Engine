@@ -96,9 +96,6 @@ int main(){
     //disk_io::write_dump();
     Logger::log(LogLevel::DEBUG, "Tablas escritas en disco ");
     Logger::log(LogLevel::OUTPUT, "__END__", true, false);
-    std::cout<<"__END__"<<std::endl;
-    fflush(stdout);
-    std::cout.flush();
     Logger::flush();
 
 
