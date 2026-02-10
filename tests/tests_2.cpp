@@ -8,6 +8,7 @@
 #include <cstring>    // strlen
 #include "data_structs.h"
 #include "bateria_tests.h"
+#include "logging.h"
 
 
 // ==============================================
@@ -191,8 +192,10 @@ std::string read_until_marker_4(int (&pipe_out)[2], const std::string& marker="_
         output.append(buf, n);                                            aux_count+= 1;
 	size_t posicion = output.find(marker);
             if (posicion != std::string::npos) {
-		    std::cout<<"SE HA ENCINTRADO LA SUBSTRING"<<std::endl;
-		    std::cout.flush();
+		    //std::cout<<"SE HA ENCINTRADO LA SUBSTRING"<<std::endl;
+		    //std::cout.flush();
+		    Logger::log(LogLevel::OUTPUT, "SE HA ENCONTRADO LA SUBSTRING", true, false);
+		    Logger::flush();
 		    break;
 	};
 
@@ -217,17 +220,24 @@ void ejecutar_proceso_padre(int (&pipe_1)[2], int (&pipe_2)[2], pid_t& pid, FIFO
     while(c_n_ptr){
 
        // Recibimos el input:
-       std::cout<<"COMANDO: "<<c_1+1<<std::endl;
-       std::cout.flush();
-       std::cout<<"> "<<c_n_ptr->comando<<std::endl;
-       std::cout.flush();
+       //std::cout<<"COMANDO: "<<c_1+1<<std::endl;
+       Logger::log(LogLevel::OUTPUT, "COMANDO: ", false, false);
+       Logger::log(LogLevel::OUTPUT, c_1+1, true, false);
+       //std::cout.flush();
+       //std::cout<<"> "<<c_n_ptr->comando<<std::endl;
+       Logger::log(LogLevel::OUTPUT, "> ", false, false);
+       Logger::log(LogLevel::OUTPUT, c_n_ptr->comando, true, false);
+       //std::cout.flush();
        output_1 = "";
        write_to_child(pipe_1, c_n_ptr->comando);
        output_1 = read_until_marker_4(pipe_2);
-       std::cout<<"Este es el output: "<<std::endl;
-       std::cout<<output_1<<std::endl;
+       //std::cout<<"Este es el output: "<<std::endl;
+       Logger::log(LogLevel::OUTPUT, "Este es el output: ", true, false);
+       //std::cout<<output_1<<std::endl;
+       Logger::log(LogLevel::OUTPUT, output_1, true, false);
        c_n_ptr = c_n_ptr->nxt_node;
-       std::cout.flush();
+       //std::cout.flush();
+       Logger::flush();
        c_1+=1;
     };
 
@@ -260,9 +270,6 @@ void run_test_subproceso(FIFO*& fifo_obj){
     // Esperamos a que el hijo termine:
     waitpid(pid, nullptr, 0);
 
-    std::cout.flush();
-
-
 }; 
 
 // -----------------------------
@@ -271,9 +278,13 @@ void run_test_subproceso(FIFO*& fifo_obj){
 
 int main()
 {
-    std::cout << "=== SQL Engine Test Runner ===\n";
-    std::cout<< "Que test quieres realizar? : ";
-    std::cout.flush();
+    Logger::level = LogLevel::OUTPUT;
+    Logger::log(LogLevel::OUTPUT, "== SQL Engine Test Runner ===", true, false);
+    Logger::log(LogLevel::OUTPUT, "Que test quieres realizar? : ", true, false);
+    Logger::flush();
+    //std::cout << "=== SQL Engine Test Runner ===\n";
+    //std::cout<< "Que test quieres realizar? : ";
+    //std::cout.flush();
 
     std::string input = "";
 
@@ -293,7 +304,8 @@ int main()
     //run_test(query);
     // Nuevo metodo:
     run_test_subproceso(fifo_obj);
-    std::cout.flush();
+    //std::cout.flush();
+    Logger::flush();
 
 
     return 0;
