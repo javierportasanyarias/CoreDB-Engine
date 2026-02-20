@@ -5,62 +5,64 @@
 #include <cctype>  // para std::isspace
 #include "logging.h"
 
-std::string textUtils::espaciar_texto(std::string input){
+std::string textUtils::espaciar_texto(const std::string& input){
 
-   std::string* buffer = new std::string("");
-   std::string* result = new std::string;
+   //std::string buffer = "";
+   std::string result = "";
 
    for(int i = 0; i<input.size(); i++){
 
-      *buffer += input[i];
+      //buffer += input[i];
       switch(input[i]){
 
       case ')':
-         *result = *result + " " + input[i] + " ";
+         result = result + " " + input[i] + " ";
          break;
       case '(':
-         *result = *result + " " + input[i] + " ";
+         result = result + " " + input[i] + " ";
          break;
       case ';':
-         *result = *result + " " + input[i]+ " ";
+         result = result + " " + input[i]+ " ";
          break;
       case ',':
-*result = *result + " " + input[i] + " ";
+         result = result + " " + input[i] + " ";
          break;
       default:
-         *result += input[i];
+         result += input[i];
       };
    };
 
-   *result += " ";
-   return  *result;
+   result += " ";
+   return  result;
 };
-
-
-//class textUtils::NodeLista1{
-//
-//   public:
-//   std::string val;
-//   textUtils::NodeLista1* nxt_node;
-//   NodeLista1(): nxt_node(nullptr){};
-//};
 
 
 void textUtils::simpleLinkedList::add_node(std::string valor){
-   textUtils::NodeLista1* nodo = new textUtils::NodeLista1;
-   nodo->val = valor;
-   if(head){
-      textUtils::NodeLista1* current_node = head;
-while(current_node->nxt_node){
-         current_node = current_node->nxt_node;
+   textUtils::NodeLista1* nuevo = new textUtils::NodeLista1();
+   nuevo->val = valor;
+   Logger::log(LogLevel::DEBUG, "Dentro de add_node: ", false, true);
+   Logger::log(LogLevel::DEBUG, nuevo->val, true, false);
+   nuevo->nxt_node = nullptr; 
+
+   if(!head){
+      Logger::log(LogLevel::DEBUG, "Se ha entrado a modificar head y tail");   
+      head = nuevo;
+      tail = nuevo;
+   } else {
+      // EN LUGAR DE RECORRER DESDE EL PRINCIPIO (que puede tener ciclos)
+      // USAMOS EL PUNTERO DIRECTO AL FINAL
+      tail->nxt_node = nuevo; 
+      tail = nuevo;
+      if (head->val != "CREATE TABLE"){
+         Logger::log(LogLevel::DEBUG, "ERROR: SE HA MODIFICADO EL VALOR DEL HEAD. Se ha cambiado por el valor: ", false, true);
+	 Logger::log(LogLevel::DEBUG, head->val, true, false);
+
       };
-      current_node->nxt_node = nodo;
-      tail = nodo;
-   }else{
-      head = nodo;
-      tail = head;
    };
 };
+
+
+
 
 void textUtils::simpleLinkedList::print_list() {
    if (!head) {
@@ -84,6 +86,19 @@ void textUtils::simpleLinkedList::print_list() {
    // std::cout << std::endl;
    Logger::flush();
 };
+
+// Metodo para borrar la lista de tokens:
+void textUtils::simpleLinkedList::clear() {
+    NodeLista1* current = head;
+    while (current != nullptr) {
+        NodeLista1* next = current->nxt_node; // Guardamos el puntero al siguiente
+        delete current;                       // Borramos el nodo actual
+        current = next;                       // Saltamos al siguiente
+    }
+    head = nullptr;
+    tail = nullptr;
+};
+
 
 std::string textUtils::borrar_espacios_repetidos(const std::string& input){
 
@@ -151,31 +166,69 @@ void textUtils::borrar_espacios_final(std::string& input) {
 };
 
 textUtils::simpleLinkedList* textUtils::crear_lista_tokens(const std::string& input){
+   std::string buffer = "";
+   textUtils::simpleLinkedList* lista = new textUtils::simpleLinkedList();
 
-   std::string* buffer = new std::string("");
-   textUtils::simpleLinkedList* lista = new textUtils::simpleLinkedList;
-   for(int i = 0; i<input.size(); i++){
-      //*buffer += input[i];
+   for(int i = 0; i < input.size(); i++){
       if(input[i] == ' '){
-         if(*buffer == "CREATE" || *buffer == "PRIMARY" || *buffer == "INSERT" || *buffer == "DROP"){
-            *buffer += input[i];
-         }else {
-            lista->add_node(*buffer);
-            *buffer = "";
+         // Solo entramos aquí si hay algo que procesar
+         if(!buffer.empty()){
+            if(buffer == "CREATE" || buffer == "PRIMARY" || buffer == "INSERT" || buffer == "DROP"){
+               buffer += input[i];
+            } else {
+               Logger::log(LogLevel::DEBUG, "Add to lista: ", false, true);
+	       Logger::log(LogLevel::DEBUG, buffer, true, false);
+               lista->add_node(buffer);
+               buffer = "";
+            };
          };
-}else{
-         *buffer += input[i];
+      } else {
+         buffer += input[i];
       };
    };
-
+   // Añadir el último token si quedó algo
+   if(!buffer.empty()) {
+      lista->add_node(buffer);
+   };
    return lista;
+};
+
+
+std::string limpiar_comienzo_input(std::string& input){
+    size_t start = input.find_first_of(" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+       if (start != std::string::npos) {
+          input = input.substr(start);
+       };
+    return input;
 };
 
 textUtils::simpleLinkedList* textUtils::procesar_texto_pipeline(std::string& input){
 
+   Logger::log(LogLevel::DEBUG, "Vemos como llega el input de texto:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
+   // Ahora realizamos la limpieza:
+   //input = limpiar_comienzo_input(input);
+   //Logger::log(LogLevel::DEBUG, "Despues de limpiar el comienzo:", true, false);
+   //Logger::log(LogLevel::DEBUG, input, true, false);
    input = espaciar_texto(input);
+   Logger::log(LogLevel::DEBUG, "Despues de espaciar texto:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
    input = borrar_espacios_repetidos(input);
+   Logger::log(LogLevel::DEBUG, "Despues de borrar espacios repetidos:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
    input = borrar_espacios_principio(input);
+   Logger::log(LogLevel::DEBUG, "Despues de borrar espacios al principio:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
    borrar_espacios_final(input);
-   return crear_lista_tokens(input);
+   Logger::log(LogLevel::DEBUG, "Texto formateado:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
+   // Ahora realizamos la limpieza:
+   input = limpiar_comienzo_input(input);
+   Logger::log(LogLevel::DEBUG, "Despues de limpiar el comienzo:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
+   textUtils::simpleLinkedList* lista_a_retornar;
+   lista_a_retornar = crear_lista_tokens(input);
+   Logger::log(LogLevel::DEBUG, "head de la lista:", true, false);
+   Logger::log(LogLevel::DEBUG, lista_a_retornar->head->val, true, false);
+   return lista_a_retornar;
 };

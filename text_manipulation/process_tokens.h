@@ -48,7 +48,7 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
 void drop_table(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nombre_ptr);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista);
+execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista);
 
 
 

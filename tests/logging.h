@@ -20,7 +20,7 @@ public:
                     bool flush_bool = true,
                     bool flag = true);
 
-    static void flush();
+    static void flush(bool endl = true);
 };
 
 #endif

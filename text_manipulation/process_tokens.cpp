@@ -335,10 +335,10 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList& lista){
+execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista){
 
     // Obtenemos le primer nodo de la lista:
-    textUtils::NodeLista1* c_l_n = lista.head;
+    textUtils::NodeLista1* c_l_n = lista->head;
 
     // Creamos la cola:
     execPlan::Queue* excec_queue = new execPlan::Queue;

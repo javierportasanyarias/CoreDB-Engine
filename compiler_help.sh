@@ -9,6 +9,7 @@ g++ -std=c++20 \
   -I"data_structure" \
   -Ilog \
   -I"disk_io" \
+  -Itests \
   app/main.cpp \
   execution/execution.cpp \
   planning_execution/execution_planning.cpp \
@@ -17,4 +18,6 @@ g++ -std=c++20 \
   text_manipulation/textutils.cpp \
   globals/globals.cpp \
   log/logging.cpp \
+  tests/data_structs.cpp \
+  tests/bateria_tests.cpp \
   -o app/sql_app.exe

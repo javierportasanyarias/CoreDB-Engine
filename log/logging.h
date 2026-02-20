@@ -21,6 +21,10 @@ public:
                     bool flag = true);
 
     static void flush();
+
+    static void login(std::string& input);
+
+    static void clear_in();
 };
 
 #endif

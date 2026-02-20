@@ -172,9 +172,9 @@ void execPlan::Queue::delete_current_queue_node(queueNode1* nodo_cola_a_eliminar
 ////////////////////////////////////////////////////////////////////////
 //Función para eliminar la cola entera:
 void execPlan::delete_task_queue(execPlan::Queue* cola){
-    delete cola->first_ptr;
+    //delete cola->first_ptr;
     cola->first_ptr = nullptr;
-    delete cola->last_ptr;
+    //delete cola->last_ptr;
     cola->last_ptr = nullptr;
     delete cola;
 

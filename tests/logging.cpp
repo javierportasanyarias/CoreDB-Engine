@@ -48,7 +48,9 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 }
 
-void Logger::flush() {
-    std::cout << std::endl;
+void Logger::flush(bool endl) {
+    if(endl){
+       std::cout << std::endl;
+    };
     std::cout.flush();
 }
