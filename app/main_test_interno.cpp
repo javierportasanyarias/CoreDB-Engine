@@ -33,18 +33,31 @@ int main(){
 
    // Fijamos el nivel de logs a debug:
    Logger::level = LogLevel::DEBUG;
-   
-   // Antes de nada, vemos laa tablas en disco:
-   std::vector<std::string> arr_tablas;
-   arr_tablas = disk_io::escanear_tablas();
-   disk_io::mostrar_tablas_disco(arr_tablas);
+   FIFO* fifo_obj = nullptr;
+   FifoNode* c_n_ptr = nullptr;
+   bool bool_aux = false;
+   int aux_counter = 0;
+   //std::setvbuf(stdin, NULL, _IONBF, 0); // Desactiva el buffering de entrada
 
    while(true){
 
       Logger::log(LogLevel::DEBUG, "Comienza una iteracion del bucle principal:");
       Logger::log(LogLevel::OUTPUT, "\n> ", false, false);
-      Logger::login(input);
       Logger::flush();
+      if(bool_aux){
+         if(!c_n_ptr){
+            input = "exit";
+	 };
+      };
+      //std::cin.clear();
+      //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+      //if (!std::getline(std::cin, input)) {
+          //break;
+      //};
+      if(!bool_aux){
+         Logger::login(input);
+      };
+      //Logger::clear_in();
       Logger::log(LogLevel::OUTPUT, "COMANDO LEIDO EN LA APP:");
       Logger::flush();
       Logger::log(LogLevel::OUTPUT, input);
@@ -54,12 +67,36 @@ int main(){
       if(input == "exit" || input == "exit\n"){
 	 Logger::log(LogLevel::DEBUG, "EXIT");
          break;
+      } else{
+	 if(!bool_aux){
+	    if (input == "test1" || input == "test1\n"){
+	       fifo_obj = define_test_1();
+	       bool_aux = true;
+	    }else if(input == "test2" || input == "test2\n"){
+	       fifo_obj = define_test_2();
+	       bool_aux = true;
+	    }else if(input == "test3" || input == "test3\n"){
+	       fifo_obj = define_test_3();
+	       bool_aux = true;
+	    };
+	    if(bool_aux){
+	       c_n_ptr = fifo_obj->head;
+	    };
+
+         };
+      };
+      if(bool_aux){
+         input = c_n_ptr->comando;
       };
       Logger::flush();
 
       // Ahora procesamos el texto:
+      //textUtils::simpleLinkedList* lista1 = new textUtils::simpleLinkedList;
       textUtils::simpleLinkedList* lista1 = textUtils::procesar_texto_pipeline(input);
       Logger::log(LogLevel::DEBUG, "procesar_texto_pipeline SE HA EJECUTADO");
+      //if(aux_counter == 1){
+         //break;
+      //};
       Logger::flush();
       lista1->add_node("EOS");
       if(Logger::level == LogLevel::DEBUG){
@@ -106,21 +143,29 @@ int main(){
     Logger::log(LogLevel::DEBUG, "Escribimos los datos del diccionario global en disco: ");
     //disk_io::write_dump();
     Logger::log(LogLevel::DEBUG, "Tablas escritas en disco ");
+    //Logger::log(LogLevel::OUTPUT, "__END__", true, false);
     Logger::flush();
-    Logger::log(LogLevel::DEBUG, "handshake: ", true, true);
-    Logger::login(handshake);
-    Logger::log(LogLevel::OUTPUT, "Se ha realizado el handshake", true, true);
+    //Logger::log(LogLevel::DEBUG, "handshake: ", true, true);
+    //std::getline(std::cin, handshake);
+    if(!bool_aux){
+       Logger::login(handshake);
+    };
+    Logger::log(LogLevel::OUTPUT, "Se ha realizado el handshake", true, false);
+    //Logger::clear_in();
+    //Logger::log(LogLevel::DEBUG, "__END__", true, false);
     Logger::log(LogLevel::OUTPUT, "__END__", true, false);
     Logger::flush();
 
+    if(bool_aux){
+       c_n_ptr = c_n_ptr->nxt_node;
+    };
+    aux_counter += 1;
+
 
    };
-   Logger::log(LogLevel::DEBUG, "Iniciada escritura en disco");
-   disk_io::write_dump();
-   Logger::log(LogLevel::DEBUG, "Escritura en disco realiazada con exito");
    Logger::log(LogLevel::DEBUG, "Terminada TODA LA EJECUCION");
    Logger::flush();
-   Logger::log(LogLevel::OUTPUT, "__END__", true, false);        Logger::flush();
+   Logger::log(LogLevel::OUTPUT, "__END__", true, false);                      Logger::flush();
 
    return 0;
 };

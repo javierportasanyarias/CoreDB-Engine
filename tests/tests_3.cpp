@@ -23,11 +23,11 @@ std::string read_until_marker_4(int (&pipe_out)[2], const std::string& marker="_
     Logger::log(LogLevel::OUTPUT, "Se ha entrado en lafuncion de lectura", true, false);
     while ((n = read(pipe_out[0], &buf, sizeof(buf))) > 0) {
         output.append(buf, n);
-	Logger::log(LogLevel::OUTPUT, "Iteracion de lectura: ", false, false);
-	Logger::log(LogLevel::OUTPUT, aux_count+1, true, false);
-	Logger::log(LogLevel::OUTPUT, "El output es asi:", true, false);
-	Logger::log(LogLevel::OUTPUT, output, true, false);
-        Logger::flush();
+	//Logger::log(LogLevel::OUTPUT, "Iteracion de lectura: ", false, false);
+	//Logger::log(LogLevel::OUTPUT, aux_count+1, true, false);
+	//Logger::log(LogLevel::OUTPUT, "El output es asi:", true, false);
+	//Logger::log(LogLevel::OUTPUT, output, true, false);
+        //Logger::flush();
         aux_count+= 1;
         size_t posicion = output.find(marker);
 	size_t posicion2 = output.find(marker+"\n");
@@ -128,9 +128,12 @@ void ejecutar_proceso_padre(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*&
 	write(pipe1[1], input.c_str(), input.length());
         Logger::flush();
 	usleep(500000); // Esperamos 0.5 s
-        // Escribimos el handshake:
-        write(pipe1[1], handshake.c_str(), handshake.length());
-        usleep(500000); // Esperamos 0.5 s
+	if(input != "exit" && input != "exit\n"){
+	   //Escribimos el handshake:
+	   write(pipe1[1], handshake.c_str(), handshake.length());
+           usleep(500000); // Esperamos 0.5 s
+
+	};
         output = read_until_marker_4(pipe2);
 	Logger::log(LogLevel::OUTPUT, "Este es el output: ", true, false);
         Logger::log(LogLevel::OUTPUT, output, true, false);
@@ -186,7 +189,8 @@ int main(){
     FIFO* fifo_obj = new FIFO;                                                  if(input == "test1"){                                                          fifo_obj = define_test_1();                                              } else if(input == "test2") {
        fifo_obj = define_test_2();
     } else if(input == "test3"){
-       fifo_obj = define_test_3();                                              };
+       fifo_obj = define_test_3();                                              } else if(input == "test4"){
+       fifo_obj = define_test_4();                                              };
 
     run_test_subproceso(fifo_obj);
     Logger::flush();
