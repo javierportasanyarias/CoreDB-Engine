@@ -15,10 +15,20 @@ public:
                     bool flush_bool = true,
                     bool flag = true);
 
+   static void log(LogLevel msgLevel,
+                const char* msg,
+                bool flush_bool = true,
+                bool flag = true);
+
     static void log(LogLevel msgLevel,
                     int msg,
                     bool flush_bool = true,
                     bool flag = true);
+
+    static void log(LogLevel msgLevel,
+		    std::variant<int, float, bool, std::string>  msg,
+		    bool flush_bool = true,
+		    bool flag = true);
 
     static void flush();
 

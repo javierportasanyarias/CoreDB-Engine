@@ -34,10 +34,10 @@ int main(){
    // Fijamos el nivel de logs a debug:
    Logger::level = LogLevel::DEBUG;
    
-   // Antes de nada, vemos laa tablas en disco:
-   std::vector<std::string> arr_tablas;
-   arr_tablas = disk_io::escanear_tablas();
-   disk_io::mostrar_tablas_disco(arr_tablas);
+   // Antes de nada, vemos laa tablas en disco y escribimos sus metadatos en memoria
+   disk_io::lectura_metadatos_todas_tablas();
+   //return 0;
+
 
    while(true){
 

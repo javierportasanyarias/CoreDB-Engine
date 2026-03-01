@@ -27,6 +27,19 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 }
 
+/* Sobrecarga para char* (Esta sobrecarga la ponemos
+   porque si se pone una "..." se 'lia' y no sabe
+   usar la de std::string o std::variant)
+*/
+void Logger::log(LogLevel msgLevel,
+		const char* msg,
+		bool flush_bool,
+		bool flag)
+{
+    // Simplemente "empujamos" el puntero a la función de string que ya tenías
+    log(msgLevel, std::string(msg), flush_bool, flag);
+}
+
 // Sobrecarga int
 void Logger::log(LogLevel msgLevel,
                  int msg,
@@ -48,6 +61,28 @@ void Logger::log(LogLevel msgLevel,
     std::cout << msg;
     if (flush_bool) std::cout << std::endl;
 }
+
+// Sobrecarga para el std::variant de Values:
+void Logger::log(LogLevel msgLevel,                                                          std::variant<int, float, bool, std::string>  msg,
+                 bool flush_bool,
+                 bool flag)
+{
+    if (msgLevel < level) return;
+
+    if (flag) {
+        switch (msgLevel) {
+            case LogLevel::DEBUG: std::cout << "[DEBUG] "; break;
+            case LogLevel::INFO:  std::cout << "[INFO] ";  break;
+            case LogLevel::WARN:  std::cout << "[WARN] ";  break;
+            case LogLevel::ERROR: std::cout << "[ERROR] "; break;                       case LogLevel::OUTPUT: break;
+        }                                                                       }
+
+    std::visit([](auto&& arg) {
+        std::cout << arg;                                                       }, msg);
+    if (flush_bool) std::cout << std::endl;
+}
+
+
 
 void Logger::flush() {
     std::cout << std::endl;

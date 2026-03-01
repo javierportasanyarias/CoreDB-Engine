@@ -10,6 +10,7 @@ g++ -std=c++20 \
   -Ilog \
   -I"disk_io" \
   -Itests \
+  -Idisk_buffer \
   app/main.cpp \
   execution/execution.cpp \
   planning_execution/execution_planning.cpp \
@@ -20,4 +21,5 @@ g++ -std=c++20 \
   log/logging.cpp \
   tests/data_structs.cpp \
   tests/bateria_tests.cpp \
+  disk_io/disk_io.cpp \
   -o app/sql_app.exe

@@ -42,3 +42,19 @@ FIFO* define_test_4(){
    nodo_1->nxt_node = nodo_2;
    nodo_2->comando = input_2;
    FifoNode* nodo_3 = new FifoNode;                                            nodo_2->nxt_node = nodo_3;                                                  nodo_3->comando = input_3;                                                                                                                              return fifo_obj;                                                                                                                                     };
+
+FIFO* define_test_5(){                                                                                                                                                                                                 FIFO* fifo_obj = new FIFO;
+   std::string input_1 = " INSERT INTO t2 VALUES( 'Rigoberto1', 112, 'Secadora'); INSERT INTO t2 VALUES('Rigoberto2', 112, 'Secadora') ; SELECT * FROM t2; SELECT ID, Producto FROM t2;";
+
+   std::string input_2= "exit";                                               
+   FifoNode* nodo_1 = new FifoNode;                                            
+   nodo_1->comando = input_1;
+   fifo_obj->head = nodo_1;
+   FifoNode* nodo_2 = new FifoNode;
+   nodo_1->nxt_node = nodo_2;
+   nodo_2->comando = input_2;
+   return fifo_obj;
+};
+
+FIFO* define_test_6(){                                                                                                                                                                                                 FIFO* fifo_obj = new FIFO;                                                                                std::string input_1 = " SELECT * FROM t2; SELECT ID, Producto FROM t2;";                                                                                                                                        
+   std::string input_2= "exit";                                                                              FifoNode* nodo_1 = new FifoNode;                                                                          nodo_1->comando = input_1;                                                                                fifo_obj->head = nodo_1;                                                                                  FifoNode* nodo_2 = new FifoNode;                                                                          nodo_1->nxt_node = nodo_2;                                                                                nodo_2->comando = input_2;                                                                                return fifo_obj;                                                                                       };
