@@ -56,53 +56,54 @@
         
     };
 
+   //---------------------------------------------------------------------------------
+   //========================================================
+   //== FUNION ESCRITURA METADATOS: =========================
+   //========================================================
+   uint32_t disk_io::write_table_metadata(table* tabla){
+      if (!tabla) return 0;
+      Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table_metadata': ");
+      std::string nombre_tabla = tabla->metadata_ptr->name;
+      std::string ruta_tabla = "data/" + nombre_tabla + "_meta.bin";
 
-    // FUNCIÓN DE ESCRITURA:
-    uint32_t disk_io::write_table(table* tabla){
-	int a = 0;
-	if (!tabla) return 0;
-        Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table': ");
-        std::string nombre_tabla = tabla->metadata_ptr->name;
-	std::string ruta_tabla = "data/" + nombre_tabla + ".bin";
+      // Abrimos la escritura:
+      std::ofstream out(ruta_tabla, std::ios::binary | std::ios::out);
 
-        // Abrimos la escritura:
-        std::ofstream out(ruta_tabla, std::ios::binary | std::ios::out);
+      // ============================================================
+      // == Primero escribimos los metadatos: =======================
+      // ============================================================
+      // -- Escribimos el nombre -----------------------------------------
+      uint32_t size_nombre = nombre_tabla.size();
+      out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
+      Logger::log(LogLevel::DEBUG, "VALOR DE size_nombre ESCRITO: " + std::to_string(size_nombre));
+      Logger::flush();
+      out.write(nombre_tabla.data(), size_nombre);
+      Logger::log(LogLevel::DEBUG, "VALOR DE nombre_tabla ESCRITA: " + nombre_tabla);
+      Logger::flush();
 
-        // ============================================================
-        // == Primero escribimos los metadatos: =======================
-        // ============================================================
-        // -- Escribimos el nombre -----------------------------------------
-        uint32_t size_nombre = nombre_tabla.size();
-        out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
-	Logger::log(LogLevel::DEBUG, "VALOR DE size_nombre ESCRITO: " + std::to_string(size_nombre));
-	Logger::flush();
-        out.write(nombre_tabla.data(), size_nombre);
-	Logger::log(LogLevel::DEBUG, "VALOR DE nombre_tabla ESCRITA: " + nombre_tabla);
-	Logger::flush();
+      // -- Escribimos el número de columnas -----------------------------
+      uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
+      out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
+      Logger::log(LogLevel::DEBUG, "Se han escrito el numero de columnas: ", false, true);
+      Logger::log(LogLevel::DEBUG, num_cols, true, false);
+      Logger::flush();
 
-        // -- Escribimos el número de columnas -----------------------------
-        uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
-        out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
-	Logger::log(LogLevel::DEBUG, "Se han escrito el numero de columnas: ", false, true);
-	Logger::log(LogLevel::DEBUG, num_cols, true, false);
-	Logger::flush();
-
-	// Escribimos el numero de filas:
-	std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
-	if(!columnas.empty()){
-	Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA NO SON NULOS");
-	std::string column_name = (tabla->metadata_ptr->column_names)[0];
-	Logger::log(LogLevel::DEBUG, " Hemos hallado el nombre de la primera columna");
-	std::vector<Values> col_datos = columnas.at(column_name);
-	Logger::log(LogLevel::DEBUG, " Hemos hallado la variable temporal 'col_datos'");
-	uint32_t n_rows = col_datos.size();
-	out.write(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
-        Logger::log(LogLevel::DEBUG, "*********** EMPEZAMOS LA ESCRITURA DE LOS METADATOS ****************");
-	Logger::flush();
-        for(uint32_t i=0; i<num_cols; i++){
+      // Escribimos el numero de filas:
+      std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
+      if(!columnas.empty()){
+         Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA NO SON NULOS");
+         std::string column_name = (tabla->metadata_ptr->column_names)[0];
+         Logger::log(LogLevel::DEBUG, " Hemos hallado el nombre de la primera columna");
+         std::vector<Values> col_datos = columnas.at(column_name);
+         Logger::log(LogLevel::DEBUG, " Hemos hallado la variable temporal 'col_datos'");
+         uint32_t n_rows = col_datos.size();
+         out.write(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
+         Logger::log(LogLevel::DEBUG, "*********** EMPEZAMOS LA ESCRITURA DE LOS METADATOS ****************");
+         Logger::flush();
+         for(uint32_t i=0; i<num_cols; i++){
             // -- Escribimos los datos de cada columna ---------------------
-	    Logger::log(LogLevel::DEBUG, "ITERACION: ", false, true);                                                                           Logger::log(LogLevel::DEBUG, i, false, false);                    Logger::log(LogLevel::DEBUG, " de escritura metadatos", true, false);
-           Logger::flush();
+            Logger::log(LogLevel::DEBUG, "ITERACION: ", false, true);                                                                           Logger::log(LogLevel::DEBUG, i, false, false);                    Logger::log(LogLevel::DEBUG, " de escritura metadatos", true, false);
+            Logger::flush();
             // -- Escribimos el nombre:
             std::string column_name = (tabla->metadata_ptr->column_names)[i];
             uint32_t size_column_name = column_name.size();
@@ -114,183 +115,235 @@
             out.write(reinterpret_cast<char*>(&col_type_disk), sizeof(uint32_t));
             // -- Escribimos si es clave primaria:
             bool column_is_key = (tabla->metadata_ptr->primary_list)[i];
-	    uint8_t key_val = column_is_key ? 1 : 0;
-	    out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
-        };
-	Logger::log(LogLevel::DEBUG, "*********** ESCRITURA DE LOS METADATOS TERMINADA ****************");
-	Logger::flush();
-	Logger::log(LogLevel::DEBUG, "HACEMOS FLUSH DE LOS DATOS AL ESCRIBIR");
-	Logger::flush();
-	out.flush();
-        // ============================================================
-        // == Escribimos los datos ====================================
-        // ============================================================
+            uint8_t key_val = column_is_key ? 1 : 0;
+            out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
+         };
+         Logger::log(LogLevel::DEBUG, "*********** ESCRITURA DE LOS METADATOS TERMINADA ****************");
+         Logger::flush();
+         Logger::log(LogLevel::DEBUG, "HACEMOS FLUSH DE LOS DATOS AL ESCRIBIR");
+         Logger::flush();
+         out.flush();
+         out.close();
+         return n_rows;
+      } else{
+         Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA SI SON NULOS");
+      };
+         out.close();
+         return 0;
+   };
 
-        // Primero hallamos el número de instancias:
-	// Antes de nada escrobiremos el numero de columnas:
-	out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
-        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// Escribimos en un bucle las columnas:
-        for(uint32_t i=0; i<num_cols; i++){
 
-	   std::string column_name = (tabla->metadata_ptr->column_names)[i];
-	   // Primero, recuperamos el array de datos a escribir:
-	   std::vector<Values> col_datos = columnas.at(column_name);
 
-	   // Escribimos el tamaño del array: (n_rows es el tamaño del array a escribir en cada iteracion. nos sirve tsmbien para luego en write_buffer escribir elemento a elemento)
-	   uint32_t n_rows = col_datos.size(); 
-	   out.write(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
 
-           // Ahora operaremos en funcion del tipo de variable:
-	   dataType col_type = (tabla->metadata_ptr->column_types)[i];
 
-	   switch(col_type){
+   //========================================================
+   //== FUNION ESCRITURA DATOS: =============================
+   //========================================================
+   void disk_io::write_table_data(table* tabla, uint32_t n_rows){
+
+	   if (!tabla) return;
+         Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table_data': ");
+         std::string nombre_tabla = tabla->metadata_ptr->name;
+	      std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
+
+      // Abrimos la escritura:
+      std::ofstream out(ruta_tabla, std::ios::binary | std::ios::out);
+
+      // == Escribimos los datos ====================================
+
+      // Primero hallamos el número de instancias:
+	   // Antes de nada escrobiremos el numero de columnas:
+	   //out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t)); YA SE ESCRIBE 'num_cols' EN LOS METADATOS
+      uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
+      std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
+
+      // SÓLO ESCRIBIMOS SI HAY DATOS QUE ESCRIBIR:
+      if(!columnas.empty()){
+         Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA NO SON NULOS");
+         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+         // Escribimos en un bucle las columnas:
+         for(uint32_t i=0; i<num_cols; i++){
+
+            std::string column_name = (tabla->metadata_ptr->column_names)[i];
+            // Primero, recuperamos el array de datos a escribir:
+            std::vector<Values> col_datos = columnas.at(column_name);
+
+            // Escribimos el tamaño del array: (n_rows es el tamaño del array a escribir en cada iteracion. nos sirve tsmbien para luego en write_buffer escribir elemento a elemento)
+            uint32_t n_rows = col_datos.size(); 
+            out.write(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
+
+            // Ahora operaremos en funcion del tipo de variable:
+            dataType col_type = (tabla->metadata_ptr->column_types)[i];
+
+            switch(col_type){
                case dataType::INT: {
-		   std::vector<int> buffer(n_rows);
-		   disk_io::write_buffer(out, n_rows, col_datos , buffer);
-		   break;
-	       };
-	       case dataType::FLOAT: {
-		   std::vector<float> buffer(n_rows);  
-		   disk_io::write_buffer(out, n_rows, col_datos , buffer);
-                   break;
-	       };
-	       case dataType::STRING: {
-		   disk_io::write_buffer(out, n_rows, col_datos);
-                   break;
-	       };
-	       case dataType::BOOL: {
-	           std::vector<uint8_t> buffer(n_rows);
-		   disk_io::write_buffer(out, n_rows, col_datos , buffer);
-                   break;
-		};
-		case dataType::UNKNOWN: {
-		   Logger::log(LogLevel::ERROR, "ERROR: Tipo de dato desconocido");
-		   break;
-		};
-
-	   };	
-
-	};	
-
-        // Terminamos la escritura:
-	Logger::log(LogLevel::DEBUG, "ANTES DE CERRAR, HACEMOS FLUSH");
-	Logger::flush();                                                                                
-	out.flush();
-	out.close();
-	}else{
-           Logger::log(LogLevel::DEBUG, "NO HAY DATOS EN LA RAM VIVA POR LO QUE NO LOS ESCRIBIMOS");
-	}; //Termina el condicional de si hay datos o no:
-	
-
-	// Retornamos el numero de filas escritas en disco:
-	return n_rows;
-	
-
-    };
-
-
-
-    void disk_io::read_table_data(table* tabla){
-       std::string nombre_tabla = tabla->metadata_ptr->name;
-       std::string ruta_tabla = "data/" + nombre_tabla + ".bin";
-       std::ifstream in(ruta_tabla, std::ios::binary);
-       // Saltamos los metadatos:
-       uint32_t bytes_saltar = 0;
-       uint32_t uint32_t_size= sizeof(uint32_t);
-       uint8_t uint8_t_size= sizeof(uint8_t);
-       uint32_t size_nombre = nombre_tabla.size();
-       uint32_t num_cols = (tabla->metadata_ptr->primary_list).size();
-       bytes_saltar += uint32_t_size + size_nombre + uint32_t_size + uint32_t_size;
-       for(uint32_t i=0; i<num_cols; i++){
-          std::string column_name = (tabla->metadata_ptr->column_names)[i];
-	  uint32_t size_column_name = column_name.size();
-
-	  bytes_saltar += uint32_t_size + size_column_name + uint32_t_size + uint8_t_size;
-
-       };
-
-       // Ya sabemos los bytes que saltar:
-       in.seekg(bytes_saltar, std::ios::cur);
-
-       // Pasamos a leer los dstos:
-       //uint32_t num_cols;	
-       //in.read(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
-       in.seekg(sizeof(uint32_t), std::ios::cur);
-       // Nos servira para usarlo dentro del bucle:
-       std::map<std::string, std::vector<Values>> columnas = tabla->data_buffer_ptr->columns;
-       // Leemos las columnas:
-       for(uint32_t i=0; i<num_cols; i++){
-          std::string column_name = (tabla->metadata_ptr->column_names)[i];
-	  std::vector<Values> col_datos = columnas.at(column_name);
-	  uint32_t n_rows;
-	  in.read(reinterpret_cast<char*>(n_rows), sizeof(uint32_t));
-	  // Ahora operaremos en funcion del tipo de variable:
-           dataType col_type = (tabla->metadata_ptr->column_types)[i];
-	   switch(col_type){
-               case dataType::INT: {
-                   std::vector<int> buffer(n_rows);                                                 // Leemos los datos:
-		   in.read(reinterpret_cast<char*>(&buffer), n_rows * sizeof(int));
-		   // Escribimos en el buffer de memoria:
-		   for(int j = 0; j<n_rows; j++){
-                      col_datos.push_back(buffer[j]);
-		   };
-                   break;
+                  std::vector<int> buffer(n_rows);
+                  disk_io::write_buffer(out, n_rows, col_datos , buffer);
+                  break;
                };
                case dataType::FLOAT: {
-                   std::vector<float> buffer(n_rows);
-                   // Leemos los datos:
-                   in.read(reinterpret_cast<char*>(&buffer), n_rows * sizeof(float));                                                                                                // Escribimos en el buffer de memoria:
-                   for(int j = 0; j<n_rows; j++){
-                      col_datos.push_back(buffer[j]);
-		   };
-                   break;
-               };                                                                               case dataType::STRING: {
-		   // Caso especial
-		   // Iteramos por cada fila o string:
-		   for(uint32_t j = 0; j < n_rows; j++){
-		      uint32_t s_len;
-                      // Leemos primero el tamaño:
-                      in.read(reinterpret_cast<char*>(&s_len), sizeof(uint32_t));
-		      // Leemos la string en cuestion:
-		      std::string s(s_len, '\0');
-		      in.read(&s[0], s_len);
-		      col_datos.push_back(s);
-		   };
-                   break;                                                                       };
-               case dataType::BOOL: {                                                               std::vector<uint8_t> buffer(n_rows);
-                   // Leemos los datos:
-                   in.read(reinterpret_cast<char*>(&buffer), n_rows * sizeof(uint8_t));                                                                                              // Escribimos en el buffer de memoria:
-                   for(int j = 0; j<n_rows; j++){
-                      col_datos.push_back(buffer[j]);
-		   }; 
-                   break;                                                                        };
-                case dataType::UNKNOWN: {
-                   Logger::log(LogLevel::ERROR, "ERROR: Tipo de dato desconocido");                                                                                                  break;                                                                        };
+                  std::vector<float> buffer(n_rows);  
+                  disk_io::write_buffer(out, n_rows, col_datos , buffer);
+                           break;
+               };
+               case dataType::STRING: {
+                  disk_io::write_buffer(out, n_rows, col_datos);
+                  break;
+               };
+               case dataType::BOOL: {
+                  std::vector<uint8_t> buffer(n_rows);
+                  disk_io::write_buffer(out, n_rows, col_datos , buffer);
+                  break;
+               };
+               case dataType::UNKNOWN: {
+                  Logger::log(LogLevel::ERROR, "ERROR: Tipo de dato desconocido");
+                  break;
+               };
 
-           };
+            };	
 
-       };
+         };	
+
+         // Terminamos la escritura:
+         Logger::log(LogLevel::DEBUG, "ANTES DE CERRAR, HACEMOS FLUSH");
+         Logger::flush();                                                                                
+         out.flush();
+      } else {
+         Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA SI SON NULOS");
+      };
+      out.close();
+   };
 
 
+
+   //========================================================
+   //== FUNION LECTURA DATOS: ===============================
+   //========================================================
+
+    void disk_io::read_table_data(table* tabla){
+      Logger::log(LogLevel::DEBUG, "ENTRAMOS A LA FUNCION DE LECTURA DE SOLO LOS DATOS");
+      std::string nombre_tabla = tabla->metadata_ptr->name;
+      std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
+      Logger::log(LogLevel::DEBUG, "Vamos a leer la ruta: "+ ruta_tabla);
+      std::ifstream in(ruta_tabla, std::ios::binary);
+      Logger::log(LogLevel::DEBUG, "Abrimos la lectura de la tabla: "+ nombre_tabla);
+      Logger::flush();
+      Logger::log(LogLevel::DEBUG, "Comenzamos a saltar bytes de los metadatos");
+      // Saltamos los metadatos:
+      uint32_t bytes_saltar = 0;
+      uint32_t uint32_t_size= sizeof(uint32_t);
+      uint8_t uint8_t_size= sizeof(uint8_t);
+      uint32_t size_nombre = nombre_tabla.size();
+      uint32_t num_cols = (tabla->metadata_ptr->primary_list).size();
+      bytes_saltar += uint32_t_size + size_nombre + uint32_t_size + uint32_t_size;
+      for(uint32_t i=0; i<num_cols; i++){
+         std::string column_name = (tabla->metadata_ptr->column_names)[i];
+         uint32_t size_column_name = column_name.size();
+         bytes_saltar += uint32_t_size + size_column_name + uint32_t_size + uint8_t_size;
+      };
+
+      // Ya sabemos los bytes que saltar:
+      in.seekg(bytes_saltar, std::ios::cur);
+      Logger::log(LogLevel::DEBUG, "++++++++++++++ BYTES DE LOS METADATOS SALTADOS CON EXITO +++++++++++++++++");
+      // Pasamos a leer los dstos:
+      //uint32_t num_cols;	
+      //in.read(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
+      // in.seekg(sizeof(uint32_t), std::ios::cur); NOS LOS SALTAMOS PORQUE 'num_cols' YA SE ESCRIBE EN LOS METADATOS
+      // Nos servira para usarlo dentro del bucle:
+      std::map<std::string, std::vector<Values>> columnas = tabla->data_buffer_ptr->columns;
+      Logger::log(LogLevel::DEBUG, "Accedemos al map de los datos en la region de RAM para el disco");
+      // Leemos las columnas:
+      Logger::flush();
+      Logger::log(LogLevel::DEBUG, "El numero de columnas es: ", false, true);
+      Logger::log(LogLevel::DEBUG, num_cols, true, false);
+      Logger::flush();
+      for(uint32_t i=0; i<num_cols; i++){
+         std::string column_name = (tabla->metadata_ptr->column_names)[i];
+         Logger::log(LogLevel::DEBUG, "Procesamos la columna con el nombre: "+ column_name);
+         std::vector<Values> col_datos;
+         if(columnas.contains(column_name)){
+            col_datos = columnas.at(column_name);
+         } else {
+            col_datos = columnas[column_name];
+         };
+         Logger::log(LogLevel::DEBUG, "Ya se ha inicializado 'col_datos'");
+	      uint32_t n_rows = 0;
+	      in.read(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
+         Logger::log(LogLevel::DEBUG, "El numero de filas es: ", false, true);
+         Logger::log(LogLevel::DEBUG, n_rows, true, false);
+         Logger::log(LogLevel::DEBUG, "Ya se ha leido 'n_rows'");
+	      // Ahora operaremos en funcion del tipo de variable:
+         Logger::log(LogLevel::DEBUG, "Procedemos a ver el tipo de dato de la columna a procesar");
+         dataType col_type = (tabla->metadata_ptr->column_types)[i];
+         Logger::log(LogLevel::DEBUG, "Tipo de la columna ya hallado");
+         Logger::log(LogLevel::DEBUG, "Entramos al SWITCH de lectura segun el tipo de dato");
+	      switch(col_type){
+            case dataType::INT: {
+               std::vector<int> buffer(n_rows);                                                 
+               // Leemos los datos:
+               in.read(reinterpret_cast<char*>(&buffer), n_rows * sizeof(int));
+               // Escribimos en el buffer de memoria:
+               for(int j = 0; j<n_rows; j++){
+                  col_datos.push_back(buffer[j]);
+               };
+               break;
+            };
+            case dataType::FLOAT: {
+               std::vector<float> buffer(n_rows);
+               // Leemos los datos:
+               in.read(reinterpret_cast<char*>(&buffer), n_rows * sizeof(float));                                                                                                // Escribimos en el buffer de memoria:
+               for(int j = 0; j<n_rows; j++){
+                  col_datos.push_back(buffer[j]);
+               };
+               break;
+            };                                                                               
+            case dataType::STRING: {
+		         // Caso especial
+		         // Iteramos por cada fila o string:
+		         for(uint32_t j = 0; j < n_rows; j++){
+		            uint32_t s_len;
+                  // Leemos primero el tamaño:
+                  in.read(reinterpret_cast<char*>(&s_len), sizeof(uint32_t));
+		            // Leemos la string en cuestion:
+		            std::string s(s_len, '\0');
+		            in.read(&s[0], s_len);
+		            col_datos.push_back(s);
+		         };
+               break;                                                                       
+            };
+            case dataType::BOOL: {                                                               
+               std::vector<uint8_t> buffer(n_rows);
+               // Leemos los datos:
+               in.read(reinterpret_cast<char*>(&buffer), n_rows * sizeof(uint8_t));                                                                                              // Escribimos en el buffer de memoria:
+               for(int j = 0; j<n_rows; j++){
+                  col_datos.push_back(buffer[j]);
+		         }; 
+               break;                                                                        
+            };
+            case dataType::UNKNOWN: {
+               Logger::log(LogLevel::ERROR, "ERROR: Tipo de dato desconocido");                                                                                                  
+               break;                                                                        
+            };
+         };
+      };
        in.close(); 
     };
 
 
 
-    void disk_io::read_table_metadata(std::filesystem::path ruta_tabla){
+    void disk_io::read_table_metadata(std::filesystem::path ruta_tabla, std::string nombre_tabla_str){
        std::string tabla_nombre = ruta_tabla.stem().string();
        Logger::log(LogLevel::DEBUG, "LEEMOS LOS METADATOS DE LA TABLA: ", false, true);
        Logger::log(LogLevel::DEBUG, tabla_nombre, true, false);
        Logger::flush();
        std::string ruta_tabla_str = ruta_tabla.string();
        Logger::log(LogLevel::DEBUG, "Ruta de la tabla a leer meta: " + ruta_tabla_str);
-       if (global_table_dict.find(tabla_nombre) == global_table_dict.end()) {
-         Logger::log(LogLevel::ERROR, "ERROR: La tabla " + tabla_nombre + " no está en el diccionario global.");
+       if (global_table_dict.find(nombre_tabla_str) == global_table_dict.end()) {
+         Logger::log(LogLevel::ERROR, "ERROR: La tabla " + nombre_tabla_str + " no está en el diccionario global.");
        } else {
-         Logger::log(LogLevel::DEBUG, "La tabla " + tabla_nombre + " SI EXISTE en el diccionario");
+         Logger::log(LogLevel::DEBUG, "La tabla " + nombre_tabla_str + " SI EXISTE en el diccionario");
        };
-       table_metadata* metadatos_puntero = global_table_dict.at(tabla_nombre)->metadata_ptr;
+       table_metadata* metadatos_puntero = global_table_dict.at(nombre_tabla_str)->metadata_ptr;
        if(metadatos_puntero){
           Logger::log(LogLevel::DEBUG, "El puntero a metadatos NO es nulo");
        };
@@ -382,20 +435,24 @@
 
 
     // Funcion auxilar recursiva:
-    void disk_io::escanear_tablas_recursiva(const std::filesystem::path& ruta, std::vector<std::filesystem::path>& arr_tablas){
-       // Iteramos por cada elemento:
-       for (const auto& entrada : fs::directory_iterator(ruta)){
-          // Caso de quecsea una ruta:
-	  if (fs::is_directory(entrada)){
-		  disk_io::escanear_tablas_recursiva(entrada.path(), arr_tablas);
-	  } else if(fs::is_regular_file(entrada) && entrada.path().extension().string() == ".bin"){
-             // Caso base de la recursion:
-	     arr_tablas.push_back(entrada);
+   void disk_io::escanear_tablas_recursiva(const std::filesystem::path& ruta, std::vector<std::filesystem::path>& arr_tablas){
+      // Iteramos por cada elemento:
+      for (const auto& entrada : fs::directory_iterator(ruta)){
+         // Caso de quecsea una ruta:
+	      if (fs::is_directory(entrada)){
+		      disk_io::escanear_tablas_recursiva(entrada.path(), arr_tablas);
+	      } else if(fs::is_regular_file(entrada) && entrada.path().extension().string() == ".bin" && entrada.path().filename().string().find("_meta") != std::string::npos){
+            /*
+            Caso base de la recursion
+            Solo adicionamos metadatos
+            */
+	         arr_tablas.push_back(entrada);
 	     
-    	  };
-       };
-};
+    	   };
+      };
+   };
 
+   // SOLO ESCANEA LOS METADATOS DE LAS TABLAS:
    std::vector<std::filesystem::path> disk_io::escanear_tablas(){
 
        fs::path ruta_tablas = "data";
@@ -417,25 +474,28 @@
        Logger::flush();
     };
 
-    void disk_io::lectura_metadatos_todas_tablas(){
+   void disk_io::lectura_metadatos_todas_tablas(){
     
-       std::vector<std::filesystem::path> arr_tablas;
-       arr_tablas = disk_io::escanear_tablas();
-       for(int i = 0; i<arr_tablas.size(); i++){
-	  // Creamos el objeto de la tabla y su entrada en el diccionario global:
-	  // Inicializamos el diccionsrio global y sus elementos:
-	  table* tabla;
-	  global_table_dict[arr_tablas[i].stem().string()] = new table;
-          tabla = global_table_dict.at(arr_tablas[i].stem().string());
-	  tabla->metadata_ptr = new table_metadata();
-	  tabla->data_ptr = new table_data();
-	  tabla->data_buffer_ptr = new table_data_buffer();
-
-	  disk_io::read_table_metadata(arr_tablas[i]);
-       };
-       disk_io::debug_print_metadatos_memoria();
-
-    };
+      std::vector<std::filesystem::path> arr_tablas;
+      arr_tablas = disk_io::escanear_tablas();
+      for(int i = 0; i<arr_tablas.size(); i++){
+         // Creamos el objeto de la tabla y su entrada en el diccionario global:
+         // Inicializamos el diccionsrio global y sus elementos:
+         table* tabla;
+         // REGISTRAMOS EL NOMBRE DE LA TABLA SIN ESE '_meta':
+         std::string nombre_tabla_str = arr_tablas[i].stem().string();
+         if(nombre_tabla_str.ends_with("_meta")){
+            nombre_tabla_str.erase(nombre_tabla_str.size() -5);
+         };
+         global_table_dict[nombre_tabla_str] = new table;
+         tabla = global_table_dict.at(nombre_tabla_str);
+         tabla->metadata_ptr = new table_metadata();
+         tabla->data_ptr = new table_data();
+         // tabla->data_buffer_ptr = new table_data_buffer(); No lo inicializamos hasta que se llame al constructor de 'tableRowIterator'
+         disk_io::read_table_metadata(arr_tablas[i], nombre_tabla_str);
+      };
+      disk_io::debug_print_metadatos_memoria();
+   };
 
 
 
@@ -460,7 +520,10 @@
 	    if (table_ptr != nullptr){
 	       // Escribimos la tabla:
 	       Logger::log(LogLevel::DEBUG, "ESCRIBIMOS LA TABLA: " + table_name);
-	       n_rows = disk_io::write_table(table_ptr);
+          // Primero escribimos los metadatos:
+          uint32_t n_rows = 0;
+          n_rows = disk_io::write_table_metadata(table_ptr);
+	       disk_io::write_table_data(table_ptr, n_rows);
 	       // Actualizamos los metadatos de la tabla para mostar el numero de filas escritas en disco:
 	       table_ptr->metadata_ptr->n_filas_disco = n_rows;
 

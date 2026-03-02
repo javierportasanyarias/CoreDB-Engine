@@ -161,42 +161,47 @@ void aux_table_values_print(const std::vector<std::string>& col_list, std::strin
     std::map<std::string, Values> fila;
     
 	while(!it.is_eof()){
-	   Logger::log(LogLevel::DEBUG, "<<<<SE HA ENTTADO A INTERTAR FILAS>>>>>>");                       Logger::flush();
+	   Logger::log(LogLevel::DEBUG, "<<<<SE HA ENTTADO A INTERTAR FILAS>>>>>>");                       
+      Logger::flush(false);
            // consultamos la proxima fila:
 	   fila = it.get_next_row();
+      Logger::log(LogLevel::DEBUG, "Ser ha conseguido obtener la fila");
 	   // Ya tenemos la fila, iteramos por la seleccion de columnas:
 	   Logger::log(LogLevel::OUTPUT, " | ", false, false);
 	   for(const std::string& nombre_col: col_list){
-		Logger::log(LogLevel::OUTPUT, fila.at(nombre_col), false, false);
-		Logger::log(LogLevel::OUTPUT, " | ", false, false);
-
+		   Logger::log(LogLevel::OUTPUT, fila.at(nombre_col), false, false);
+		   Logger::log(LogLevel::OUTPUT, " | ", false, false);
 	   };
 	   Logger::log(LogLevel::OUTPUT, " | ", false, false);
-	   Logger::flush(); 
+	   Logger::flush(false); 
 	};
+   Logger::flush();
 };
 
 // Función auxiliar que imprime los valores de la tabla (SE HAN SELECCIONADO COLUMNAS):
-void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string nombre_tabla) {                                                                                                      // Creamos el iterador de filas de la tabla:
-    disk_buffer::tableRowIterator it(nombre_tabla);
-    std::map<std::string, Values> fila;
+void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string nombre_tabla) {                                                                                                      
+   // Creamos el iterador de filas de la tabla:
+   disk_buffer::tableRowIterator it(nombre_tabla);
+   std::map<std::string, Values> fila;
 
-        while(!it.is_eof()){
+   while(!it.is_eof()){
 	   Logger::log(LogLevel::DEBUG, "<<<<SE HA ENTTADO A INTERTAR FILAS>>>>>>");
-	   Logger::flush();
-           // consultamos la proxima fila:
-           fila = it.get_next_row();
-           // Ya tenemos la fila, iteramos por la seleccion de columnas:
-           Logger::log(LogLevel::OUTPUT, " | ", false, false);
-           for(const ItemNode& elemento: col_list){
-		auto elemento_valor = fila.find(elemento.nombre);
-		if(elemento_valor == fila.end()){
-		   throw std::runtime_error("Error al mostrar la tabla, la columna: "+ elemento.nombre + " no existe");
-		};
-                Logger::log(LogLevel::OUTPUT, elemento_valor->second, false, false);
-		Logger::log(LogLevel::OUTPUT, " | ", false, false);                                                                                                                                        };                                                                                              Logger::log(LogLevel::OUTPUT, " | ", false, false);
-	   Logger::flush();
-        };
+	   Logger::flush(false);
+      // consultamos la proxima fila:
+      fila = it.get_next_row();
+      // Ya tenemos la fila, iteramos por la seleccion de columnas:
+      Logger::log(LogLevel::OUTPUT, " | ", false, false);
+      for(const ItemNode& elemento: col_list){
+		   auto elemento_valor = fila.find(elemento.nombre);
+		   if(elemento_valor == fila.end()){
+		      throw std::runtime_error("Error al mostrar la tabla, la columna: "+ elemento.nombre + " no existe");
+		   };
+         Logger::log(LogLevel::OUTPUT, elemento_valor->second, false, false);
+         Logger::log(LogLevel::OUTPUT, " | ", false, false);                                                                                                                                        
+      };                                                                                              
+      Logger::flush();
+   };
+   Logger::flush();
 };
 
 // Función auxiliar para imprimir la tabla: PARA TODAS LAS COLUMNAS:

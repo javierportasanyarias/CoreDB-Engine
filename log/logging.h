@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <variant>
 
 enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
 
@@ -30,7 +31,7 @@ public:
 		    bool flush_bool = true,
 		    bool flag = true);
 
-    static void flush();
+    static void flush(bool endl = true);
 
     static void login(std::string& input);
 

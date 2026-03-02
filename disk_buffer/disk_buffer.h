@@ -54,69 +54,97 @@ namespace disk_buffer {
       uint32_t contador;
       table* tabla_ptr;
       bool eof;
+
       // Metodo constructor
       tableRowIterator(std::string tabla_nombre){
-	 contador = 0;
+	      contador = 0;
          tabla_ptr = global_table_dict.at(tabla_nombre);
-	 // Solo en caso de tenerlo, contamos las filas en RAM viva:
-	 if(tabla_ptr->data_ptr){
+	      // Solo en caso de tenerlo, contamos las filas en RAM viva:
+	      if(tabla_ptr->data_ptr){
             contar_datos_ram_una_tabla(tabla_nombre);
-	 };
-	 Logger::log(LogLevel::DEBUG, "Se han contado las filas en la RAM viva");
-	 Logger::flush();
-	 // Aqui deberismos cargar los dstos desde el disco:
-	 if(!tabla_ptr->data_buffer_ptr){
-		 // Solo leemos si existe el archivo:
-		 if (fs::exists("data/" + tabla_nombre + ".bin")){
-		    disk_io::read_table_data(tabla_ptr); // Esta funcion ya actusliza el conteo en disco
-		 };
-	 };
-	 this->eof = (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram == 0);
-	 Logger::log(LogLevel::DEBUG, "Se ha construido tableRowIterator hasta 'eof'");
-	 Logger::log(LogLevel::DEBUG, "El booleano 'eof' nos sale :", false, true);
-	 if(this->eof){
-	    Logger::log(LogLevel::DEBUG, "true", true, false);
-	 } else {
-            Logger::log(LogLevel::DEBUG, "false", true, false);
-	 };
-	 Logger::log(LogLevel::DEBUG, "Hemos leido con exito los datos en disco");
-	 Logger::flush();
+	      };
+	      Logger::log(LogLevel::DEBUG, "Se han contado las filas en la RAM viva");
+         if(Logger::level == LogLevel::OUTPUT){
+	         Logger::flush(false);
+         } else {
+            Logger::flush();
+         };
+         // Aqui deberismos cargar los dstos desde el disco:
+         if(!tabla_ptr->data_buffer_ptr){
+            // Solo leemos si existe el archivo:
+            Logger::log(LogLevel::DEBUG, "NO EXISTE EL APARTADO EN RAM DE DATOS EN DISCO, ENTRAMOS A LEERLO SI EL ARCHIVO EXISTE");
+            if (fs::exists("data/" + tabla_nombre + "_data.bin")){
+               Logger::log(LogLevel::DEBUG, "LEEMOS LOS DATOS EN DISCO:", true, true);
+               // Antes de leer, creamos la región de la RAM para los datos en disco:
+               tabla_ptr->data_buffer_ptr = new table_data_buffer();
+               disk_io::read_table_data(tabla_ptr); // Esta funcion ya actusliza el conteo en disco
+            } else {
+               Logger::log(LogLevel::DEBUG, "LOS DATOS DE LA TABLA: "+tabla_nombre+ " no existen en disco", true, true);
+            }
+         };
+         this->eof = (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram == 0);
+         Logger::log(LogLevel::DEBUG, "Se ha construido tableRowIterator hasta 'eof'");
+         Logger::log(LogLevel::DEBUG, "El booleano 'eof' nos sale :", false, true);
+         if(this->eof){
+            Logger::log(LogLevel::DEBUG, "true", true, false);
+         } else {
+                  Logger::log(LogLevel::DEBUG, "false", true, false);
+         };
+         Logger::log(LogLevel::DEBUG, "Hemos leido con exito los datos en disco");
+         if(Logger::level == LogLevel::OUTPUT){
+	         Logger::flush(false);
+         } else {
+            Logger::flush();
+         };
       };
+
       // Para consultar eof:
       bool is_eof() {
-        return eof;
+         return eof;
       };
 
       // Para devolver la prox fila:
       std::map<std::string, Values> get_next_row(){
          std::map<std::string, Values> map_fila_retornar;
-	 uint32_t n_f_disk = tabla_ptr->metadata_ptr->n_filas_disco;
-	 uint32_t n_f_ram = tabla_ptr->metadata_ptr->n_filas_ram;
-	 uint32_t n_f_total = n_f_disk + n_f_ram;
-	 Logger::log(LogLevel::DEBUG, "N filas disco: ", false, true);
-	 Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
-	 Logger::log(LogLevel::DEBUG, "N filas RAM: ", false, true);
+         uint32_t n_f_disk = tabla_ptr->metadata_ptr->n_filas_disco;
+         uint32_t n_f_ram = tabla_ptr->metadata_ptr->n_filas_ram;
+         uint32_t n_f_total = n_f_disk + n_f_ram;
+         Logger::log(LogLevel::DEBUG, "N filas disco: ", false, true);
+         Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
+         Logger::log(LogLevel::DEBUG, "N filas RAM: ", false, true);
          Logger::log(LogLevel::DEBUG, n_f_ram, true, false);
-	 Logger::flush();
+         if(Logger::level == LogLevel::OUTPUT){
+	         Logger::flush(false);
+         } else {
+            Logger::flush();
+         };
          // Iteramos por cada columna:
          for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
-	    if(contador < n_f_disk){
-	       // Leemos primero desde disco:
-	       Logger::log(LogLevel::DEBUG, "Leemos desde el disco");
-	       Logger::flush();
+            if(contador < n_f_disk){
+               // Leemos primero desde disco:
+               Logger::log(LogLevel::DEBUG, "Leemos desde el disco");
+               if(Logger::level == LogLevel::OUTPUT){
+                  Logger::flush(false);
+               } else {
+                  Logger::flush();
+               };
                map_fila_retornar[nombre_col] = tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
-	    } else if(contador < n_f_total) {
-		uint32_t indice_relativo_ram = contador - n_f_disk;
+            } else if(contador < n_f_total) {
+               uint32_t indice_relativo_ram = contador - n_f_disk;
                // Leemos desde la RAM viva:
-	       Logger::log(LogLevel::DEBUG, "Leemos desde RAM viva");
-	       Logger::flush();
-	       map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[indice_relativo_ram];
-	    };
+               Logger::log(LogLevel::DEBUG, "Leemos desde RAM viva");
+               if(Logger::level == LogLevel::OUTPUT){
+                  Logger::flush(false);
+               } else {
+                  Logger::flush();
+               };
+               map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[indice_relativo_ram];
+            };
          }; // Termina la iteracion de columna
          contador += 1;
          if(contador >= (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram)){
             this-> eof = true;
-	 };
+	      };
          return map_fila_retornar;
       }; // Termina el metodo 'get_next_row'
 

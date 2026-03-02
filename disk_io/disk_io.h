@@ -28,14 +28,16 @@ namespace disk_io {
 
 
     // FUNCIÓN DE ESCRITURA:
-    uint32_t write_table(table* tabla);
+    uint32_t write_table_metadata(table* tabla);
+
+    void write_table_data(table* tabla, uint32_t n_rows);
 
 
     void read_table_data(table* tabla);
 
 
 
-    void read_table_metadata(std::filesystem::path ruta_tabla);
+    void read_table_metadata(std::filesystem::path ruta_tabla, std::string nombre_tabla_str);
 
 
 

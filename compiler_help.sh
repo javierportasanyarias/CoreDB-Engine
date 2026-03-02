@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-g++ -std=c++20 \
+clang++ -std=c++20 \
   -Iexecution \
   -Iplanning_execution \
   -Inodes_for_trees \

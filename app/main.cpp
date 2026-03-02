@@ -107,8 +107,9 @@ int main(){
     //disk_io::write_dump();
     Logger::log(LogLevel::DEBUG, "Tablas escritas en disco ");
     Logger::flush();
-    Logger::log(LogLevel::DEBUG, "handshake: ", true, true);
+    Logger::log(LogLevel::OUTPUT, "handshake: ", false, true);
     Logger::login(handshake);
+    Logger::flush();
     Logger::log(LogLevel::OUTPUT, "Se ha realizado el handshake", true, true);
     Logger::log(LogLevel::OUTPUT, "__END__", true, false);
     Logger::flush();
