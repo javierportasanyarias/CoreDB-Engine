@@ -22,4 +22,5 @@ clang++ -std=c++20 \
   tests/data_structs.cpp \
   tests/bateria_tests.cpp \
   disk_io/disk_io.cpp \
+  disk_buffer/disk_buffer.cpp \
   -o app/sql_app.exe
