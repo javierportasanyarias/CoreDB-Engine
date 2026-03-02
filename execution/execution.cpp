@@ -156,9 +156,12 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
 
 // Función auxiliar que imprime los valores de la tabla (CASO TODAS LAS COLUMNAS):
 void aux_table_values_print(const std::vector<std::string>& col_list, std::string nombre_tabla) {
-    // Creamos el iterador de filas de la tabla:
-    disk_buffer::tableRowIterator it(nombre_tabla);
-    std::map<std::string, Values> fila;
+   // Creamos el iterador de filas de la tabla:
+   disk_buffer::tableRowIterator it(nombre_tabla);
+   Logger::log(LogLevel::DEBUG, "Se ha creado un objeto 'tableRowIterator' para la tabla: ", false, true);
+   Logger::log(LogLevel::DEBUG, nombre_tabla, false, false);
+   Logger::log(LogLevel::DEBUG, " (SELECT *)", true, false);
+   std::map<std::string, Values> fila;
     
 	while(!it.is_eof()){
 	   Logger::log(LogLevel::DEBUG, "<<<<SE HA ENTTADO A INTERTAR FILAS>>>>>>");                       
@@ -182,6 +185,9 @@ void aux_table_values_print(const std::vector<std::string>& col_list, std::strin
 void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string nombre_tabla) {                                                                                                      
    // Creamos el iterador de filas de la tabla:
    disk_buffer::tableRowIterator it(nombre_tabla);
+   Logger::log(LogLevel::DEBUG, "Se ha creado un objeto 'tableRowIterator' para la tabla: ", false, true);
+   Logger::log(LogLevel::DEBUG, nombre_tabla, false, false);
+   Logger::log(LogLevel::DEBUG, " (SELECT <COLUMNAS>)", true, false);
    std::map<std::string, Values> fila;
 
    while(!it.is_eof()){

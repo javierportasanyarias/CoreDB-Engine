@@ -120,6 +120,8 @@ namespace disk_buffer {
          };
          // Iteramos por cada columna:
          for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
+            Logger::log(LogLevel::DEBUG, "Nombre de la columna a leer de la RAM: ", false, true);
+            Logger::log(LogLevel::DEBUG, nombre_col, true, false);
             if(contador < n_f_disk){
                // Leemos primero desde disco:
                Logger::log(LogLevel::DEBUG, "Leemos desde el disco");
@@ -127,6 +129,15 @@ namespace disk_buffer {
                   Logger::flush(false);
                } else {
                   Logger::flush();
+               };
+               if(tabla_ptr->data_buffer_ptr->columns.contains(nombre_col)){
+                  Logger::log(LogLevel::DEBUG, "SI existe: ", false, true);
+                  Logger::log(LogLevel::DEBUG, nombre_col, false, false);
+                  Logger::log(LogLevel::DEBUG, " en 'tabla_ptr->data_buffer_ptr->columns'", true, false);
+               } else {
+                  Logger::log(LogLevel::DEBUG, "NO existe: ", false, true);
+                  Logger::log(LogLevel::DEBUG, nombre_col, false, false);
+                  Logger::log(LogLevel::DEBUG, " en 'tabla_ptr->data_buffer_ptr->columns'", true, false); 
                };
                map_fila_retornar[nombre_col] = tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
             } else if(contador < n_f_total) {
