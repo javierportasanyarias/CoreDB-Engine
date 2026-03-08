@@ -91,9 +91,9 @@
 
 
    // Funcion auxliar para escribir un valor concreto en disco:
-   void write_aux_val(Values value, dataType tipo_dato, std::ofstream& out){
+   void disk_io::write_aux_val(Values value, dataType tipo_dato, std::ofstream& out){
 
-      switch(col_type){
+      switch(tipo_dato){
 
          case dataType::INT: {
             int buffer;
@@ -114,12 +114,12 @@
             }else{
                buffer_int8 = 0;
             };
-            out.write(reinterpret_cast<char*>(&buffer), sizeof(uint8_t));
+            out.write(reinterpret_cast<char*>(&buffer_int8), sizeof(uint8_t));
          };
          case dataType::STRING: {
-            std:.string buffer;
+            std::string buffer;
             uint32_t string_size;
-            buffer = std::get<std:.string>(value);
+            buffer = std::get<std::string>(value);
             string_size = buffer.size();
             // Primero escribimos el tamaño de la string:
             out.write(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
@@ -134,29 +134,43 @@
    void disk_io::write_table_data(table* tabla, uint32_t n_rows){
 
 	   if (!tabla) return;
-         Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table_data': ");
-         std::string nombre_tabla = tabla->metadata_ptr->name;
-	      std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
+      Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table_data': ");
+      std::string nombre_tabla = tabla->metadata_ptr->name;
+	   std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
 
       // Abrimos la escritura:
-      std::ofstream out(ruta_tabla, std::ios::binary | std::ios::app);
+      std::ofstream out(ruta_tabla, std::ios::out | std::ios::binary);
 
       table_metadata* metadata = tabla->metadata_ptr;
-      std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types
+      std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
+      std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
       uint32_t n_cols = tipos_datos.size();
       uint32_t n_filas = metadata->n_filas_ram;
 
       // Creamos el iterador por filas:
-      auto& it = disK_buffer::tableRowIterator_only_ram();
+      auto it = disk_buffer::tableRowIterator_only_ram(nombre_tabla);
       std::map<std::string, Values> fila_a_escribir;
       Values valor_tmp;
+
+      // Antes de escribir los datos, escribimos las filas de datos totales:
+      uint32_t n_f_disk = tabla->metadata_ptr->n_filas_disco;
+      uint32_t n_f_ram = tabla->metadata_ptr->n_filas_ram;
+
+      uint32_t n_filas_total = n_f_disk + n_f_ram;
+      out.write(reinterpret_cast<char*>(&n_filas_total), sizeof(uint32_t));
+
+      // Ahora nos movemos al final para poder escribir sólo al finaL_
+      out.seekp(0, std::ios::end);
+
       // Ahora iteraremos hasta que esteé vacía la fila a escribir
       bool aux_bool = true;
       while(!it.is_eof()){
          fila_a_escribir = it.get_next_row_ram_viva();
          // Ahora iteramos por cada columna:
          for(int i = 0; i<n_cols; i++){
-            valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
+            // valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
+            valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
+            disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
          };
       };
       out.flush();
@@ -169,45 +183,51 @@
    //== FUNION LECTURA DATOS: ===============================
    //========================================================
 
-   void write_aux_val(Values value, dataType tipo_dato, std::ofstream& out){
 
-      switch(col_type){
+   // Funcion auxliar para escribir un valor concreto en disco:
+   Values disk_io::read_aux_val(dataType tipo_dato, std::ifstream& in){
+
+      Values value;
+      switch(tipo_dato){
 
          case dataType::INT: {
             int buffer;
-            buffer = std::get<int>(value);
-            out.write(reinterpret_cast<char*>(&buffer), sizeof(int));
+            //buffer = std::get<int>(value);
+            in.read(reinterpret_cast<char*>(&buffer), sizeof(int));
+            value = buffer;
          };
          case dataType::FLOAT: {
             int buffer;
-            buffer = std::get<float>(value);
-            out.write(reinterpret_cast<char*>(&buffer), sizeof(float));
+            //buffer = std::get<float>(value);
+            in.read(reinterpret_cast<char*>(&buffer), sizeof(float));
+            value = buffer;
          };
          case dataType::BOOL: {
             bool buffer_bool;
             uint8_t buffer_int8;
-            buffer_bool = std::get<bool>(value);
-            if(buffer_bool){
-               buffer_int8 = 1;
+            //buffer_bool = std::get<bool>(value);
+            in.read(reinterpret_cast<char*>(&buffer_int8), sizeof(uint8_t));
+            if(buffer_int8==1){
+               buffer_bool = true;
             }else{
-               buffer_int8 = 0;
+               buffer_bool = false;
             };
-            out.write(reinterpret_cast<char*>(&buffer), sizeof(uint8_t));
+            value = buffer_bool;
          };
          case dataType::STRING: {
-            std:.string buffer;
+            std::string buffer;
             uint32_t string_size;
-            buffer = std::get<std:.string>(value);
-            string_size = buffer.size();
+            //buffer = std::get<std::string>(value);
             // Primero escribimos el tamaño de la string:
-            out.write(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
+            in.read(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
             // Ahora ya si escribimos la cadena de texto:
-            out.write(reinterpret_cast<char*>(buffer.data()), string_size);
+            in.read(reinterpret_cast<char*>(buffer.data()), string_size);
+            value = buffer;
          };
-
       };
-   };
 
+      return value;
+   };
 
    
    void disk_io::read_table_data(table* tabla){
@@ -227,14 +247,35 @@
       uint32_t n_filas = metadata->n_filas_ram;
 
       // Donde guardaremos los datos:
-      std::map<std::string, std::vector<Values>>& columas = tabla->data_buffer_ptr->columns;
+      std::map<std::string, std::vector<Values>>& columnas = tabla->data_buffer_ptr->columns;
 
+      // Creamos el objeto de iteració para 
       // Creamos el iterador por filas:
       std::map<std::string, Values> fila_a_escribir;
       Values valor_tmp;
-      // Ahora iteraremos hasta que esteé vacía la fila a escribir
-      bool aux_bool = true;
-      while(!it.is_eof()){
+
+      // Primero de todo, leemos las filas a leer:
+      //uint32_t n_filas = 0;
+      in.read(reinterpret_cast<char*>(&n_filas), sizeof(uint32_t));
+
+      // Ahora iteramos por otodas las filas:
+      for(int i = 0; i<n_filas; i++){
+         for(int j = 0; i<n_cols; j++){
+            // Usamos una función auxliar para leer los datos según su tipo:
+            valor_tmp = disk_io::read_aux_val(tipos_datos[j], in);
+            // Hemos recuperado el valor j de la fila i
+            // Aho0ra rellenamos el vector correspondiente:
+            if(columnas.empty()){
+               columnas[col_names[i]].push_back(valor_tmp);
+            }else{
+               columnas.at(col_names[i]).push_back(valor_tmp);
+            };
+         };
+      };
+
+
+
+      /*while(!it.is_eof()){
          // Ahora iteramos por cada columna:
          for(int i = 0; i<n_cols; i++){
             // Ahra vamos actualizando las entradas una a una del std::map de datos:
@@ -242,7 +283,8 @@
                columas[col_names][i] = 
             };
          };
-      };
+      };*/
+
       in.close();
     };
 

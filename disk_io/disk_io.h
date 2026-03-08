@@ -30,9 +30,13 @@ namespace disk_io {
     // FUNCIÓN DE ESCRITURA:
     uint32_t write_table_metadata(table* tabla);
 
+    void write_aux_val(Values value, dataType tipo_dato, std::ofstream& out);
+
     void write_table_data(table* tabla, uint32_t n_rows);
 
     void write_table_data_viejo(table* tabla, uint32_t n_rows);
+
+    Values read_aux_val(dataType tipo_dato, std::ifstream& in);
 
     void read_table_data(table* tabla);
 
