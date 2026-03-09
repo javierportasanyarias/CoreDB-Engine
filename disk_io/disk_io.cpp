@@ -96,35 +96,47 @@
       switch(tipo_dato){
 
          case dataType::INT: {
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es entero");
             int buffer;
             buffer = std::get<int>(value);
+            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             out.write(reinterpret_cast<char*>(&buffer), sizeof(int));
+            break;
          };
          case dataType::FLOAT: {
-            int buffer;
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es float");
+            float buffer;
             buffer = std::get<float>(value);
+            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             out.write(reinterpret_cast<char*>(&buffer), sizeof(float));
+            break;
          };
          case dataType::BOOL: {
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es booleano");
             bool buffer_bool;
             uint8_t buffer_int8;
             buffer_bool = std::get<bool>(value);
+            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             if(buffer_bool){
                buffer_int8 = 1;
             }else{
                buffer_int8 = 0;
             };
             out.write(reinterpret_cast<char*>(&buffer_int8), sizeof(uint8_t));
+            break;
          };
          case dataType::STRING: {
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es una cadena de texto");
             std::string buffer;
             uint32_t string_size;
             buffer = std::get<std::string>(value);
+            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             string_size = buffer.size();
             // Primero escribimos el tamaño de la string:
             out.write(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
             // Ahora ya si escribimos la cadena de texto:
             out.write(reinterpret_cast<char*>(buffer.data()), string_size);
+            break;
          };
 
       };
@@ -166,8 +178,16 @@
       bool aux_bool = true;
       while(!it.is_eof()){
          fila_a_escribir = it.get_next_row_ram_viva();
+         Logger::log(LogLevel::DEBUG, "Ya hemos leido la fila desde el iterador ");
+         Logger::flush();
          // Ahora iteramos por cada columna:
          for(int i = 0; i<n_cols; i++){
+            Logger::log(LogLevel::DEBUG, "//////////////////////////////////////////////////////", false, true);
+            Logger::log(LogLevel::DEBUG, "Insertamos el valor de la columna: ", false, true);
+            Logger::log(LogLevel::DEBUG, columnas_nombre[i], true, false);
+            //Logger::log(LogLevel::DEBUG, "Tipo de dato: ", false, true);
+            //Logger::log(LogLevel::DEBUG, tipos_datos[i], true, false);
+            Logger::flush();
             // valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
             valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
             disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
@@ -191,18 +211,25 @@
       switch(tipo_dato){
 
          case dataType::INT: {
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es entero");
             int buffer;
             //buffer = std::get<int>(value);
             in.read(reinterpret_cast<char*>(&buffer), sizeof(int));
             value = buffer;
+            Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
+            break;
          };
          case dataType::FLOAT: {
-            int buffer;
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es float");
+            float buffer;
             //buffer = std::get<float>(value);
             in.read(reinterpret_cast<char*>(&buffer), sizeof(float));
             value = buffer;
+            Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
+            break;
          };
          case dataType::BOOL: {
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es bool");
             bool buffer_bool;
             uint8_t buffer_int8;
             //buffer_bool = std::get<bool>(value);
@@ -213,8 +240,11 @@
                buffer_bool = false;
             };
             value = buffer_bool;
+            Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
+            break;
          };
          case dataType::STRING: {
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es una cadena de texto");
             std::string buffer;
             uint32_t string_size;
             //buffer = std::get<std::string>(value);
@@ -223,6 +253,8 @@
             // Ahora ya si escribimos la cadena de texto:
             in.read(reinterpret_cast<char*>(buffer.data()), string_size);
             value = buffer;
+            Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
+            break;
          };
       };
 
@@ -257,7 +289,8 @@
       // Primero de todo, leemos las filas a leer:
       //uint32_t n_filas = 0;
       in.read(reinterpret_cast<char*>(&n_filas), sizeof(uint32_t));
-
+      Logger::log(LogLevel::DEBUG, "Comenzamos por las filas y las columnas para leer la tabla");
+      Logger::flush();
       // Ahora iteramos por otodas las filas:
       for(int i = 0; i<n_filas; i++){
          for(int j = 0; i<n_cols; j++){

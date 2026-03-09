@@ -191,12 +191,6 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
    } else {
       Logger::log(LogLevel::DEBUG, "false", true, false);
    };
-   Logger::log(LogLevel::DEBUG, "Hemos leido con exito los datos en disco");
-   if(Logger::level == LogLevel::OUTPUT){
-      Logger::flush(false);
-   } else {
-      Logger::flush();
-   };
 };
 
 // Para consultar eof:
@@ -232,11 +226,17 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram::get_next_r
          } else {
             Logger::flush();
          };
-         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[n_f_total];
+         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[contador];
+         Logger::log(LogLevel::DEBUG, "Valor recuperado de la tabla en RAM viva");
+         if(Logger::level == LogLevel::OUTPUT){
+            Logger::flush(false);
+         } else {
+            Logger::flush();
+         };
       }; 
    };
    contador += 1;
-   if(contador >= (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram)){
+   if(contador >= (tabla_ptr->metadata_ptr->n_filas_ram)){
       this-> eof = true;
    };
    return map_fila_retornar;
