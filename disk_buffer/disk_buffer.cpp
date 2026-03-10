@@ -106,6 +106,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
    Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
    Logger::log(LogLevel::DEBUG, "N filas RAM: ", false, true);
    Logger::log(LogLevel::DEBUG, n_f_ram, true, false);
+   //std::map<std::string, std::vector<Values>> columnas = tabla_ptr->data_buffer_ptr->columns;
    if(Logger::level == LogLevel::OUTPUT){
       Logger::flush(false);
    } else {
@@ -123,7 +124,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
          } else {
             Logger::flush();
          };
-         if(tabla_ptr->data_buffer_ptr->columns.contains(nombre_col)){
+         if(this->tabla_ptr->data_buffer_ptr->columns.find(nombre_col) != this->tabla_ptr->data_buffer_ptr->columns.end()){
             Logger::log(LogLevel::DEBUG, "SI existe: ", false, true);
             Logger::log(LogLevel::DEBUG, nombre_col, false, false);
             Logger::log(LogLevel::DEBUG, " en 'tabla_ptr->data_buffer_ptr->columns'", true, false);
@@ -132,7 +133,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
             Logger::log(LogLevel::DEBUG, nombre_col, false, false);
             Logger::log(LogLevel::DEBUG, " en 'tabla_ptr->data_buffer_ptr->columns'", true, false); 
          };
-         map_fila_retornar[nombre_col] = tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
+         map_fila_retornar[nombre_col] = this->tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
       } else if(contador < n_f_total) {
          uint32_t indice_relativo_ram = contador - n_f_disk;
          // Leemos desde la RAM viva:
