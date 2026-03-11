@@ -40,7 +40,7 @@ struct table_data {
 
 struct table_data_buffer {
 
-        std::map<std::string, std::vector<Values>> columns;
+   std::map<std::string, std::vector<Values>> columns;
 };
 
 struct table {

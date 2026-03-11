@@ -63,7 +63,8 @@ void Logger::log(LogLevel msgLevel,
 };
 
 // Sobrecarga para el std::variant de Values:
-void Logger::log(LogLevel msgLevel,                                                          std::variant<int, float, bool, std::string>  msg,
+void Logger::log(LogLevel msgLevel,                                                          
+                 std::variant<int, float, bool, std::string>  msg,
                  bool flush_bool,
                  bool flag)
 {

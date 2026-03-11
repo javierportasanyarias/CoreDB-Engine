@@ -45,6 +45,14 @@
       Logger::flush();
 
       // Escribimos el numero de filas:
+      /*
+         SÓLO tiene sentido registrar el número de filas qu habrá en disco, 
+         osea las totales cuando se lea desde cero. Por lo que:
+         * Recuperamos las filas en RAM
+         * Recuperamos las filas en disco
+         * Sumamos el número de ambas filas
+         * Escribimos sólo la suma
+      */
       std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
       if(!columnas.empty()){
          Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA NO SON NULOS");
@@ -53,7 +61,27 @@
          std::vector<Values> col_datos = columnas.at(column_name);
          Logger::log(LogLevel::DEBUG, " Hemos hallado la variable temporal 'col_datos'");
          uint32_t n_rows = col_datos.size();
-         out.write(reinterpret_cast<char*>(&n_rows), sizeof(uint32_t));
+         uint32_t n_rows_total = n_rows;
+         uint32_t n_rows_disk = 0;
+         // Escribimos las filas en RAM:
+         if(tabla->data_buffer_ptr){
+            std::map<std::string, std::vector<Values>>& columnas_disco = tabla->data_buffer_ptr->columns;
+            if(!columnas_disco.empty()){
+               n_rows_disk = columnas_disco.at(column_name).size();
+            };
+            //n_rows_disk = tabla->data_buffer_ptr->columns.size();
+            n_rows_total += n_rows_disk;
+         };
+         Logger::log(LogLevel::OUTPUT, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+         Logger::log(LogLevel::OUTPUT, "Escritura de los metadatos");
+         Logger::log(LogLevel::OUTPUT, "Escribimos el total de filas: ", false, true);
+         Logger::log(LogLevel::OUTPUT, n_rows_total, true, false);
+         Logger::log(LogLevel::OUTPUT, "filas en RAM: ", false, true);
+         Logger::log(LogLevel::OUTPUT, n_rows, false, false);
+         Logger::log(LogLevel::OUTPUT, " filas en disco: ", false, false);
+         Logger::log(LogLevel::OUTPUT, n_rows_disk, true, false);
+         Logger::log(LogLevel::OUTPUT, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+         out.write(reinterpret_cast<char*>(&n_rows_total), sizeof(uint32_t));
          Logger::log(LogLevel::DEBUG, "*********** EMPEZAMOS LA ESCRITURA DE LOS METADATOS ****************");
          Logger::flush();
          for(uint32_t i=0; i<num_cols; i++){
@@ -156,17 +184,17 @@
       // Ahora vemos si el archivo esta abierto o no:
       if(!out.is_open()){
          Logger::log(LogLevel::DEBUG, "El archivo no existía. Lo escribimos de cero");
-	 // Lo escribimos solo como out:
-	 out.clear();
-	 out.open(ruta_tabla, std::ios::out | std::ios::binary);
+	      // Lo escribimos solo como out:
+         out.clear();
+         out.open(ruta_tabla, std::ios::out | std::ios::binary);
       } else {
-	 Logger::log(LogLevel::DEBUG, "El archivo existe");
+	      Logger::log(LogLevel::DEBUG, "El archivo existe");
          out.seekp(0, std::ios::beg);
       };
 
       if (!out) {
-        Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
-        return;
+         Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
+         return;
       };
 
       table_metadata* metadata = tabla->metadata_ptr;
@@ -185,15 +213,22 @@
       uint32_t n_f_ram = tabla->metadata_ptr->n_filas_ram;
 
       uint32_t n_filas_total = n_f_disk + n_f_ram;
+      Logger::log(LogLevel::OUTPUT, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+      Logger::log(LogLevel::OUTPUT, "FILAS QUE SE ESCRIBEN EN DISCO:");
+      Logger::log(LogLevel::OUTPUT, "Filas en RAM: ", false, true);
+      Logger::log(LogLevel::OUTPUT, n_f_ram, true, false);
+      Logger::log(LogLevel::OUTPUT, "Filas en Disco: ", false, true);
+      Logger::log(LogLevel::OUTPUT, n_f_disk, true, false);
+      Logger::log(LogLevel::OUTPUT, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+      out.seekp(0);
       out.write(reinterpret_cast<char*>(&n_filas_total), sizeof(uint32_t));
 
       // Ahora nos movemos al final para poder escribir sólo al final
       out.flush();
       out.clear();
-      out.seekp(0, std::fstream::end);
+      out.seekp(0, std::ios::end);
 
       // Ahora iteraremos hasta que esteé vacía la fila a escribir
-      bool aux_bool = true;
       while(!it.is_eof()){
          fila_a_escribir = it.get_next_row_ram_viva();
          Logger::log(LogLevel::DEBUG, "Ya hemos leido la fila desde el iterador ");
@@ -229,7 +264,7 @@
       switch(tipo_dato){
 
          case dataType::INT: {
-            //Logger::log(LogLevel::DEBUG, "El tipo de valor es entero");
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es entero");
             int buffer;
             //buffer = std::get<int>(value);
             in.read(reinterpret_cast<char*>(&buffer), sizeof(int));
@@ -238,7 +273,7 @@
             break;
          };
          case dataType::FLOAT: {
-            //Logger::log(LogLevel::DEBUG, "El tipo de valor es float");
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es float");
             float buffer;
             //buffer = std::get<float>(value);
             in.read(reinterpret_cast<char*>(&buffer), sizeof(float));
@@ -247,7 +282,7 @@
             break;
          };
          case dataType::BOOL: {
-            //Logger::log(LogLevel::DEBUG, "El tipo de valor es bool");
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es bool");
             bool buffer_bool;
             uint8_t buffer_int8;
             //buffer_bool = std::get<bool>(value);
@@ -262,19 +297,26 @@
             break;
          };
          case dataType::STRING: {
-            //Logger::log(LogLevel::DEBUG, "El tipo de valor es una cadena de texto");
+            Logger::log(LogLevel::DEBUG, "El tipo de valor es una cadena de texto");
             std::string buffer;
             uint32_t string_size;
             //buffer = std::get<std::string>(value);
             // Primero escribimos el tamaño de la string:
             in.read(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
+            // Ajustamos el tamaño de la cadena de texto donde escribiremos:
+            buffer.resize(string_size);   // ← reservar memoria
             // Ahora ya si escribimos la cadena de texto:
-            in.read(reinterpret_cast<char*>(buffer.data()), string_size);
+            in.read(buffer.data(), string_size);
+            /* No es necesario 'reinterpret_cast<char*>' porque data()
+            de una std::string ya es un puntero a un caracter de texto
+            */
             value = buffer;
             //Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
             break;
          };
       };
+      Logger::log(LogLevel::DEBUG, "Dato leído :", false, true);
+      Logger::log(LogLevel::DEBUG, value, true, false);
 
       return value;
    };
@@ -321,13 +363,13 @@
       for(int i = 0; i<n_filas; i++){
          for(int j = 0; j<n_cols; j++){
             // Usamos una función auxliar para leer los datos según su tipo:
-	    Logger::log(LogLevel::DEBUG, "fila: ", false, true);
-	    Logger::log(LogLevel::DEBUG, i, false, false);
-	    Logger::log(LogLevel::DEBUG, " columna: ", false, false);
-	    Logger::log(LogLevel::DEBUG, j, true, false);
+            Logger::log(LogLevel::DEBUG, "fila: ", false, true);
+            Logger::log(LogLevel::DEBUG, i, false, false);
+            Logger::log(LogLevel::DEBUG, " columna: ", false, false);
+            Logger::log(LogLevel::DEBUG, j, true, false);
             valor_tmp = disk_io::read_aux_val(tipos_datos[j], in);
-	    Logger::log(LogLevel::DEBUG, "Valor recuperado");
-	    Logger::flush(false);
+            Logger::log(LogLevel::DEBUG, "Valor recuperado");
+            Logger::flush(false);
             // Hemos recuperado el valor j de la fila i
             // Aho0ra rellenamos el vector correspondiente:
             if(columnas.find(col_names[j]) == columnas.end()){
@@ -335,8 +377,8 @@
             }else{
                columnas.at(col_names[j]).push_back(valor_tmp);
             };
-	    Logger::log(LogLevel::DEBUG, "Valor insertado");
-	    Logger::flush();
+            Logger::log(LogLevel::DEBUG, "Valor insertado");
+            Logger::flush();
          };
       };
 
