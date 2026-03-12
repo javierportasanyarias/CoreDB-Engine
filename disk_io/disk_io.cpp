@@ -19,7 +19,6 @@
    //========================================================
    uint32_t disk_io::write_table_metadata(table* tabla){
       if (!tabla) return 0;
-      Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table_metadata': ");
       std::string nombre_tabla = tabla->metadata_ptr->name;
       std::string ruta_tabla = "data/" + nombre_tabla + "_meta.bin";
 
@@ -31,18 +30,11 @@
       // -- Escribimos el nombre -----------------------------------------
       uint32_t size_nombre = nombre_tabla.size();
       out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
-      Logger::log(LogLevel::DEBUG, "VALOR DE size_nombre ESCRITO: " + std::to_string(size_nombre));
-      Logger::flush();
       out.write(nombre_tabla.data(), size_nombre);
-      Logger::log(LogLevel::DEBUG, "VALOR DE nombre_tabla ESCRITA: " + nombre_tabla);
-      Logger::flush();
 
       // -- Escribimos el número de columnas -----------------------------
       uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
       out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
-      Logger::log(LogLevel::DEBUG, "Se han escrito el numero de columnas: ", false, true);
-      Logger::log(LogLevel::DEBUG, num_cols, true, false);
-      Logger::flush();
 
       // Escribimos el numero de filas:
       /*
@@ -55,11 +47,8 @@
       */
       std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
       if(!columnas.empty()){
-         Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA NO SON NULOS");
          std::string column_name = (tabla->metadata_ptr->column_names)[0];
-         Logger::log(LogLevel::DEBUG, " Hemos hallado el nombre de la primera columna");
          std::vector<Values> col_datos = columnas.at(column_name);
-         Logger::log(LogLevel::DEBUG, " Hemos hallado la variable temporal 'col_datos'");
          uint32_t n_rows = col_datos.size();
          uint32_t n_rows_total = n_rows;
          uint32_t n_rows_disk = 0;
@@ -82,12 +71,8 @@
          Logger::log(LogLevel::OUTPUT, n_rows_disk, true, false);
          Logger::log(LogLevel::OUTPUT, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
          out.write(reinterpret_cast<char*>(&n_rows_total), sizeof(uint32_t));
-         Logger::log(LogLevel::DEBUG, "*********** EMPEZAMOS LA ESCRITURA DE LOS METADATOS ****************");
-         Logger::flush();
          for(uint32_t i=0; i<num_cols; i++){
             // -- Escribimos los datos de cada columna ---------------------
-            Logger::log(LogLevel::DEBUG, "ITERACION: ", false, true);                                                                           Logger::log(LogLevel::DEBUG, i, false, false);                    Logger::log(LogLevel::DEBUG, " de escritura metadatos", true, false);
-            Logger::flush();
             // -- Escribimos el nombre:
             std::string column_name = (tabla->metadata_ptr->column_names)[i];
             uint32_t size_column_name = column_name.size();
@@ -102,15 +87,9 @@
             uint8_t key_val = column_is_key ? 1 : 0;
             out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
          };
-         Logger::log(LogLevel::DEBUG, "*********** ESCRITURA DE LOS METADATOS TERMINADA ****************");
-         Logger::flush();
-         Logger::log(LogLevel::DEBUG, "HACEMOS FLUSH DE LOS DATOS AL ESCRIBIR");
-         Logger::flush();
          out.flush();
          out.close();
          return n_rows;
-      } else{
-         Logger::log(LogLevel::DEBUG, "LOS DATOS EN RAM VIVA SI SON NULOS");
       };
          out.close();
          return 0;
@@ -124,27 +103,21 @@
       switch(tipo_dato){
 
          case dataType::INT: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es entero");
             int buffer;
             buffer = std::get<int>(value);
-            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             out.write(reinterpret_cast<char*>(&buffer), sizeof(int));
             break;
          };
          case dataType::FLOAT: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es float");
             float buffer;
             buffer = std::get<float>(value);
-            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             out.write(reinterpret_cast<char*>(&buffer), sizeof(float));
             break;
          };
          case dataType::BOOL: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es booleano");
             bool buffer_bool;
             uint8_t buffer_int8;
             buffer_bool = std::get<bool>(value);
-            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             if(buffer_bool){
                buffer_int8 = 1;
             }else{
@@ -154,11 +127,9 @@
             break;
          };
          case dataType::STRING: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es una cadena de texto");
             std::string buffer;
             uint32_t string_size;
             buffer = std::get<std::string>(value);
-            Logger::log(LogLevel::DEBUG, "Dato recuperado en el buffer");
             string_size = buffer.size();
             // Primero escribimos el tamaño de la string:
             out.write(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
@@ -174,7 +145,6 @@
    void disk_io::write_table_data(table* tabla, uint32_t n_rows){
 
 	   if (!tabla) return;
-      Logger::log(LogLevel::DEBUG, "DENTRO DE 'write_table_data': ");
       std::string nombre_tabla = tabla->metadata_ptr->name;
 	   std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
 
@@ -183,12 +153,10 @@
 
       // Ahora vemos si el archivo esta abierto o no:
       if(!out.is_open()){
-         Logger::log(LogLevel::DEBUG, "El archivo no existía. Lo escribimos de cero");
 	      // Lo escribimos solo como out:
          out.clear();
          out.open(ruta_tabla, std::ios::out | std::ios::binary);
       } else {
-	      Logger::log(LogLevel::DEBUG, "El archivo existe");
          out.seekp(0, std::ios::beg);
       };
 
@@ -231,16 +199,8 @@
       // Ahora iteraremos hasta que esteé vacía la fila a escribir
       while(!it.is_eof()){
          fila_a_escribir = it.get_next_row_ram_viva();
-         Logger::log(LogLevel::DEBUG, "Ya hemos leido la fila desde el iterador ");
-         Logger::flush();
          // Ahora iteramos por cada columna:
          for(int i = 0; i<n_cols; i++){
-            Logger::log(LogLevel::DEBUG, "//////////////////////////////////////////////////////", false, true);
-            Logger::log(LogLevel::DEBUG, "Insertamos el valor de la columna: ", false, true);
-            Logger::log(LogLevel::DEBUG, columnas_nombre[i], true, false);
-            //Logger::log(LogLevel::DEBUG, "Tipo de dato: ", false, true);
-            //Logger::log(LogLevel::DEBUG, tipos_datos[i], true, false);
-            Logger::flush();
             // valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
             valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
             disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
@@ -264,28 +224,20 @@
       switch(tipo_dato){
 
          case dataType::INT: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es entero");
             int buffer;
-            //buffer = std::get<int>(value);
             in.read(reinterpret_cast<char*>(&buffer), sizeof(int));
             value = buffer;
-            //Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
             break;
          };
          case dataType::FLOAT: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es float");
             float buffer;
-            //buffer = std::get<float>(value);
             in.read(reinterpret_cast<char*>(&buffer), sizeof(float));
             value = buffer;
-            //Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
             break;
          };
          case dataType::BOOL: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es bool");
             bool buffer_bool;
             uint8_t buffer_int8;
-            //buffer_bool = std::get<bool>(value);
             in.read(reinterpret_cast<char*>(&buffer_int8), sizeof(uint8_t));
             if(buffer_int8==1){
                buffer_bool = true;
@@ -293,14 +245,11 @@
                buffer_bool = false;
             };
             value = buffer_bool;
-            //Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
             break;
          };
          case dataType::STRING: {
-            Logger::log(LogLevel::DEBUG, "El tipo de valor es una cadena de texto");
             std::string buffer;
             uint32_t string_size;
-            //buffer = std::get<std::string>(value);
             // Primero escribimos el tamaño de la string:
             in.read(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
             // Ajustamos el tamaño de la cadena de texto donde escribiremos:
@@ -311,25 +260,22 @@
             de una std::string ya es un puntero a un caracter de texto
             */
             value = buffer;
-            //Logger::log(LogLevel::DEBUG, "Dato leído al buffer");
             break;
          };
       };
-      Logger::log(LogLevel::DEBUG, "Dato leído :", false, true);
-      Logger::log(LogLevel::DEBUG, value, true, false);
-
       return value;
    };
 
    
    void disk_io::read_table_data(table*& tabla){
-      Logger::log(LogLevel::DEBUG, "ENTRAMOS A LA FUNCION DE LECTURA DE SOLO LOS DATOS");
       std::string nombre_tabla = tabla->metadata_ptr->name;
       std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
-      Logger::log(LogLevel::DEBUG, "Vamos a leer la ruta: "+ ruta_tabla);
       std::ifstream in(ruta_tabla, std::ios::binary);
-      Logger::log(LogLevel::DEBUG, "Abrimos la lectura de la tabla: "+ nombre_tabla);
-      Logger::flush();
+      if(Logger::level == LogLevel::DEBUG){
+         Logger::flush();
+      }else{
+         Logger::flush(false);
+      };
       
       // Obtenemos los datos necesarios para la lectura:
       table_metadata* metadata = tabla->metadata_ptr;
@@ -339,10 +285,6 @@
       uint32_t n_filas;
 
       // Donde guardaremos los datos:
-      if(!tabla->data_buffer_ptr){
-         Logger::log(LogLevel::DEBUG, "EL PUNTERO A LOS DATOS RAM DEL DISCO ES NULO");
-      };
-      Logger::flush();
       std::map<std::string, std::vector<Values>>& columnas = tabla->data_buffer_ptr->columns;
 
       // Creamos el objeto de iteració para 
@@ -353,23 +295,11 @@
       // Primero de todo, leemos las filas a leer:
       //uint32_t n_filas = 0;
       in.read(reinterpret_cast<char*>(&n_filas), sizeof(uint32_t));
-      Logger::log(LogLevel::DEBUG, "Numero de filas: ", false, true);
-      Logger::log(LogLevel::DEBUG, n_filas, true, false);
-      Logger::log(LogLevel::DEBUG, "Numero de columnas: ", false, true);
-      Logger::log(LogLevel::DEBUG, n_cols, true, false);
-      Logger::log(LogLevel::DEBUG, "Comenzamos por las filas y las columnas para leer la tabla");
-      Logger::flush();
       // Ahora iteramos por otodas las filas:
       for(int i = 0; i<n_filas; i++){
          for(int j = 0; j<n_cols; j++){
             // Usamos una función auxliar para leer los datos según su tipo:
-            Logger::log(LogLevel::DEBUG, "fila: ", false, true);
-            Logger::log(LogLevel::DEBUG, i, false, false);
-            Logger::log(LogLevel::DEBUG, " columna: ", false, false);
-            Logger::log(LogLevel::DEBUG, j, true, false);
             valor_tmp = disk_io::read_aux_val(tipos_datos[j], in);
-            Logger::log(LogLevel::DEBUG, "Valor recuperado");
-            Logger::flush(false);
             // Hemos recuperado el valor j de la fila i
             // Aho0ra rellenamos el vector correspondiente:
             if(columnas.find(col_names[j]) == columnas.end()){
@@ -377,8 +307,6 @@
             }else{
                columnas.at(col_names[j]).push_back(valor_tmp);
             };
-            Logger::log(LogLevel::DEBUG, "Valor insertado");
-            Logger::flush();
          };
       };
 
@@ -389,48 +317,21 @@
 
     void disk_io::read_table_metadata(std::filesystem::path ruta_tabla, std::string nombre_tabla_str){
        std::string tabla_nombre = ruta_tabla.stem().string();
-       Logger::log(LogLevel::DEBUG, "LEEMOS LOS METADATOS DE LA TABLA: ", false, true);
-       Logger::log(LogLevel::DEBUG, tabla_nombre, true, false);
-       Logger::flush();
        std::string ruta_tabla_str = ruta_tabla.string();
-       Logger::log(LogLevel::DEBUG, "Ruta de la tabla a leer meta: " + ruta_tabla_str);
-       if (global_table_dict.find(nombre_tabla_str) == global_table_dict.end()) {
-         Logger::log(LogLevel::ERROR, "ERROR: La tabla " + nombre_tabla_str + " no está en el diccionario global.");
-       } else {
-         Logger::log(LogLevel::DEBUG, "La tabla " + nombre_tabla_str + " SI EXISTE en el diccionario");
-       };
+
        table_metadata* metadatos_puntero = global_table_dict.at(nombre_tabla_str)->metadata_ptr;
-       if(metadatos_puntero){
-          Logger::log(LogLevel::DEBUG, "El puntero a metadatos NO es nulo");
-       };
-       Logger::flush();
 
        // COMIENZA LA LECTURA:
        std::ifstream in(ruta_tabla_str, std::ios::binary);
-       /*
-       if (!in.is_open()) {
-          Logger::log(LogLevel::ERROR, "!!! NO SE PUDO ABRIR EL ARCHIVO PARA LEER: " + ruta_tabla_str);
-	  return;
-       };
-       */
-       Logger::log(LogLevel::DEBUG, "La lectura de los metadatos ha sido sbierta");
-       Logger::flush();
+
        // Leemos el tamaño del nombre:
        uint32_t size_nombre = 0;
        in.read(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
-       Logger::log(LogLevel::DEBUG, "Se ha leido el size del nombre");
-       Logger::log(LogLevel::DEBUG, "VALOR DE size_nombre LEIDO: " + std::to_string(size_nombre));
-       Logger::flush();
+
        // Leemos el nombre:
        std::string nombre_tabla(size_nombre, '\0');
        in.read(&nombre_tabla[0], size_nombre);
-       Logger::log(LogLevel::DEBUG, "Se ha leido el nombre de la tsbla");
        metadatos_puntero->name = nombre_tabla;
-       Logger::log(LogLevel::DEBUG, " Nombre de la tabla: ", false, true);
-       Logger::log(LogLevel::DEBUG, nombre_tabla, true, false);
-       Logger::flush();
-       Logger::log(LogLevel::DEBUG, "Se ha registrado el nombre de la tabla");
-       Logger::flush();
 
        // Leemos el numero de columnas:
        uint32_t num_cols_lectura = 0;
@@ -441,16 +342,12 @@
        uint32_t num_filas_disco_lectura = 0;
        in.read(reinterpret_cast<char*>(&num_filas_disco_lectura), sizeof(uint32_t));
        metadatos_puntero->n_filas_disco = num_filas_disco_lectura;
-       //Logger::log(LogLevel::DEBUG, "LECTURA PRUEBA METADATOS TERMINADA");
-       //Logger::flush();
-       //return;
 
        // Ahora iteramos poe cada columna, añadiendo metadatos de cada una:
        for(uint32_t i=0; i<num_cols_lectura; i++){
           // Leemos el nombre de la columna:
-	  uint32_t size_column_name;
-          in.read(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t
-));
+	      uint32_t size_column_name;
+          in.read(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
 	  std::string columna_nombre_leido(size_column_name, '\0');
 	  in.read(&columna_nombre_leido[0], size_column_name);
 	  metadatos_puntero->column_names.push_back(columna_nombre_leido);
@@ -477,8 +374,12 @@
 
        };
        Logger::log(LogLevel::ERROR, "Metadatos leidos con exito");
-       Logger::flush();
-       in.close();
+      if(Logger::level == LogLevel::DEBUG){
+         Logger::flush();
+      }else{
+         Logger::flush(false);
+      };
+      in.close();
 
    };
 
@@ -520,15 +421,14 @@
 
     };
 
-    void disk_io::mostrar_tablas_disco(std::vector<std::filesystem::path>& arr_tablas){
+    /*void disk_io::mostrar_tablas_disco(std::vector<std::filesystem::path>& arr_tablas){
 
-       Logger::log(LogLevel::DEBUG, "Mostramos las tablas en disco:");
        for(int i = 0; i<arr_tablas.size(); i++){
-          Logger::log(LogLevel::DEBUG, "   Tabla: ", false, true);
-	  Logger::log(LogLevel::DEBUG, arr_tablas[i].stem().string(), true, false);
-       };
-       Logger::flush();
-    };
+         Logger::log(LogLevel::DEBUG, "   Tabla: ", false, true);
+	      Logger::log(LogLevel::DEBUG, arr_tablas[i].stem().string(), true, false);
+      };
+      Logger::flush();
+    };*/
 
    void disk_io::lectura_metadatos_todas_tablas(){
     
@@ -559,17 +459,14 @@
 
 
    void disk_io::write_dump(){
-      Logger::log(LogLevel::DEBUG, "--- INICIO DIAGNÓSTICO DE DICCIONARIO ---");
-    Logger::log(LogLevel::DEBUG, "Total de entradas en global_table_dict: " + std::to_string(global_table_dict.size()));
 
       // Primero vemos si el diccionario esta vacio o no:
       if(global_table_dict.empty()){
-         Logger::log(LogLevel::DEBUG, "No escribiremos nada, el diccionario esta vacio");
+         // El diccionario esta vacio, salimos
+         return;
       }else{
          //El diccionario tiene contenido:
 	      for (const auto& [table_name, table_ptr] : global_table_dict){
-            std::string info_clave = "Clave encontrada: [" + table_name + "] | Longitud: " + std::to_string(table_name.length());
-            Logger::log(LogLevel::DEBUG, info_clave);
             int32_t n_rows;
             // Solo enviamos a escribir si la tabla existe:
             if (table_ptr != nullptr){
@@ -577,7 +474,6 @@
                if(table_ptr->data_ptr){
                   if(!table_ptr->data_ptr->columns.empty()){
 
-                     Logger::log(LogLevel::DEBUG, "ESCRIBIMOS LA TABLA: " + table_name);
                      // Primero escribimos los metadatos:
                      uint32_t n_rows = 0;
 
@@ -662,7 +558,11 @@ void disk_io::debug_print_metadatos_memoria() {
         }
     }
     Logger::log(LogLevel::DEBUG, "==============================================");
-    Logger::flush();
+    if(Logger::level == LogLevel::DEBUG){
+      Logger::flush();
+    }else{
+      Logger::flush(false);
+    };
 };
 
 

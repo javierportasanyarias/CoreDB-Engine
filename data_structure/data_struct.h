@@ -32,14 +32,12 @@ struct table_metadata {
 };
 
 using Values = std::variant<int, float, bool, std::string>;
-struct table_data {
 
-   //std::unordered_map<std::string, std::vector<Values>> columns;
+struct table_data {
 	std::map<std::string, std::vector<Values>> columns;
 };
 
 struct table_data_buffer {
-
    std::map<std::string, std::vector<Values>> columns;
 };
 
@@ -51,7 +49,5 @@ struct table {
 
    table(): metadata_ptr(nullptr), data_ptr(nullptr), data_buffer_ptr(nullptr){};
 };
-
-
 
 #endif

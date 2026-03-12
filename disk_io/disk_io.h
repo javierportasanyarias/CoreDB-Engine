@@ -59,7 +59,6 @@ namespace disk_io {
 
     // FUNCIÓN DE ESCRITURA DE TODAS LAS TABLAS:
 
-
    void write_dump();
 
    void debug_print_metadatos_memoria();
