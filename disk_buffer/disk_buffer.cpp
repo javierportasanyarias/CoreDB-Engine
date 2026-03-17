@@ -3,11 +3,10 @@
 #include "logging.h"
 #include "disk_buffer.h"
 
-// namespace disk_buffer {
 
-   // ==========================================
-   // == FUNCIONES AUXILIARES: CONTEO FILAS ====
-   // ==========================================
+// ==========================================
+// == FUNCIONES AUXILIARES: CONTEO FILAS ====
+// ==========================================
 
 void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
    table* table_ptr = global_table_dict.at(nombre_tabla);
@@ -26,7 +25,7 @@ void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
    } else {
          table_ptr->metadata_ptr->n_filas_ram = 0;
    };
-   //Logger::flush();
+
 };
 
 
@@ -42,9 +41,9 @@ void disk_buffer::contar_datos_en_ram_todas_tablas(){
 
 };
 
-   // ==========================================
-   // == FUNCION PRINCIPAL: ITERADOR FILAS =====
-   // ==========================================
+// ==========================================
+// == FUNCION PRINCIPAL: ITERADOR FILAS =====
+// ==========================================
 
 
 // Metodo constructor
@@ -103,9 +102,9 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
 }; // Termina el metodo 'get_next_row'
    
    
-   //====================================================
-   //== tableRowIterator pero solo para RAM =============
-   //====================================================
+//====================================================
+//== tableRowIterator pero solo para RAM =============
+//====================================================
 
 disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string tabla_nombre){
    contador = 0;

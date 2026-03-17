@@ -12,29 +12,29 @@ namespace textUtils {
    class NodeLista1{
 
       public:
-      std::string val;
-      NodeLista1* nxt_node;
-      NodeLista1(): nxt_node(nullptr), val(""){};
+         std::string val;
+         NodeLista1* nxt_node;
+         NodeLista1(): nxt_node(nullptr), val(""){};
    };
 
    class simpleLinkedList{
 
       public:
-      NodeLista1* head;
-      NodeLista1* tail; // Se podrá elimniar en el futuro ?
+         NodeLista1* head;
+         NodeLista1* tail; // Se podrá elimniar en el futuro ?
 
-      simpleLinkedList(): head(nullptr), tail(nullptr){};
+         simpleLinkedList(): head(nullptr), tail(nullptr){};
 
-      // Añade el destructor
-      ~simpleLinkedList() {
-         clear();
-      };
+         // Añade el destructor
+         ~simpleLinkedList() {
+            clear();
+         };
 
-      void add_node(std::string valor);
+         void add_node(std::string valor);
 
-      void print_list();
+         void print_list();
 
-      void clear();
+         void clear();
    };
 
    std::string borrar_espacios_repetidos(const std::string& input);

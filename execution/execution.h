@@ -13,8 +13,7 @@
 #include "node_for_trees.h"
 
 ///////////////////////////////////////////////////////////////////////
-///
-///
+
 // Tipos de datos admitidos en el esquema:
 dataType transform_str_to_datatype(const std::string& input);
 

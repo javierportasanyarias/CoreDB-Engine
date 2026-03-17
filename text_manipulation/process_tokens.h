@@ -50,6 +50,4 @@ void drop_table(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nom
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista);
 
-
-
 #endif

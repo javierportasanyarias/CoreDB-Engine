@@ -21,7 +21,6 @@ namespace execPlan {
             queueNode1* nxt_node_queue;
             queueNode1* prv_node_queue;
             queueNode1();
-
     };
 
     // en el header
@@ -46,10 +45,7 @@ namespace execPlan {
 
             // Función para eliminar nodos de la cola:
             void delete_current_queue_node(queueNode1* nodo_cola_a_eliminar);
-
-
     };
-
     // Método a parte de la cola para eliminarla:
     void delete_task_queue(Queue* cola);
 };

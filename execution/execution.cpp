@@ -18,18 +18,17 @@
 ///
 // Tipos de datos admitidos en el esquema:
 dataType transform_str_to_datatype(const std::string& input){
-
-      if (input == "INT"){
-         return dataType::INT;
-      } else if(input == "FLOAT"){
-         return dataType::FLOAT;
-      } else if(input == "BOOL"){
-         return dataType::BOOL;
-      } else if(input == "STRING"){
-         return dataType::STRING;
-      } else{
-         return dataType::UNKNOWN;
-      };
+   if (input == "INT"){
+      return dataType::INT;
+   } else if(input == "FLOAT"){
+      return dataType::FLOAT;
+   } else if(input == "BOOL"){
+      return dataType::BOOL;
+   } else if(input == "STRING"){
+      return dataType::STRING;
+   } else{
+      return dataType::UNKNOWN;
+   };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -37,75 +36,73 @@ dataType transform_str_to_datatype(const std::string& input){
 
 
 void fill_table_with_values_v4(NodeType3* nodo_ptr) {
-    // 1. Comprobaciones de seguridad
 
-    auto it = global_table_dict.find(nodo_ptr->nombre_tabla);
-    if (it == global_table_dict.end()) {
-        throw std::runtime_error("No se ha encontrado la tabla en el diccionario global");
-    };
+   // 1. Comprobaciones de seguridad
+   auto it = global_table_dict.find(nodo_ptr->nombre_tabla);
+   if (it == global_table_dict.end()) {
+      throw std::runtime_error("No se ha encontrado la tabla en el diccionario global");
+   };
 
-    table* tb_recup = it->second;
-    if (!tb_recup || !tb_recup->metadata_ptr) {
-        throw std::runtime_error("Error: Puntero de tabla o metadatos nulo");
-    }
-    table_metadata* metadatos = tb_recup->metadata_ptr;
+   table* tb_recup = it->second;
+   if (!tb_recup || !tb_recup->metadata_ptr) {
+      throw std::runtime_error("Error: Puntero de tabla o metadatos nulo");
+   }
+   table_metadata* metadatos = tb_recup->metadata_ptr;
 
-    if (!tb_recup->data_ptr) {
-        tb_recup->data_ptr = new table_data;
-    };
+   if (!tb_recup->data_ptr) {
+      tb_recup->data_ptr = new table_data;
+   };
 
    // Iteramos para recuperar los valores:
    // En el caso de no haber especificsdo cooumnas, las pillamps de los ketadatos:
-    std::vector<std::string> nombres_columnas = nodo_ptr->columnas;
-    size_t len_n_cols = nombres_columnas.size();
-    if(len_n_cols == 0){
-       nombres_columnas = metadatos->column_names;
-       len_n_cols = nombres_columnas.size();
-    };
-    //size_t len_n_cols = nombres_columnas.size();
-    std::vector<std::vector<std::string>> filas = nodo_ptr->filas;
-    size_t num_fila = filas.size();
+   std::vector<std::string> nombres_columnas = nodo_ptr->columnas;
+   size_t len_n_cols = nombres_columnas.size();
+   if(len_n_cols == 0){
+      nombres_columnas = metadatos->column_names;
+      len_n_cols = nombres_columnas.size();
+   };
+   //size_t len_n_cols = nombres_columnas.size();
+   std::vector<std::vector<std::string>> filas = nodo_ptr->filas;
+   size_t num_fila = filas.size();
    for(int i = 0; i<len_n_cols; i++){
       // Ahora iteramos por las filas:
       for(int j = 0; j<num_fila; j++){
-	 // Recuperamos el valor como string:
-	 std::string valor_str = filas[j][i];
-    if(Logger::level == LogLevel::DEBUG){
-      Logger::flush();
-    }else{
-      Logger::flush(false);
-    };
-	 Values valor_variante; // Valor variante
+	      // Recuperamos el valor como string:
+	      std::string valor_str = filas[j][i];
+         if(Logger::level == LogLevel::DEBUG){
+            Logger::flush();
+         }else{
+            Logger::flush(false);
+         };
+	      Values valor_variante; // Valor variante
          // Hacemos la conversion de valor de acuerdo a los metadatos:
-	 dataType tipo_dato= metadatos->column_types[i];
-	 switch(tipo_dato){
-	    case dataType::INT:
-	       valor_variante = std::stoi(valor_str);
-	       break;
-	    case dataType::FLOAT:
-	       valor_variante = std::stof(valor_str);
-	       break;
-	    case dataType::BOOL:
-	       if(valor_str == "true" || valor_str == "True" || valor_str == "TRUE"){
-	          valor_variante = true;
-	       }else if(valor_str == "false" || valor_str == "False" || valor_str == "FALSE"){
-	          valor_variante = false;
-	       };
-	       break;
-	    case dataType::STRING:
-	          valor_variante = valor_str;
-		  break;
-	 };
-	 // Ya tenemos el valor variante, ahora rellenamos los datos de la tabla en la RAM viva:
+         dataType tipo_dato= metadatos->column_types[i];
+         switch(tipo_dato){
+            case dataType::INT:
+               valor_variante = std::stoi(valor_str);
+               break;
+            case dataType::FLOAT:
+               valor_variante = std::stof(valor_str);
+               break;
+            case dataType::BOOL:
+               if(valor_str == "true" || valor_str == "True" || valor_str == "TRUE"){
+                  valor_variante = true;
+               }else if(valor_str == "false" || valor_str == "False" || valor_str == "FALSE"){
+                  valor_variante = false;
+               };
+               break;
+            case dataType::STRING:
+               valor_variante = valor_str;
+               break;
+         };
+         // Ya tenemos el valor variante, ahora rellenamos los datos de la tabla en la RAM viva:
          auto it = tb_recup->data_ptr->columns.find(nombres_columnas[i]);
-	 if(it != tb_recup->data_ptr->columns.end()){
+         if(it != tb_recup->data_ptr->columns.end()){
             it->second.push_back(valor_variante);
-	 }else{
+         }else{
             tb_recup->data_ptr->columns[nombres_columnas[i]].push_back(valor_variante);
-	 };
-
+         };
       };
-
    };
 };
 
@@ -119,7 +116,7 @@ void recursive_metadata_fill_lv2(NodeType2* nodo_ptr, table* tb_created){
    // Rellenamos los datos del campo a tratar:
    auto& metadata = *tb_created->metadata_ptr;
    (metadata.column_names).push_back(std::move(nodo_ptr->name_campo));
-  (metadata.column_types).push_back(transform_str_to_datatype(nodo_ptr->tipo));
+   (metadata.column_types).push_back(transform_str_to_datatype(nodo_ptr->tipo));
    if(nodo_ptr->is_primary){
       (metadata.primary_list).push_back(true);
    };
@@ -158,7 +155,7 @@ void aux_table_values_print(const std::vector<std::string>& col_list, std::strin
    std::map<std::string, Values> fila;
     
 	while(!it.is_eof()){
-           // consultamos la proxima fila:
+      // consultamos la proxima fila:
 	   fila = it.get_next_row();
 	   // Ya tenemos la fila, iteramos por la seleccion de columnas:
 	   Logger::log(LogLevel::OUTPUT, " | ", false, false);
@@ -199,13 +196,10 @@ void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string n
 void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre_tabla){
    // Imprimios los nombres de las columnas:
    for(int  i = 0; i<col_list.size(); i++){
-      //std::cout<<" | "<<col_list[i];
       Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
       Logger::log(LogLevel::OUTPUT, col_list[i], false);
    };
-   //std::cout<<" | "<<std::endl;
    Logger::log(LogLevel::OUTPUT, " | ", true);
-   //Logger::flush();
    // Imprimimos los valores:
    aux_table_values_print(col_list, nombre_tabla);
 };
@@ -214,41 +208,33 @@ void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre
 void imprimir_tabla(QueryNode*& nodo_root, const std::vector<ItemNode>& col_list, std::string nombre_tabla){
    // Imprimios los nombres de las columnas:
        for(int i = 0; i<(nodo_root->nodo_select->items).size(); i++){
-         //std::cout<<" | "<<(nodo_root->nodo_select)->items[i].nombre;
          Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
          Logger::log(LogLevel::OUTPUT, (nodo_root->nodo_select)->items[i].nombre, false);
        };
-       //std::cout<<" | "<<std::endl;
        Logger::log(LogLevel::OUTPUT, " | ", true);
-       //Logger::flush();
    // Imprimimos los valores:
    aux_table_values_print(col_list, nombre_tabla);
 };
 
 void mostrar_tabla_query(QueryNode* nodo_root){
 
-    //Logger::flush();
+   //recuperamos el nombre de la tabla
+   std::string nombre_tabla = nodo_root->nodo_from->nombre;
+   // Antes de nada vemos si es una columna valida:
+   if(!global_table_dict.at(nombre_tabla)){
+      Logger::log(LogLevel::ERROR, "La tabla a consultar no existe");
+      return;
+   };
 
-    //recuperamos el nombre de la tabla
-    std::string nombre_tabla = nodo_root->nodo_from->nombre;
-    // Antes de nada vemos si es una columna valida:
-    if(!global_table_dict.at(nombre_tabla)){
-       Logger::log(LogLevel::ERROR, "La tabla a consultar no existe");
-       return;
-    };
-
-    if (nodo_root->nodo_select == nullptr) {
-       // La lista no existe o está vacía:
-	
-       // Guardamos en memoria valores del diccionario accedidos con regularidad:
-       const std::vector<std::string>& col_list = (global_table_dict.at(nombre_tabla)->metadata_ptr)->column_names;
-       imprimir_tabla(col_list, nombre_tabla);
-    } else {
-
-       //Ahora imprimimos los valores:
-       const std::vector<ItemNode>& col_list = (nodo_root->nodo_select->items);
-
-       imprimir_tabla(nodo_root, col_list, nombre_tabla);
+   if (nodo_root->nodo_select == nullptr) {
+      // La lista no existe o está vacía:
+      // Guardamos en memoria valores del diccionario accedidos con regularidad:
+      const std::vector<std::string>& col_list = (global_table_dict.at(nombre_tabla)->metadata_ptr)->column_names;
+      imprimir_tabla(col_list, nombre_tabla);
+   } else {
+      //Ahora imprimimos los valores:
+      const std::vector<ItemNode>& col_list = (nodo_root->nodo_select->items);
+      imprimir_tabla(nodo_root, col_list, nombre_tabla);
    };
 };
 
@@ -256,68 +242,65 @@ void mostrar_tabla_query(QueryNode* nodo_root){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Eliminación de tablas:
 void liberar_tabla(table*& tb){
-    if (!tb) return;
-    delete tb->metadata_ptr;
-    tb->metadata_ptr = nullptr;
-    delete tb->data_ptr;
-    tb->data_ptr = nullptr;
-    delete tb;
+   if (!tb) return;
+   delete tb->metadata_ptr;
+   tb->metadata_ptr = nullptr;
+   delete tb->data_ptr;
+   tb->data_ptr = nullptr;
+   delete tb;
 };
 
 void drop_table_from_global_dict(DropTableNode*& nodo_ptr){
 
-    auto it = global_table_dict.find(nodo_ptr->nombre_tabla);
-    // Ahora vemos si estq vacio o no:
-    if(it == global_table_dict.end()){
-       // No existe la entrada:
-       //Logger::log(LogLevel::DEBUG, "La tabla ya no existe. No la eliminaremos del diccionario");
-       return;
-    }else{
-       //Logger::log(LogLevel::DEBUG, "La tabla existe. Procedemos a eliminarla");
-       table* tabla = it->second;
-       global_table_dict.erase(nodo_ptr->nombre_tabla);
-       liberar_tabla(tabla);
-       tabla = nullptr;
-    };
-    
+   auto it = global_table_dict.find(nodo_ptr->nombre_tabla);
+   // Ahora vemos si estq vacio o no:
+   if(it == global_table_dict.end()){
+      // No existe la entrada:
+      return;
+   }else{
+      table* tabla = it->second;
+      global_table_dict.erase(nodo_ptr->nombre_tabla);
+      liberar_tabla(tabla);
+      tabla = nullptr;
+   };
+   
 };
 // =================================
 // == ELIMNAR ENTRADAS NULAS:
 // =================================
 
 void sanitize_global_dict() {
-    auto it = global_table_dict.begin();
-    while (it != global_table_dict.end()) {
-        const std::string& nombre = it->first;
-        table* ptr = it->second;
-        bool eliminar = false;
+   auto it = global_table_dict.begin();
+   while (it != global_table_dict.end()) {
+      const std::string& nombre = it->first;
+      table* ptr = it->second;
+      bool eliminar = false;
 
-        // 1. Validación de Longitud
-        if (nombre.length() == 0) {
-            Logger::log(LogLevel::WARN, "Sanitizador: Nombre de longitud 0 detectado.");
-            eliminar = true;
-        }
-        // 2. Validación de Contenido (¿Es imprimible?)
-        else if (!std::isprint(static_cast<unsigned char>(nombre[0]))) {
-            Logger::log(LogLevel::WARN, "Sanitizador: Carácter no imprimible detectado en la clave.");
-            eliminar = true;
-        }
-        // 3. Validación de Puntero
-        else if (ptr == nullptr) {
-            Logger::log(LogLevel::WARN, "Sanitizador: Puntero nulo para tabla '" + nombre + "'.");
-            eliminar = true;
-        }
+      // 1. Validación de Longitud
+      if (nombre.length() == 0) {
+         Logger::log(LogLevel::WARN, "Sanitizador: Nombre de longitud 0 detectado.");
+         eliminar = true;
+      }
+      // 2. Validación de Contenido (¿Es imprimible?)
+      else if (!std::isprint(static_cast<unsigned char>(nombre[0]))) {
+         Logger::log(LogLevel::WARN, "Sanitizador: Carácter no imprimible detectado en la clave.");
+         eliminar = true;
+      }
+      // 3. Validación de Puntero
+      else if (ptr == nullptr) {
+         Logger::log(LogLevel::WARN, "Sanitizador: Puntero nulo para tabla '" + nombre + "'.");
+         eliminar = true;
+      }
 
-        if (eliminar) {
-            // Importante: liberar la memoria del contenido si el puntero no es nulo
-            // pero la clave está corrupta, para evitar leaks.
-            if (ptr != nullptr) {
-                liberar_tabla(ptr);
-            }
-            it = global_table_dict.erase(it);
-        } else {
-            ++it;
-        }
+      if (eliminar) {
+         // Importante: liberar la memoria del contenido si el puntero no es nulo
+         // pero la clave está corrupta, para evitar leaks.
+         if (ptr != nullptr) {
+            liberar_tabla(ptr);
+         }
+         it = global_table_dict.erase(it);
+      } else {
+         ++it;
+      }
     }
-}
-
+};

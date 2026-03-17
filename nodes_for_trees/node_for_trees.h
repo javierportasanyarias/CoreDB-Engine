@@ -34,10 +34,10 @@ class NodeType1{
 //using Valor = std::variant<int, float, std::string>;
 
 class NodeType3 {
-    public:
-        std::string nombre_tabla;              // Ej: "clientes"
-        std::vector<std::string> columnas;     // Ej: ["id", "nombre", "edad"]
-        std::vector<std::vector<std::string>> filas;  // Ej: [[1, "Alice", 20], [2, "Bob", 30]]
+   public:
+      std::string nombre_tabla;              // Ej: "clientes"
+      std::vector<std::string> columnas;     // Ej: ["id", "nombre", "edad"]
+      std::vector<std::vector<std::string>> filas;  // Ej: [[1, "Alice", 20], [2, "Bob", 30]]
 };
 ////////////////////////////////////
 /// NODOS PARA CONSULTAS:
@@ -57,7 +57,6 @@ class ItemNode {
    public:
       std::string nombre;
       std::string alias;
-
       ItemNode();
 };
 
@@ -70,7 +69,6 @@ class QueryNode {
    public:
       SelectNode* nodo_select;
       FromNode* nodo_from;
-
       QueryNode();
 };
 ////////////////////////////////////
@@ -78,7 +76,6 @@ class QueryNode {
 class DropTableNode {
    public:
       std::string nombre_tabla;
-
       DropTableNode();
       
 };
@@ -105,9 +102,7 @@ class tree_for_schema{
 
    public:
       NodeType1*  root;
-
       tree_for_schema();
-
       void imprimir_arbol();
 
 };

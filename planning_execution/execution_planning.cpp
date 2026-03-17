@@ -54,44 +54,35 @@ void execPlan::Queue::printNodeTypes() const{
     int index = 0;
 
     while (current != nullptr) {
-        // std::cout << "Nodo " << index << ": ";
         Logger::log(LogLevel::DEBUG,  "Nodo ", false, true);
         Logger::log(LogLevel::DEBUG,  index, false, false);
         Logger::log(LogLevel::DEBUG,  ": ", false, false);
 
         // Comprobamos qué tipo de puntero contiene el variant:
         if (std::holds_alternative<NodeType1*>(current->nodePtr)) {
-            // std::cout << "NodeType1" << std::endl;
             Logger::log(LogLevel::DEBUG,  "NodeType1", true, false);
             const NodeType1* nodo_puntero = std::get<NodeType1*>(current->nodePtr);
             recursive_tree_print(nodo_puntero);
         } else if (std::holds_alternative<NodeType2*>(current->nodePtr)) {
-            // std::cout << "NodeType2";
             Logger::log(LogLevel::DEBUG,  "NodeType2", true, false);
         } else if (std::holds_alternative<NodeType3*>(current->nodePtr)) {
-            // std::cout << "NodeType3"<<std::endl;
             Logger::log(LogLevel::DEBUG,  "NodeType3", true, false);
             const NodeType3* nodo_puntero = std::get<NodeType3*>(current->nodePtr);
             insert_data_node_print(nodo_puntero);
         } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
-            // std::cout << "QueryNode"<<std::endl;
             Logger::log(LogLevel::DEBUG,  "QueryNode", true, false);
         } else if (std::holds_alternative<DropTableNode*>(current->nodePtr)) {
             Logger::log(LogLevel::DEBUG,  "DropTableNode", true, false);
         } else {
-            // std::cout << "Tipo desconocido";
             Logger::log(LogLevel::DEBUG,  "Tipo desconocido", true, false);
         };
-
-        // std::cout << std::endl;
         Logger::flush();
         current = current->nxt_node_queue;
         index++;
-    }
-
-    if (index == 0)
-        // std::cout << "(La cola está vacía)\n";
+    };
+    if (index == 0){
         Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n");
+    };
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -177,7 +168,6 @@ void execPlan::delete_task_queue(execPlan::Queue* cola){
     //delete cola->last_ptr;
     cola->last_ptr = nullptr;
     delete cola;
-
 };
 
 
@@ -216,23 +206,22 @@ void execPlan::Queue::execute_queue_tasks(){
             QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
             mostrar_tabla_query(nodo);
 
-	}  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
-	    DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
-	    drop_table_from_global_dict(nodo);
+        }  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
+            DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
+            drop_table_from_global_dict(nodo);
 
             Logger::log(LogLevel::DEBUG,  "Tabla eliminada: " + nodo->nombre_tabla);
-	    // Por si acaso hubiera entradas corruptas, las eliminamos del diccionario global:
-	    sanitize_global_dict();
+            // Por si acaso hubiera entradas corruptas, las eliminamos del diccionario global:
+            sanitize_global_dict();
 
         } else {
             Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");
-        
-	};
-
+            
+        };
         Logger::log(LogLevel::DEBUG,  "Operacion terminada", false, true);
         index++;
         Logger::flush();
-	execPlan::queueNode1* proximo_nodo = c_q_n->nxt_node_queue;
+        execPlan::queueNode1* proximo_nodo = c_q_n->nxt_node_queue;
         // Ahora eliminamos el nodo que acabamos de ejecutar:
         execPlan::Queue::delete_current_queue_node(c_q_n);
         c_q_n = proximo_nodo;
@@ -240,5 +229,4 @@ void execPlan::Queue::execute_queue_tasks(){
     if (index == 0){
         Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n", true, true);
     };
-
 };

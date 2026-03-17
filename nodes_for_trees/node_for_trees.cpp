@@ -61,8 +61,8 @@ void recursive_tree_print(const NodeType1* nodo_ptr){
       Logger::log(LogLevel::DEBUG, " ", false, false);
       Logger::log(LogLevel::DEBUG, (nodo_ptr->alias), true, false);
    }else {
-       // std::cout<<nodo_ptr->nombre_tabla<<std::endl;
-       Logger::log(LogLevel::DEBUG, (nodo_ptr->nombre_tabla), true, false);
+      // std::cout<<nodo_ptr->nombre_tabla<<std::endl;
+      Logger::log(LogLevel::DEBUG, (nodo_ptr->nombre_tabla), true, false);
    };
    for (auto* hijo : nodo_ptr->hijos) {
       recursive_tree_print(hijo);
@@ -75,16 +75,15 @@ void imprimir_columnas(const NodeType3*& nodo){
 	   // std::cout<<"Columnas a insertar: ";
       Logger::log(LogLevel::DEBUG, "Columnas a insertar: ", false, false);
 	   for(int i = 0; i<(nodo->columnas).size(); i++){
-              // std::cout<<(nodo->columnas)[i]<<" ";
-              Logger::log(LogLevel::DEBUG, (nodo->columnas)[i], false, false);
-              Logger::log(LogLevel::DEBUG, " ", false, false);
-
+         // std::cout<<(nodo->columnas)[i]<<" ";
+         Logger::log(LogLevel::DEBUG, (nodo->columnas)[i], false, false);
+         Logger::log(LogLevel::DEBUG, " ", false, false);
 	   };
 	   // std::cout<<std::endl;
       Logger::flush();
 	}else{
-           // std::cout<<"No se han especificado las columnas"<<std::endl;
-           Logger::log(LogLevel::DEBUG, "No se han especificado las columnas", true, false);
+      // std::cout<<"No se han especificado las columnas"<<std::endl;
+      Logger::log(LogLevel::DEBUG, "No se han especificado las columnas", true, false);
 	};
 };
 
@@ -97,9 +96,9 @@ void imptimir_valores(const NodeType3*& nodo){
       Logger::log(LogLevel::DEBUG, i+1, false, false);
       Logger::log(LogLevel::DEBUG, " : ", false, false);
          for(int j= 0; j<(fila_current).size(); j++){
-               // std::cout<<fila_current[j]<<" ";
-               Logger::log(LogLevel::DEBUG, fila_current[j], false, false);
-               Logger::log(LogLevel::DEBUG, " ", false, false);
+            // std::cout<<fila_current[j]<<" ";
+            Logger::log(LogLevel::DEBUG, fila_current[j], false, false);
+            Logger::log(LogLevel::DEBUG, " ", false, false);
          };
       // std::cout<<std::endl;
       Logger::flush();
@@ -132,5 +131,5 @@ tree_for_schema::tree_for_schema() : root(nullptr) {}
 
 // Método imprimir_arbol
 void tree_for_schema::imprimir_arbol() {
-    recursive_tree_print(root);
+   recursive_tree_print(root);
 };

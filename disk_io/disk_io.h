@@ -49,7 +49,7 @@ namespace disk_io {
     // Funcion auxilar recursiva:
     void escanear_tablas_recursiva(const std::filesystem::path& ruta, std::vector<std::filesystem::path>& arr_tablas);
 
-   std::vector<std::filesystem::path> escanear_tablas();
+    std::vector<std::filesystem::path> escanear_tablas();
 
     void mostrar_tablas_disco(std::vector<std::filesystem::path>& arr_tablas);
 
@@ -59,9 +59,9 @@ namespace disk_io {
 
     // FUNCIÓN DE ESCRITURA DE TODAS LAS TABLAS:
 
-   void write_dump();
+    void write_dump();
 
-   void debug_print_metadatos_memoria();
+    void debug_print_metadatos_memoria();
 
 
 }; // Cerrar el namespace 'disk_io'

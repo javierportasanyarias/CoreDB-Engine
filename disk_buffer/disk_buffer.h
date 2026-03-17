@@ -47,7 +47,7 @@ namespace disk_buffer {
 
       tableRowIterator_only_ram(std::string tabla_nombre);
 
-     // Para consultar eof:
+      // Para consultar eof:
       bool is_eof();
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
