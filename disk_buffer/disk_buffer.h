@@ -20,19 +20,32 @@ namespace disk_buffer {
    // ==========================================
 
    class tableRowIterator {
-   public:
-      uint32_t contador;
-      table* tabla_ptr;
-      bool eof;
+      /*
+      Clase para iterar y retornar filas, venidas del disco o de la propia sesión.
+      Posee los siguientes atributos:
+         -> contador: para trackear la fila por la que se está iterando/recuperando
+         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
+            * Si es true: se ha llegado al final y no hay más filas que devolver
+            * Si es false: todavía queda una fila o más por iterar
+      Al crearse la clase automáticamente:
+         -> Se cuentan los datos en RAM viva.
+         -> Si existe archivo de datos, este se lee del disco.
+         -> Se calcula el valor inicial de la variable eof.
+      */
+      public:
+         uint32_t contador;
+         table* tabla_ptr;
+         bool eof;
 
-      // Metodo constructor
-      tableRowIterator(std::string tabla_nombre);
+         // Metodo constructor
+         tableRowIterator(std::string tabla_nombre);
 
-      // Para consultar eof:
-      bool is_eof();
+         // Para consultar eof:
+         bool is_eof();
 
-      // Para devolver la prox fila:
-      std::map<std::string, Values> get_next_row();
+         // Para devolver la prox fila:
+         std::map<std::string, Values> get_next_row();
    };
    
    
@@ -40,6 +53,19 @@ namespace disk_buffer {
    //== tableRowIterator pero solo para RAM =============
    //====================================================
    class tableRowIterator_only_ram {
+      /*
+      Muy similar a la clase 'tableRowIterator', pero sólo itera por los datos añadidos
+      en la misma sesión (RAM viva).
+      Posee los siguientes atributos:
+         -> contador: para trackear la fila por la que se está iterando/recuperando
+         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
+            * Si es true: se ha llegado al final y no hay más filas que devolver
+            * Si es false: todavía queda una fila o más por iterar
+      Al crearse la clase automáticamente:
+         -> Se cuentan los datos en RAM viva.
+         -> Se calcula el valor inicial de la variable eof.
+      */
       public:
          uint32_t contador;
          table* tabla_ptr;

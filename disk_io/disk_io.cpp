@@ -11,12 +11,24 @@
 #include "disk_io.h"
 #include "disk_buffer.h"
 
+void disk_io::aux_vector_buffer_write_disk(std::vector<char> buffer, std::ofstream& out){
+
+   if (out.is_open()) {
+         // Escribimos todo el contenido una sola vez
+         out.write(buffer.data(), buffer.size());
+   };
+}; 
+
+
 
 //---------------------------------------------------------------------------------
 //========================================================
 //== FUNION ESCRITURA METADATOS: =========================
 //========================================================
 uint32_t disk_io::write_table_metadata(table* tabla){
+   /*
+   Función que escribe los metadatos en disco.
+   */
    if (!tabla) return 0;
    std::string nombre_tabla = tabla->metadata_ptr->name;
    std::string ruta_tabla = "data/" + nombre_tabla + "_meta.bin";
@@ -24,16 +36,38 @@ uint32_t disk_io::write_table_metadata(table* tabla){
    // Abrimos la escritura:
    std::ofstream out(ruta_tabla, std::ios::binary | std::ios::out);
 
+   /*
+   Usamos un vector de punteros de caracteres para así no 
+   realizar tantas llamadas a la escritura
+   */
+   std::vector<char> buffer;
+   char* tmp_char_ptr = nullptr;
+
    // == Escribimos los metadatos: ===============================
 
    // -- Escribimos el nombre -----------------------------------------
    uint32_t size_nombre = nombre_tabla.size();
-   out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
-   out.write(nombre_tabla.data(), size_nombre);
+   //out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
+   tmp_char_ptr = reinterpret_cast<char*>(&size_nombre);
+   buffer.insert(buffer.end(),
+                 tmp_char_ptr,
+                 tmp_char_ptr + sizeof(uint32_t)
+                );
+   //out.write(nombre_tabla.data(), size_nombre);
+   tmp_char_ptr = nombre_tabla.data();
+   buffer.insert(buffer.end(),
+                 tmp_char_ptr,
+                 tmp_char_ptr + size_nombre
+                );
 
    // -- Escribimos el número de columnas -----------------------------
    uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
-   out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
+   //out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
+   tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
+   buffer.insert(buffer.end(),
+                 tmp_char_ptr,
+                 tmp_char_ptr + sizeof(uint32_t)
+                );
 
    std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
    if(!columnas.empty()){
@@ -60,23 +94,52 @@ uint32_t disk_io::write_table_metadata(table* tabla){
       Logger::log(LogLevel::DEBUG, " filas en disco: ", false, false);
       Logger::log(LogLevel::DEBUG, n_rows_disk, true, false);
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-      out.write(reinterpret_cast<char*>(&n_rows_total), sizeof(uint32_t));
+      //out.write(reinterpret_cast<char*>(&n_rows_total), sizeof(uint32_t));
+      tmp_char_ptr = reinterpret_cast<char*>(&n_rows_total);
+      buffer.insert(buffer.end(),
+                  tmp_char_ptr,
+                  tmp_char_ptr + sizeof(uint32_t)
+                  );
       for(uint32_t i=0; i<num_cols; i++){
          // -- Escribimos los datos de cada columna ---------------------
          // -- Escribimos el nombre:
          std::string column_name = (tabla->metadata_ptr->column_names)[i];
          uint32_t size_column_name = column_name.size();
-         out.write(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
-         out.write(column_name.data(), size_column_name);
+         //out.write(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
+         tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
+         buffer.insert(buffer.end(),
+                     tmp_char_ptr,
+                     tmp_char_ptr + sizeof(uint32_t)
+                     );
+         //out.write(column_name.data(), size_column_name);
+         tmp_char_ptr = column_name.data();
+         buffer.insert(buffer.end(),
+                     tmp_char_ptr,
+                     tmp_char_ptr + size_column_name
+                     );
          // -- Escribimos el tipo de dato:
          dataType col_type = (tabla->metadata_ptr->column_types)[i];
          uint32_t col_type_disk = static_cast<uint32_t>(col_type);
-         out.write(reinterpret_cast<char*>(&col_type_disk), sizeof(uint32_t));
+         //out.write(reinterpret_cast<char*>(&col_type_disk), sizeof(uint32_t));
+         tmp_char_ptr = reinterpret_cast<char*>(&col_type_disk);
+         buffer.insert(buffer.end(),
+                     tmp_char_ptr,
+                     tmp_char_ptr + sizeof(uint32_t)
+                     );
          // -- Escribimos si es clave primaria:
          bool column_is_key = (tabla->metadata_ptr->primary_list)[i];
          uint8_t key_val = column_is_key ? 1 : 0;
-         out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
+         //out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
+         tmp_char_ptr = reinterpret_cast<char*>(&key_val);
+         buffer.insert(buffer.end(),
+                     tmp_char_ptr,
+                     tmp_char_ptr + sizeof(uint8_t)
+                     );
       };
+      // Ahora es cuando recorremos los vectores y hacemos la escritura como tal
+       disk_io::aux_vector_buffer_write_disk(buffer,
+                                             out
+                                            );
       out.flush();
       out.close();
       return n_rows;

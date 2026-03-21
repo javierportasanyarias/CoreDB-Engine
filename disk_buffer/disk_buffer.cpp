@@ -8,7 +8,15 @@
 // == FUNCIONES AUXILIARES: CONTEO FILAS ====
 // ==========================================
 
+
+// == Para contar filas de una tabla =================
 void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
+   /*
+   Método auxiliar para actualizar el contador de filas en RAM viva
+   o de datos añadidos en la misma sesión. 
+   No retorna nada, actualiza el contador de filas en RAM en los metadatos de una tabla
+   dado como input su nombre
+   */
    table* table_ptr = global_table_dict.at(nombre_tabla);
    
    // 1. Verificamos que data_ptr exista y que el mapa de columnas no esté vacío
@@ -29,9 +37,12 @@ void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
 };
 
 
-
+// == Para contar todas filas ========================
 void disk_buffer::contar_datos_en_ram_todas_tablas(){
-
+   /*
+   Función que actualiza el contador de filas en RAM viva de
+   todas las tablas cargadas en memoria.
+   */
    // iteramos por todas las tablas:
    for (const auto& [table_name, table_ptr] : global_table_dict){
       // Contamos el numero de filas en RAM viva:
@@ -41,13 +52,16 @@ void disk_buffer::contar_datos_en_ram_todas_tablas(){
 
 };
 
-// ==========================================
-// == FUNCION PRINCIPAL: ITERADOR FILAS =====
-// ==========================================
+//====================================================
+//=============== tableRowIterator ===================
+//====================================================
 
 
-// Metodo constructor
+// == Método constructor =============================
 disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
+   /*
+   Constructor de la clase 'tableRowIterator'
+   */
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    // Solo en caso de tenerlo, contamos las filas en RAM viva:
@@ -72,13 +86,29 @@ disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
    this->eof = (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram == 0);
 };
 
-// Para consultar eof:
+
+// == Para consultar eof =============================
 bool disk_buffer::tableRowIterator::is_eof() {
+   /*
+   Simple función para retornar el atributo booleano 'eof'
+   */
    return eof;
 };
 
-// Para devolver la prox fila:
+
+// == Para obtener la próxima fila ===================
 std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
+   /*
+   Función de iteración sobre las filas de una tabla.
+   Es un método de la clase 'tableRowIterator'.
+   Funciona de la siguiente manera:
+      1º Itera por cada columna de la tabla.
+      2º Dado el atributo 'contador' extrae dicho elemento de cada vector de columnas de cada columna.
+         Dependiendo del valor de 'contador' se extrae de los datos en RAM viva o los leídos en disco.
+         Primero siempre se lee desde el disco y luego desde la RAM viva.
+      3º Una vez terminado el bucle se actualiza el valor del atributo 'eof'.
+      4º Se incrementa en uno el contador de fila.
+   */
    std::map<std::string, Values> map_fila_retornar;
    uint32_t n_f_disk = tabla_ptr->metadata_ptr->n_filas_disco;
    uint32_t n_f_ram = tabla_ptr->metadata_ptr->n_filas_ram;
@@ -106,7 +136,11 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
 //== tableRowIterator pero solo para RAM =============
 //====================================================
 
+// == Método constructor =============================
 disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string tabla_nombre){
+   /*
+   Constructor de la clase 'tableRowIterator_only_ram'
+   */
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    // Solo en caso de tenerlo, contamos las filas en RAM viva:
@@ -117,13 +151,27 @@ disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string ta
    this->eof = (tabla_ptr->metadata_ptr->n_filas_ram == 0);
 };
 
-// Para consultar eof:
+// == Para consultar eof =============================
 bool disk_buffer::tableRowIterator_only_ram::is_eof() {
+   /*
+   Simple función para retornar el atributo booleano 'eof'
+   */
    return eof;
 };
 
-// == PARA OBTENER LA PROXIMA FILA de la ram viva:
+
+// == Para obtener la próxima fila (RAM viva) ========
 std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram::get_next_row_ram_viva(){
+   /*
+   Método parecido a 'get_next_row' de tableRowIterator. Sólo que aquí únicamente
+   se retornaran datos de la misma sesión o RAM viva.
+   Funciona de la siguiente manera:
+      1º Itera por cada columna de la tabla.
+      2º Dado el atributo 'contador' extrae dicho elemento de cada vector de columnas de cada columna,
+         , siempre de los datos en RAM viva.
+      3º Una vez terminado el bucle se actualiza el valor del atributo 'eof'.
+      4º Se incrementa en uno el contador de fila.
+   */
    std::map<std::string, Values> map_fila_retornar;
    uint32_t n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
    // Iteramos por cada columna:

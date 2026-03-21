@@ -18,6 +18,9 @@
 ///
 // Tipos de datos admitidos en el esquema:
 dataType transform_str_to_datatype(const std::string& input){
+   /*
+   Función que dado un string que indique el tipo de dato, devuelve dicho tipo
+   */
    if (input == "INT"){
       return dataType::INT;
    } else if(input == "FLOAT"){

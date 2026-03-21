@@ -14,6 +14,7 @@ namespace fs = std::filesystem;
 
 namespace disk_io {
 
+    void aux_vector_buffer_write_disk(std::vector<char> buffer, std::ofstream& out);
 
     void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<int>& buffer);
 

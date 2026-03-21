@@ -10,7 +10,15 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Nodos de los árboles:
 class NodeType2{
-
+   /*
+   Nodo que registra los metadatos de una columna concreta.
+   Posee los siguientes atributos:
+      -> name_campo: nombre de la columna.
+      -> tipo: tipo de datos al que pertenece la columna.
+      -> is_primary: booleano indiciador de si la columna es clave primaria (true) o no (false).
+      -> hijos: Aunque esta clae podría tener "hijos" de su mismo tipo, en la práctica no se usa.
+         (atributo candidato a ser eliminado?)
+   */
    public:
       std::string name_campo;
       std::string tipo;
@@ -21,7 +29,16 @@ class NodeType2{
 };
 
 class NodeType1{
-
+   /*
+   Nodo que alamacena los metadatos básicos de un tabla.
+   Estos atributos son:
+      -> nombre_tabla: nombre de la tabla.
+      -> alias: alias de la tabla
+         (actualmente en uso, será sustituido por otor sistema de alias?).
+      -> hijos: Enlaza con nodos de la clase 'NodeType2'. Estos corresponden
+         a cada una de las columnas e la tabla.
+      -> tb_struct: la tabla en sí.
+   */
    public:
       std::string nombre_tabla;
       std::string alias;
