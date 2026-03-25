@@ -66,7 +66,9 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
    };
    //size_t len_n_cols = nombres_columnas.size();
    std::vector<std::vector<std::string>> filas = nodo_ptr->filas;
-   size_t num_fila = filas.size();
+
+   //size_t num_fila = filas.size();
+   uint32_t num_fila = filas.size();
    for(int i = 0; i<len_n_cols; i++){
       // Ahora iteramos por las filas:
       for(int j = 0; j<num_fila; j++){
@@ -107,6 +109,14 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
          };
       };
    };
+
+   /*
+   Aquí incrementamos el contador de las filas en RAM viva.
+   De esta forma se actualizan cuando los valores se añaden y
+   no es necesarias contarlas a posteriori
+   */
+   tb_recup->metadata_ptr->n_filas_ram += num_fila;
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////

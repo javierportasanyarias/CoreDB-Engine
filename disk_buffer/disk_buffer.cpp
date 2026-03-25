@@ -65,7 +65,7 @@ disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    // Solo en caso de tenerlo, contamos las filas en RAM viva:
-   if(tabla_ptr->data_ptr){
+   if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
       contar_datos_ram_una_tabla(tabla_nombre);
    };
    if(Logger::level == LogLevel::OUTPUT){
@@ -80,7 +80,11 @@ disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
 
          // Antes de leer, creamos la región de la RAM para los datos en disco:
          tabla_ptr->data_buffer_ptr = new table_data_buffer();
-         disk_io::read_table_data(tabla_ptr); // Esta funcion ya actusliza el conteo en disco
+         disk_io::read_table_data(tabla_ptr); // Lee los datos en disco
+         /* El número de filas en disco ya se ha recuperado a leer los metadatos
+         Este se recuperó en la lectura de los metadatos, resultado de la suma de los datos
+         en RAM y en disco.
+         */
       };
    };
    this->eof = (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram == 0);
@@ -144,7 +148,7 @@ disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string ta
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    // Solo en caso de tenerlo, contamos las filas en RAM viva:
-   if(tabla_ptr->data_ptr){
+   if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
       contar_datos_ram_una_tabla(tabla_nombre);
    };
 
