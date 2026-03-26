@@ -19,6 +19,10 @@
 
 
 NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
+    /*
+    Función auxliar que se encarga de crear y rellenar los atributos de
+    los nodos de tipo 'NodeType2'.
+    */
 
     NodeType2* nodo = new NodeType2;
 
@@ -58,6 +62,12 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
 
 // FUNCIONES PARA DEFINIR EL ESQUEMA:
 void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* nodo){
+    /*
+    Función auxiliar que crea los hijos de 'NodeType1', el nodo que es la raiz del árbol
+    para definir el esquema.
+    Cada nodo 'NodeType2' es su hijo y corresponde a cada campo que se haya definido al
+    crear la tabla.
+    */
     while(c_l_n->val != ";" && c_l_n->val != ")"){
         // NodeType2* nodo_hijo = new NodeType2;
         NodeType2* nodo_hijo = aux_ddl_tree_2(c_l_n);
@@ -68,7 +78,12 @@ void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* no
 
 
 void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils::NodeLista1*& c_l_n){
+    /*
+    Función especializada en traducir las instrucciones de definición de una tabla.
+    Añade una instancia del tipo 'NodeType1' al contenido de la nueva tarea que crea
+    de ejecución (nuevo nodo de la cola de tareas de tipo 'Queue')
 
+    */
 
     if(c_l_n->val != "CREATE TABLE"){
         throw std::runtime_error("Se esperaba 'TABLE' después de 'CREATE'");
@@ -327,6 +342,11 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista){
+    /*
+    Función que toma la lista de tokens y devuelve una cola de ejecución.
+    Esta cola luego se ejecutará siendo recorrida y ejecutando cada uno de sus nodos.
+
+    */
 
     // Obtenemos le primer nodo de la lista:
     textUtils::NodeLista1* c_l_n = lista->head;
@@ -338,15 +358,12 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista){
 
         // std::cout<<"Valor del token: ";
         Logger::log(LogLevel::DEBUG, "Valor del token: ", false, true);
-        // std::cout<<c_l_n->val<<std::endl;
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 
         if(c_l_n->val == "CREATE TABLE"){
-            // std::cout<<"Procedemos a definir el esquema:"<<std::endl;
             Logger::log(LogLevel::DEBUG, "Procedemos a definir el esquema:");
             procesar_lista_para_definir_esquema(excec_queue, c_l_n);
         } else if(c_l_n->val == "INSERT INTO"){
-            // std::cout<<"Procedemos a insertar valores:"<<std::endl;
             Logger::log(LogLevel::DEBUG, "Procedemos a insertar valores:");
             procesar_lista_para_insertar_valores(excec_queue, c_l_n);
         } else if(c_l_n->val == "SELECT"){
@@ -359,7 +376,6 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista){
     
         // Ahora, si encontramos un ";" avanzamos un nodo adicinoal en la lista de tokens:
         if(c_l_n->val == ";"){
-            // std::cout<<"saltamos los valores ';' :"<<std::endl;
             Logger::log(LogLevel::DEBUG, "saltamos los valores ';' :");
             c_l_n = c_l_n->nxt_node;
         };
