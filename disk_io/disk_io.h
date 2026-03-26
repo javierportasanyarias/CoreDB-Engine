@@ -16,14 +16,15 @@ namespace disk_io {
 
     void aux_vector_buffer_write_disk(std::vector<char> buffer, std::ofstream& out);
 
-    void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<int>& buffer);
+    void eliminar_archivo_binario_metadatos(table*& tb);
 
+    void eliminar_archivo_binario_datos(table*& tb);
+
+    void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<int>& buffer);
 
     void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<float>& buffer);
 
-
     void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos,  std::vector<uint8_t>& buffer);
-
 
     void write_buffer(std::ofstream& out, uint32_t n_rows, std::vector<Values> col_datos);
 

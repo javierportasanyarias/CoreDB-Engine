@@ -25,6 +25,43 @@ void disk_io::aux_vector_buffer_write_disk(std::vector<char> buffer, std::ofstre
 //========================================================
 //== FUNION ESCRITURA METADATOS: =========================
 //========================================================
+
+void disk_io::eliminar_archivo_binario_metadatos(table*& tb){
+   /*
+   Función que dada la referencia al puntero de la tabla,
+   elimina sus metadatos en disco si estos existen.
+   */
+
+   std::string tb_name = tb->metadata_ptr->name;
+
+   std::filesystem::path ruta = "data/" + tb_name + "_meta.bin";
+
+   if(std::filesystem::exists(ruta)){
+      // Sólo eliminamos si existe el archivo:
+      std::filesystem::remove(ruta);
+   };
+};
+
+
+void disk_io::eliminar_archivo_binario_datos(table*& tb){
+   /*
+   Función que dada la referencia al puntero de la tabla,
+   elimina sus datos en disco si estos existen.
+   */
+
+   std::string tb_name = tb->metadata_ptr->name;
+
+   std::filesystem::path ruta = "data/" + tb_name + "_data.bin";
+
+   if(std::filesystem::exists(ruta)){
+      // Sólo eliminamos si existe el archivo:
+      std::filesystem::remove(ruta);
+   };
+}; 
+
+//========================================================
+//== FUNION ESCRITURA METADATOS: =========================
+//========================================================
 uint32_t disk_io::write_table_metadata(table* tabla){
    /*
    Función que escribe los metadatos en disco.

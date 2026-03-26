@@ -10,7 +10,9 @@
 #include "logging.h"
 
 #include <cctype> // Para isprint
+#include "disk_io.h"
 #include "disk_buffer.h"
+
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -255,11 +257,33 @@ void mostrar_tabla_query(QueryNode* nodo_root){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Eliminación de tablas:
 void liberar_tabla(table*& tb){
+   /*
+   Función encargada de eliminar la tabla y sus datos:
+   La función se dividirá en:
+   1) Eliminación de los archivos en disco, si los hay
+   2) Eliminación de los datos en la memoria volátil
+   */
+   //////////////////////////
+   //1) Eliminación de los datos en disco:
+   disk_io::eliminar_archivo_binario_metadatos(tb);
+   disk_io::eliminar_archivo_binario_datos(tb);
+   //////////////////////////
+   // Eliminación de los datos en RAM:
+
+   // Eliminamos los metadatos:
    if (!tb) return;
    delete tb->metadata_ptr;
    tb->metadata_ptr = nullptr;
-   delete tb->data_ptr;
-   tb->data_ptr = nullptr;
+   // Eliminamos los datos en RAM viva:
+   if(tb->data_ptr){
+      delete tb->data_ptr;
+      tb->data_ptr = nullptr;
+   };
+   // Eliminamos los datos en RAM venidos del disco:
+   if(tb->data_buffer_ptr){
+      delete tb->data_buffer_ptr;
+      tb->data_buffer_ptr = nullptr;
+   };
    delete tb;
 };
 
