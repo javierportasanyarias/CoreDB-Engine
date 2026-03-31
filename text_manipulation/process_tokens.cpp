@@ -285,6 +285,7 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
 
     // Avanzamos uno:
     Logger::log(LogLevel::DEBUG, "IINCIAMOS LA CREACION DEL ARBOL DE CONSULTA");
+    
     c_l_n = c_l_n->nxt_node;
     QueryNode* nodo_consulta = new QueryNode;
 
@@ -302,6 +303,15 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
         c_l_n = c_l_n->nxt_node;
         FromNode* nodo_desde = new FromNode;
         // ahora viene el nombre de la tabla:
+	// Antes comprobamos si existe dicha tabla:
+        if(global_table_dict.find(c_l_n->val) == global_table_dict.end()){
+           // No existe esa tabla:
+	   delete nodo_desde;
+	   nodo_desde = nullptr;
+	   delete nodo_consulta;
+	   nodo_consulta = nullptr;
+	   return;
+	};	
         nodo_desde->nombre = c_l_n->val;
         nodo_consulta->nodo_from = nodo_desde;
     };
@@ -325,7 +335,12 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
   
     std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre_ptr->val);
     if(item_pair== global_table_dict.end()){
-        throw std::runtime_error("ERROR: La tabla "+ table_nombre_ptr->val +" no existe. No se puede eliminar");
+        //throw std::runtime_error("ERROR: La tabla "+ table_nombre_ptr->val +" no existe. No se puede eliminar");
+       Logger::log(LogLevel::OUTPUT, "ERROR: La tabla: ", false, true);
+       Logger::log(LogLevel::OUTPUT, table_nombre_ptr->val, false,false);
+       Logger::log(LogLevel::OUTPUT," .No se puede elimonar");
+
+      return;
     };
     // En caso de existir la clave procedemos a crear un nodo de elimonacion de tabla:
     DropTableNode* nodo_drop = new DropTableNode;

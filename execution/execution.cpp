@@ -293,6 +293,7 @@ void drop_table_from_global_dict(DropTableNode*& nodo_ptr){
    // Ahora vemos si estq vacio o no:
    if(it == global_table_dict.end()){
       // No existe la entrada:
+      Logger::log(LogLevel::OUTPUT, "NO EXISTE LA TABLA, NO SE PUEDE ELIMINAR");
       return;
    }else{
       table* tabla = it->second;
