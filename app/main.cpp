@@ -32,7 +32,7 @@ int main(){
    // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
-   Logger::level = LogLevel::OUTPUT;
+   Logger::level = LogLevel::DEBUG;
    
    // Antes de nada, vemos laa tablas en disco y escribimos sus metadatos en memoria
    disk_io::lectura_metadatos_todas_tablas();
