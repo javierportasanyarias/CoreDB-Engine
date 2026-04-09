@@ -52,6 +52,15 @@ namespace disk_io {
 
     void delete_wal_bin_file();
 
+    // Funcions relativas a la lectura del WAl de metadatos:
+    std::vector<char> recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
+
+    std::string recuperar_meta_wal_tabla_nombre(std::ifstream& in);
+
+    void aux_read_single_table_wal_metadata(std::ifstream& in);
+
+    void read_table_wal_metadata();
+
 
 
     void read_table_metadata(std::filesystem::path ruta_tabla, std::string nombre_tabla_str);

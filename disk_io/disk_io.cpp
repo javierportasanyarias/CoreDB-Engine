@@ -10,6 +10,7 @@
 #include "filesystem"
 #include "disk_io.h"
 #include "disk_buffer.h"
+#include <cstring> // Para usar std::memcpy
 
 void disk_io::aux_vector_buffer_write_disk(std::vector<char> buffer, std::ofstream& out){
 
@@ -200,8 +201,27 @@ void disk_io::write_table_wal_metadata(table* tabla){
 
    // Abrimos la escritura:
    //std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::out);
-   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
-   Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
+   // std::ofstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::app);
+   uint32_t n_tablas_meta = 0;
+   if (!fs::exists("backup_data/meta_wal.bin")) {
+      // No existe el archivo previamente:
+      std::ofstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::app);
+      out.seekp(0); // Vamos al principio
+      out.write(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
+
+   } else {
+      std::fstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::in | std::ios::out);
+      out.seekp(0); // Vamos al principio
+      out.read(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
+      n_tablas_meta += 1;
+      out.seekp(0); // Vamos al principio
+      out.write(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
+      //out.seekp(0, std::ios::end); // Volvemos al final para escribir el nuevo bloque de metadatos
+   };
+
+   // Volvemos a abrir el archivo ,esta vez en modo append:
+   std::ofstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::app);
+   out.seekp(0, std::ios::end); // Volvemos al final para escribir el nuevo bloque de metadatos
 
 
    /*
@@ -302,14 +322,17 @@ void disk_io::write_table_wal_metadata(table* tabla){
    // escribir el tipo y el tamaño de la información.
 
    // Escribimos el ipo de dato (metadato)
-   Logger::log(LogLevel::DEBUG, "Registramos el tipo de dato");
+   /*Logger::log(LogLevel::DEBUG, "Registramos el tipo de dato");
    uint8_t valorCero = 0;
    out.write(reinterpret_cast<const char*>(&valorCero), sizeof(uint8_t));
    Logger::log(LogLevel::DEBUG, "Tipo de dato escrito con exito. Al ser metadato es cero");
+   */
    // Escribimos el tamaño de los metadatos:
    Logger::log(LogLevel::DEBUG, "Registramos el tamaño del buffer de los metadatos");
    //uint32_t buffer_size = static_cast<uint32_t>(buffer.size());
    uint32_t buffer_size = sizeof(buffer.data());
+   // Modificamos el tamaño del buffer para que este no tenga en cuenta el nombre de la tabla:
+   buffer_size = buffer_size - sizeof(uint32_t) - size_nombre;
    out.write(reinterpret_cast<char*>(&buffer_size), sizeof(uint32_t));
    Logger::log(LogLevel::DEBUG, "Tamaño del buffer de datos escito con exito");
    Logger::log(LogLevel::DEBUG, "Pasamos a escribir el buffer de datos en disco:");
@@ -323,6 +346,146 @@ void disk_io::write_table_wal_metadata(table* tabla){
    return;
 };
 
+
+//========================================================
+//== FUNION LECTURA METADATOS EN EL WAL: =================
+//========================================================
+
+
+std::vector<char> disk_io::recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla){
+   /*
+   Función que devuelve un buffer con los datos de ua tabla concreta.
+   La función devuelve:
+   2º) El buffer de los datos leídos
+   */
+
+   std::vector<char> buffer;
+   // Ahora vemos si el archivo de metadatos ya existe o no:
+   if (fs::exists("data/" + nombre_tabla + "_meta.bin")) return buffer;
+
+   // En caso de no existir, leemos los datos desde el WAL de metadatos:
+
+   // 1º) Leemos el tamaño del buffer de memoria de los metadatos de la tabla concreta:
+   uint32_t buffer_size = 0;
+   in.read(reinterpret_cast<char*>(&buffer_size), sizeof(uint32_t));
+   // 2º) Leemos el buffer de datos:
+   in.read(reinterpret_cast<char*>(buffer.data()), buffer_size);
+
+   return buffer;
+
+};
+
+
+std::string disk_io::recuperar_meta_wal_tabla_nombre(std::ifstream& in){
+   /*
+   Función que devuelve un buffer con los datos de ua tabla concreta.
+   La función devuelve:
+   1º) El nombre de la tabla
+   */
+
+   // Leemos el nombre de la tabls
+   uint32_t size_nombre_tabla;
+   in.read(reinterpret_cast<char*>(size_nombre_tabla), sizeof(uint32_t));
+   std::string nombre_tabla;
+   nombre_tabla.resize(size_nombre_tabla);   // ← reservar memoria
+   in.read(nombre_tabla.data(), size_nombre_tabla);
+
+   return nombre_tabla;
+};
+
+
+void disk_io::aux_read_single_table_wal_metadata(std::ifstream& in){
+   /*
+   Función auxliar que lee los metadatos de una sola tabla desde el WAL de metadatos de una tabla:
+   */
+   // Leemos el nombre de la tabla:
+   std::string nombre_tabla;
+   nombre_tabla = disk_io::recuperar_meta_wal_tabla_nombre(in);
+   // Recuperamos el buffer de datos:
+   std::vector<char> buffer;
+   buffer = disk_io::recuperar_meta_wal_tabla_buffer(in, nombre_tabla);
+   if(buffer.empty()) return;
+
+   /////////////////////////////////////////////
+   // Antes de leer vemos is los metadatos de la tabla están en memoria RAM:
+   auto it = global_table_dict.find(nombre_tabla);
+   if(it != global_table_dict.end()){
+      return;
+   };
+   // No existe en los metadatos de la RAM, por lo que creamos la entrada:
+   table* tb_created = global_table_dict[nombre_tabla];
+   // Creamos además sus metadatos:
+   tb_created->metadata_ptr = new table_metadata;
+
+   // Pasamos a insertar el nombre en la RAM de latabla:
+   ((*(tb_created->metadata_ptr)).name) = nombre_tabla;
+
+
+   /////////////////////////////////////////////
+   // Ya recuperado el buffer de datos, debemos leerlo y rellenar los metadatos de la tabla en RAM
+   uint32_t offset_read = 0; // Offset de lectura
+
+   // Leemos el número de columnas:
+   uint32_t num_cols = 0;
+   std::memcpy(&num_cols, buffer.data() + offset_read, sizeof(uint32_t));
+   offset_read += sizeof(uint32_t);
+
+   // Leemos el numero de filas (siempre será cero en el WAL):
+   uint32_t n_filas = 0;
+   std::memcpy(&n_filas, buffer.data() + offset_read, sizeof(uint32_t));
+   offset_read += sizeof(uint32_t);
+
+   // Ahora iteramos por cada columna:
+   for(int i = 0; i<num_cols; i++){
+
+      // Leemos el nombre de la columna:
+      uint32_t size_column_name = 0;
+      std::memcpy(&size_column_name, buffer.data() + offset_read, sizeof(uint32_t));
+      offset_read += sizeof(uint32_t);
+
+      std::string column_name;
+      std::memcpy(column_name.data(), buffer.data() + offset_read, size_column_name);
+      offset_read += size_column_name;
+
+      tb_created->metadata_ptr->column_names.push_back(column_name);
+
+      // Ahora leemos el tipo de dato:
+      uint32_t col_type_disk_int;
+      std::memcpy(&col_type_disk_int, buffer.data() + offset_read, sizeof(uint32_t));
+      dataType col_type_disk = static_cast<dataType>(col_type_disk_int);
+      offset_read += sizeof(uint32_t);
+
+      tb_created->metadata_ptr->column_types.push_back(col_type_disk);
+
+      // Ahora leemos si la variable es clave primaria o no:
+      uint8_t key_val_int;
+      bool key_val = true;
+      std::memcpy(&key_val_int, buffer.data() + offset_read, sizeof(uint8_t));
+      offset_read += sizeof(uint8_t);
+      if(key_val_int == 0){
+         key_val = false;
+      };
+      tb_created->metadata_ptr->primary_list.push_back(key_val);
+   };
+
+};
+
+void disk_io::read_table_wal_metadata(){
+
+   if(!fs::exists("backup_data/meta_wal.bin")) return;
+
+   std::ifstream in("backup_data/meta_wal.bin", std::ios::binary);
+
+   // Primero, leemos el número de tablas de las que leer los metadatos:
+   uint32_t n_tablas_meta = 0;
+   in.read(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
+
+   // Ahora iteramos por cada bloque de metadatos presente:
+   for(int i = 0; i<n_tablas_meta; i++){
+      disk_io::aux_read_single_table_wal_metadata(in);
+   };
+
+};
 
 
 // Funcion auxliar para escribir un valor concreto en disco:
@@ -511,7 +674,7 @@ void disk_io::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
       Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
       return;
    };*/
-   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
+   std::ofstream out("backup_data/" + nombre_tabla + "_data_wal.bin", std::ios::binary | std::ios::app);
    Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
 
    table_metadata* metadata = tabla->metadata_ptr;
