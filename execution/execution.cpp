@@ -109,15 +109,16 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
          }else{
             tb_recup->data_ptr->columns[nombres_columnas[i]].push_back(valor_variante);
          };
-      };
+      }; // Cierre de la escritura de cada fila
    };
-
+   tb_recup->metadata_ptr->n_filas_ram += num_fila;
    /*
    Aquí incrementamos el contador de las filas en RAM viva.
    De esta forma se actualizan cuando los valores se añaden y
    no es necesarias contarlas a posteriori
    */
-   tb_recup->metadata_ptr->n_filas_ram += num_fila;
+   // Ejecutamos la escritura en el WAL de los archivos
+   disk_io::write_table_data_wal(tb_recup, num_fila);
 
 };
 

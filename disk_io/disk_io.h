@@ -36,13 +36,21 @@ namespace disk_io {
 
     void write_aux_val(Values value, dataType tipo_dato, std::fstream& out);
 
+    void write_aux_val(Values value, dataType tipo_dato, std::ofstream& out);
+
     void write_table_data(table* tabla, uint32_t n_rows);
+
+    void write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir);
 
     void write_table_data_viejo(table* tabla, uint32_t n_rows);
 
     Values read_aux_val(dataType tipo_dato, std::ifstream& in);
 
     void read_table_data(table*& tabla);
+
+    // Funciones de eliminacion:
+
+    void delete_wal_bin_file();
 
 
 

@@ -369,6 +369,53 @@ void disk_io::write_aux_val(Values value, dataType tipo_dato, std::fstream& out)
 };
 
 
+// Funcion auxliar para escribir un valor concreto en disco:
+void disk_io::write_aux_val(Values value, dataType tipo_dato, std::ofstream& out){
+
+   switch(tipo_dato){
+
+      case dataType::INT: {
+         int buffer;
+         buffer = std::get<int>(value);
+         out.write(reinterpret_cast<char*>(&buffer), sizeof(int));
+         break;
+      };
+      case dataType::FLOAT: {
+         float buffer;
+         buffer = std::get<float>(value);
+         out.write(reinterpret_cast<char*>(&buffer), sizeof(float));
+         break;
+      };
+      case dataType::BOOL: {
+         bool buffer_bool;
+         uint8_t buffer_int8;
+         buffer_bool = std::get<bool>(value);
+         if(buffer_bool){
+            buffer_int8 = 1;
+         }else{
+            buffer_int8 = 0;
+         };
+         out.write(reinterpret_cast<char*>(&buffer_int8), sizeof(uint8_t));
+         break;
+      };
+      case dataType::STRING: {
+         std::string buffer;
+         uint32_t string_size;
+         buffer = std::get<std::string>(value);
+         string_size = buffer.size();
+         // Primero escribimos el tamaño de la string:
+         out.write(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
+         // Ahora ya si escribimos la cadena de texto:
+         out.write(reinterpret_cast<char*>(buffer.data()), string_size);
+         break;
+      };
+   };
+};
+
+//========================================================
+//== FUNION ESCRITURA DATOS: =============================
+//========================================================
+
 void disk_io::write_table_data(table* tabla, uint32_t n_rows){
 
    if (!tabla) return;
@@ -391,6 +438,7 @@ void disk_io::write_table_data(table* tabla, uint32_t n_rows){
       Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
       return;
    };
+
 
    table_metadata* metadata = tabla->metadata_ptr;
    std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
@@ -437,6 +485,78 @@ void disk_io::write_table_data(table* tabla, uint32_t n_rows){
    out.close();
 };
 
+//========================================================
+//== FUNION ESCRITURA DATOS EN EL WAL: ===================
+//========================================================
+
+void disk_io::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
+
+   if (!tabla) return;
+   std::string nombre_tabla = tabla->metadata_ptr->name;
+   /*std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
+
+   // Abrimos la escritura:
+   std::fstream out(ruta_tabla, std::ios::in | std::ios::out | std::ios::binary);
+
+   // Ahora vemos si el archivo esta abierto o no:
+   if(!out.is_open()){
+      // Lo escribimos solo como out:
+      out.clear();
+      out.open(ruta_tabla, std::ios::out | std::ios::binary);
+   } else {
+      out.seekp(0, std::ios::beg);
+   };
+
+   if (!out) {
+      Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
+      return;
+   };*/
+   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
+   Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
+
+   table_metadata* metadata = tabla->metadata_ptr;
+   std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
+   std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
+   uint32_t n_cols = tipos_datos.size();
+   uint32_t n_filas = metadata->n_filas_ram;
+
+   // Creamos el iterador por filas:
+   auto it = disk_buffer::tableRowIterator_only_ram_for_wal(nombre_tabla, n_rows_a_escribir);
+   std::map<std::string, Values> fila_a_escribir;
+   Values valor_tmp;
+
+   Logger::log(LogLevel::DEBUG, "Filas insertadas que escribiremos en el WAL: ", false, true);
+   Logger::log(LogLevel::DEBUG, n_rows_a_escribir, true, false);
+   out.write(reinterpret_cast<char*>(&n_rows_a_escribir), sizeof(uint32_t));
+
+   // Ahora nos movemos al final para poder escribir sólo al final
+
+   // Ahora iteraremos hasta que esteé vacía la fila a escribir
+   Logger::log(LogLevel::DEBUG, "Pasamos a la iteración de escribir las filas");
+   Logger::log(LogLevel::DEBUG, " ");
+   Logger::log(LogLevel::DEBUG, "//////////////////////////////////////////////////////////////");
+   while(!it.is_eof()){
+      fila_a_escribir = it.get_next_row_ram_viva();
+      Logger::log(LogLevel::DEBUG, "Insertamos la fila: ", false, true);
+      Logger::log(LogLevel::DEBUG, it.contador, true, false);
+      // Ahora iteramos por cada columna:
+      for(int i = 0; i<n_cols; i++){
+         // valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
+         Logger::log(LogLevel::DEBUG, "Pasamos a recuperar la variable 'valor_tmp'");
+         valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
+         Logger::log(LogLevel::DEBUG, "Variable 'valor_tmp' recuperada con exito");
+         disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
+         Logger::log(LogLevel::DEBUG, "Escritura de la fila: ", false, true);
+         Logger::log(LogLevel::DEBUG, it.contador, false, false);
+         Logger::log(LogLevel::DEBUG, " terminada con exito", true, false);
+         Logger::flush();
+      };
+      Logger::flush();
+   };
+   Logger::flush();
+   out.flush();
+   out.close();
+};
 
 //========================================================
 //== FUNION LECTURA DATOS: ===============================
@@ -607,6 +727,27 @@ void disk_io::read_table_metadata(std::filesystem::path ruta_tabla, std::string 
    in.close();
 };
 
+//========================================================
+//== ELIMINAR EL ARCHIVO WAL ENTERO: =====================
+//========================================================
+
+
+void disk_io::delete_wal_bin_file(){
+   if(fs::remove("backup_data/wal.bin")){
+      Logger::log(LogLevel::DEBUG, "Archivo WAl eliminado con EXITO");
+   } else {
+      Logger::log(LogLevel::DEBUG, "El archivo WAL no existía, por lo que NO ha sido eliminado");
+   };
+};
+
+
+
+
+
+
+
+
+
 
    // Funcion auxilar recursiva:
 void disk_io::escanear_tablas_recursiva(const std::filesystem::path& ruta, std::vector<std::filesystem::path>& arr_tablas){
@@ -700,6 +841,9 @@ void disk_io::write_dump(){
          };
       };
    };
+
+   // Justo Antes de concluir la escritura, eliminamos el archivo WAL:
+   disk_io::delete_wal_bin_file();
 };
 
 
