@@ -57,9 +57,15 @@ namespace disk_io {
 
     std::string recuperar_meta_wal_tabla_nombre(std::ifstream& in);
 
+    void recuperar_data_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
+
     void aux_read_single_table_wal_metadata(std::ifstream& in);
 
-    void read_table_wal_metadata();
+    void aux_read_single_table_wal_data(std::ifstream& in);
+
+    bool is_eof_read(std::ifstream& in);
+
+    void read_wal();
 
 
 

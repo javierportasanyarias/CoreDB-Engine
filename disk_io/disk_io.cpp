@@ -200,27 +200,25 @@ void disk_io::write_table_wal_metadata(table* tabla){
    // std::string ruta_tabla = "data/" + nombre_tabla + "_meta.bin";
 
    // Abrimos la escritura:
-   //std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::out);
-   // std::ofstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::app);
-   uint32_t n_tablas_meta = 0;
-   if (!fs::exists("backup_data/meta_wal.bin")) {
+   /*uint32_t n_tablas_meta = 0;
+   if (!fs::exists("backup_data/wal.bin")) {
       // No existe el archivo previamente:
-      std::ofstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::app);
+      std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
       out.seekp(0); // Vamos al principio
       out.write(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
 
    } else {
-      std::fstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::in | std::ios::out);
+      std::fstream out("backup_data/wal.bin", std::ios::binary | std::ios::in | std::ios::out);
       out.seekp(0); // Vamos al principio
       out.read(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
       n_tablas_meta += 1;
       out.seekp(0); // Vamos al principio
       out.write(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
       //out.seekp(0, std::ios::end); // Volvemos al final para escribir el nuevo bloque de metadatos
-   };
+   };*/
 
    // Volvemos a abrir el archivo ,esta vez en modo append:
-   std::ofstream out("backup_data/meta_wal.bin", std::ios::binary | std::ios::app);
+   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
    out.seekp(0, std::ios::end); // Volvemos al final para escribir el nuevo bloque de metadatos
 
 
@@ -239,7 +237,13 @@ void disk_io::write_table_wal_metadata(table* tabla){
    -> Tamaño (4 bytes):
       Almacena el tamaño en bytes de la información en sí
    */
-
+   // Escribimos el tipo de dato
+   uint8_t tipo_dato = 0; // 0 porque es un metadato
+   tmp_char_ptr = reinterpret_cast<char*>(&tipo_dato);
+   buffer.insert(buffer.end(),
+                 tmp_char_ptr,
+                 tmp_char_ptr + sizeof(uint8_t)
+                );
    // == Escribimos los metadatos: ===============================
 
    // -- Escribimos el nombre -----------------------------------------
@@ -470,21 +474,102 @@ void disk_io::aux_read_single_table_wal_metadata(std::ifstream& in){
 
 };
 
-void disk_io::read_table_wal_metadata(){
+void disk_io::recuperar_data_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla){
 
-   if(!fs::exists("backup_data/meta_wal.bin")) return;
+   // Leemos el número de filas:
+   uint32_t n_filas = 0;
+   in.read(reinterpret_cast<char*>(&n_filas), sizeof(uint32_t));
 
-   std::ifstream in("backup_data/meta_wal.bin", std::ios::binary);
+   // Recuperamos la tabla:
+   auto it = global_table_dict.find(nombre_tabla);
+   // Asumimos que la tabla SÍ existe simpre: haya sido recuperada o esté en los metadatos:
+   table* tabla = it->second;
+   // Recuperamos el número de columnas
+   table_metadata* metadata = tabla->metadata_ptr;
+   std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
+   uint32_t n_cols = tipos_datos.size();
+
+   // Recuperamos otros datos necesarios:
+   std::vector<std::string> col_names = tabla->metadata_ptr->column_names;
+
+   Values valor_tmp;
+
+   std::map<std::string, std::vector<Values>>& columnas = tabla->data_buffer_ptr->columns;
+
+   // Ahora leemos el contenido:
+   for(int i = 0; i<n_filas; i++){
+      for(int j = 0; j<n_cols; j++){
+         // Usamos una función auxliar para leer los datos según su tipo:
+         valor_tmp = disk_io::read_aux_val(tipos_datos[j], in);
+         // Hemos recuperado el valor j de la fila i
+         // Aho0ra rellenamos el vector correspondiente:
+         if(columnas.find(col_names[j]) == columnas.end()){
+            columnas[col_names[j]].push_back(valor_tmp);
+         }else{
+            columnas.at(col_names[j]).push_back(valor_tmp);
+         };
+      };
+   };
+};
+
+void disk_io::aux_read_single_table_wal_data(std::ifstream& in){
+
+   // Leemos el nombre de la tabla:
+   std::string nombre_tabla;
+   nombre_tabla = disk_io::recuperar_meta_wal_tabla_nombre(in);
+
+   // Ahora leemos el contenido de los datos de la tabla y lo guardamos en un buffer:
+   std::vector<char> buffer;
+   disk_io::recuperar_data_wal_tabla_buffer(in, nombre_tabla); // Esta función ya insert los datos en la RAM
+
+};
+
+
+// FUNCIONES AUXILIARES:
+
+bool disk_io::is_eof_read(std::ifstream& in){
+   in.seekg(0, std::ios::end);
+   std::streamsize total_file_size = in.tellg();
+   in.seekg(0, std::ios::beg);
+   if(in.tellg() < total_file_size){
+      return false;
+   } else{
+      return true;
+   };
+};
+
+void disk_io::read_wal(){
+
+   if(!fs::exists("backup_data/wal.bin")) return;
+
+   std::ifstream in("backup_data/wal.bin", std::ios::binary);
 
    // Primero, leemos el número de tablas de las que leer los metadatos:
-   uint32_t n_tablas_meta = 0;
-   in.read(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));
+   /*uint32_t n_tablas_meta = 0;
+   in.read(reinterpret_cast<char*>(&n_tablas_meta), sizeof(uint32_t));*/
 
    // Ahora iteramos por cada bloque de metadatos presente:
-   for(int i = 0; i<n_tablas_meta; i++){
+   /*for(int i = 0; i<n_tablas_meta; i++){
       disk_io::aux_read_single_table_wal_metadata(in);
-   };
+   };*/
 
+   // Vamos leyendo por bloques:
+   bool eof = false;
+   eof = disk_io::is_eof_read(in);
+   while(!eof){
+      // Antes de nada leemos el tipo de dato:
+      uint8_t tipo_dato = 0;
+      in.read(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
+      // Si tipo_dato es 0 es metadato y si es 1 es dato
+      if(tipo_dato == 0){
+         // Metadato:
+         disk_io::aux_read_single_table_wal_metadata(in);
+      } else {
+         // Dato:
+         disk_io::aux_read_single_table_wal_data(in);
+      };
+   };
+   in.close();
 };
 
 
@@ -656,25 +741,9 @@ void disk_io::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
 
    if (!tabla) return;
    std::string nombre_tabla = tabla->metadata_ptr->name;
-   /*std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
 
-   // Abrimos la escritura:
-   std::fstream out(ruta_tabla, std::ios::in | std::ios::out | std::ios::binary);
 
-   // Ahora vemos si el archivo esta abierto o no:
-   if(!out.is_open()){
-      // Lo escribimos solo como out:
-      out.clear();
-      out.open(ruta_tabla, std::ios::out | std::ios::binary);
-   } else {
-      out.seekp(0, std::ios::beg);
-   };
-
-   if (!out) {
-      Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
-      return;
-   };*/
-   std::ofstream out("backup_data/" + nombre_tabla + "_data_wal.bin", std::ios::binary | std::ios::app);
+   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
    Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
 
    table_metadata* metadata = tabla->metadata_ptr;
@@ -687,6 +756,16 @@ void disk_io::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
    auto it = disk_buffer::tableRowIterator_only_ram_for_wal(nombre_tabla, n_rows_a_escribir);
    std::map<std::string, Values> fila_a_escribir;
    Values valor_tmp;
+
+   // Antes de nada, escribimos el tipo de dato que es:
+   uint8_t tipo_dato = 1; // 1 porque es dato
+   out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
+
+   // Escribimos el nombre de la tabla:
+   uint32_t size_nombre_tabla = sizeof(nombre_tabla);
+   out.write(reinterpret_cast<char*>(&size_nombre_tabla), sizeof(uint8_t));
+   out.write(nombre_tabla.data(), size_nombre_tabla);
+
 
    Logger::log(LogLevel::DEBUG, "Filas insertadas que escribiremos en el WAL: ", false, true);
    Logger::log(LogLevel::DEBUG, n_rows_a_escribir, true, false);
@@ -800,6 +879,7 @@ void disk_io::read_table_data(table*& tabla){
    // Creamos el iterador por filas:
    std::map<std::string, Values> fila_a_escribir;
    Values valor_tmp;
+
 
    // Primero de todo, leemos las filas a leer:
    //uint32_t n_filas = 0;
@@ -974,6 +1054,7 @@ void disk_io::write_dump(){
    // Primero vemos si el diccionario esta vacio o no:
    if(global_table_dict.empty()){
       // El diccionario esta vacio, salimos
+      Logger::log(LogLevel::DEBUG, "EL DICCIONARIO DE TABLAS NO EXISTE. SALIMOS");
       return;
    }else{
       //El diccionario tiene contenido:
@@ -992,7 +1073,6 @@ void disk_io::write_dump(){
                   disk_io::write_table_data(table_ptr, n_rows);
                   // Actualizamos los metadatos de la tabla para mostar el numero de filas escritas en disco:
                   table_ptr->metadata_ptr->n_filas_disco = n_rows;
-                  return;
                } else {
                   Logger::log(LogLevel::DEBUG, "EXISTE la tabla en el diccionario, pero NO tiene datos en RAM viva. NO LA ESCRIBIMOS");
                };
@@ -1006,6 +1086,7 @@ void disk_io::write_dump(){
    };
 
    // Justo Antes de concluir la escritura, eliminamos el archivo WAL:
+   Logger::log(LogLevel::DEBUG, "ELIMINAMOS EL ARCHIVO WAL DE DATOS DE BACKUP");
    disk_io::delete_wal_bin_file();
 };
 
