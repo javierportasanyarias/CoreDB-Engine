@@ -36,6 +36,9 @@ int main(){
    
    // Antes de nada, vemos laa tablas en disco y escribimos sus metadatos en memoria
    disk_io::lectura_metadatos_todas_tablas();
+
+   // Leemos también los datos recuperados del WAL:
+   disk_io::read_wal();
    //return 0;
 
 

@@ -162,6 +162,11 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
    */
    Logger::log(LogLevel::DEBUG, "YA SE HA CREADO LOS METADATOS DE LA TABLA");
    Logger::log(LogLevel::DEBUG, "Pasamos a escribir los metadatos en el WAL:");
+
+   Logger::log(LogLevel::DEBUG, "<<<<<< ESCRIBIMOS EN EL WAL LA TABLA: ", false, true);
+   Logger::log(LogLevel::DEBUG, tb_created->metadata_ptr->name, false, false);
+   Logger::log(LogLevel::DEBUG, " >>>>>>>>", true, false);
+   Logger::flush();
    disk_io::write_table_wal_metadata(tb_created);
    return;
 };
