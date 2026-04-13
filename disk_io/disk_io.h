@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 
 namespace disk_io {
 
-    void aux_vector_buffer_write_disk(std::vector<char> buffer, std::ofstream& out);
+    void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstream& out);
 
     void eliminar_archivo_binario_metadatos(table*& tb);
 
@@ -32,40 +32,19 @@ namespace disk_io {
     // FUNCIÓN DE ESCRITURA:
     uint32_t write_table_metadata(table* tabla);
 
-    void write_table_wal_metadata(table* tabla);
-
     void write_aux_val(Values value, dataType tipo_dato, std::fstream& out);
 
     void write_aux_val(Values value, dataType tipo_dato, std::ofstream& out);
 
-    void write_table_data(table* tabla, uint32_t n_rows);
+    void write_aux_val_buffer(Values value, dataType tipo_dato, std::vector<char>& buffer);
 
-    void write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir);
+    void write_table_data(table* tabla, uint32_t n_rows);
 
     void write_table_data_viejo(table* tabla, uint32_t n_rows);
 
     Values read_aux_val(dataType tipo_dato, std::ifstream& in);
 
     void read_table_data(table*& tabla);
-
-    // Funciones de eliminacion:
-
-    void delete_wal_bin_file();
-
-    // Funcions relativas a la lectura del WAl de metadatos:
-    std::vector<char> recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
-
-    std::string recuperar_meta_wal_tabla_nombre(std::ifstream& in);
-
-    void recuperar_data_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
-
-    void aux_read_single_table_wal_metadata(std::ifstream& in);
-
-    void aux_read_single_table_wal_data(std::ifstream& in);
-
-    bool is_eof_read(std::ifstream& in);
-
-    void read_wal();
 
 
 
