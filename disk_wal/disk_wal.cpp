@@ -571,7 +571,7 @@ void disk_wal::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
          valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
          Logger::log(LogLevel::DEBUG, "Variable 'valor_tmp' recuperada con exito");
          //disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
-         disk_io::write_aux_val_buffer(valor_tmp,tipos_datos[i], buffer);
+         disk_io::write_aux_val_buffer(valor_tmp, tipos_datos[i], buffer);
          Logger::log(LogLevel::DEBUG, "Escritura de la fila: ", false, true);
          Logger::log(LogLevel::DEBUG, it.contador, false, false);
          Logger::log(LogLevel::DEBUG, " terminada con exito", true, false);

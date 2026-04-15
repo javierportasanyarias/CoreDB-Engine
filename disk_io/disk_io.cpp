@@ -19,7 +19,15 @@ void disk_io::aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstr
          // Escribimos todo el contenido una sola vez
          out.write(buffer.data(), buffer.size());
    };
-}; 
+};
+
+void disk_io::aux_vector_buffer_write_disk(std::vector<char>& buffer, std::fstream& out){
+
+   if (out.is_open()) {
+         // Escribimos todo el contenido una sola vez
+         out.write(buffer.data(), buffer.size());
+   };
+};
 
 
 //---------------------------------------------------------------------------------
@@ -417,7 +425,7 @@ void disk_io::write_table_data(table* tabla, uint32_t n_rows){
    out.flush();
    out.clear();
    out.seekp(0, std::ios::end);
-
+   std::vector<char> buffer;
    // Ahora iteraremos hasta que esteé vacía la fila a escribir
    while(!it.is_eof()){
       fila_a_escribir = it.get_next_row_ram_viva();
@@ -425,9 +433,12 @@ void disk_io::write_table_data(table* tabla, uint32_t n_rows){
       for(int i = 0; i<n_cols; i++){
          // valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
          valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
-         disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
+         //disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
+         disk_io::write_aux_val_buffer(valor_tmp, tipos_datos[i], buffer);
       };
    };
+   // Antes de cerrar la escritura, escribimos el buffer de escritura:
+   disk_io::aux_vector_buffer_write_disk(buffer, out);
    out.flush();
    out.close();
 };
@@ -437,7 +448,7 @@ void disk_io::write_table_data(table* tabla, uint32_t n_rows){
 //========================================================
 
 
-// Funcion auxliar para escribir un valor concreto en disco:
+// Funcion auxliar para leer un valor concreto en disco:
 Values disk_io::read_aux_val(dataType tipo_dato, std::ifstream& in){
 
    Values value;

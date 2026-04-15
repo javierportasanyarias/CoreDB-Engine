@@ -16,6 +16,8 @@ namespace disk_io {
 
     void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstream& out);
 
+    void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::fstream& out);
+
     void eliminar_archivo_binario_metadatos(table*& tb);
 
     void eliminar_archivo_binario_datos(table*& tb);
