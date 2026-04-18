@@ -14,6 +14,14 @@ namespace fs = std::filesystem;
 
 namespace disk_io {
 
+    bool is_eof(std::ifstream& in, std::streampos end_pos);
+
+    bool is_eof_2(uint32_t puntero_lectura, uint32_t size_archivo);
+
+    void write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<std::string> col_names, uint32_t& size_disponible_buffer, uint32_t& contador_bytes_buffer, std::map<std::string, std::vector<Values>>& columnas, int contador_cols, std::array<char, 128>& buffer, uint32_t& offset);
+
+    void lectura_datos_monolitica(table* tabla);
+    
     void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstream& out);
 
     void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::fstream& out);

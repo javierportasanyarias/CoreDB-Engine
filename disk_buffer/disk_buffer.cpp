@@ -80,7 +80,10 @@ disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
 
          // Antes de leer, creamos la región de la RAM para los datos en disco:
          tabla_ptr->data_buffer_ptr = new table_data_buffer();
-         disk_io::read_table_data(tabla_ptr); // Lee los datos en disco
+
+         //disk_io::read_table_data(tabla_ptr); // Lee los datos en disco
+         disk_io::lectura_datos_monolitica(tabla_ptr);
+
          /* El número de filas en disco ya se ha recuperado a leer los metadatos
          Este se recuperó en la lectura de los metadatos, resultado de la suma de los datos
          en RAM y en disco.
