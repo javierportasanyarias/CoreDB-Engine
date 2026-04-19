@@ -15,7 +15,6 @@
 
 
 // LECTURA CON BUFFER:
-
 bool disk_io::is_eof(std::ifstream& in, std::streampos end_pos){
 
    // Calculamos el tamaño del archivo:
@@ -46,7 +45,9 @@ void disk_io::write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<s
          case dataType::INT: {
             Logger::log(LogLevel::DEBUG, "CASO ENTERO");
             if(sizeof(int) > size_disponible_buffer){
-               offset = sizeof(int); 
+               //offset = sizeof(int);
+               offset = size_disponible_buffer; 
+               Logger::log(LogLevel::DEBUG, "Nos hemos quedado a medias leyendo el INT");
                size_disponible_buffer -= sizeof(int);
                break;
             };
@@ -61,7 +62,9 @@ void disk_io::write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<s
          case dataType::FLOAT: {
             Logger::log(LogLevel::DEBUG, "CASO FLOAT");
             if(sizeof(float) > size_disponible_buffer){
-               offset = sizeof(float);
+               //offset = sizeof(float);
+               offset = size_disponible_buffer;
+               Logger::log(LogLevel::DEBUG, "Nos hemos quedado a medias leyendo el FLOAT");
                size_disponible_buffer -= sizeof(float);
                break;
             };
@@ -76,7 +79,9 @@ void disk_io::write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<s
          case dataType::BOOL: {
             Logger::log(LogLevel::DEBUG, "CASO BOOLEANO");
             if(sizeof(uint8_t) > size_disponible_buffer){
-               offset = sizeof(uint8_t);
+               //offset = sizeof(uint8_t);
+               offset = size_disponible_buffer;
+               Logger::log(LogLevel::DEBUG, "Nos hemos quedado a medias leyendo el BOOL");
                size_disponible_buffer -= sizeof(uint8_t);
                break;
             };
@@ -95,15 +100,21 @@ void disk_io::write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<s
          };
          case dataType::STRING: {
             Logger::log(LogLevel::DEBUG, "CASO STRING");
+            uint32_t size_disponible_buffer_snapshot = size_disponible_buffer;
 
             uint32_t string_size;
             // Antes nos aseguramos de que quede espacio para leer el tamaño de la string:
             if(sizeof(uint32_t) > size_disponible_buffer){
-               offset = sizeof(uint32_t);
+               offset = size_disponible_buffer;
+               Logger::log(LogLevel::DEBUG, "Nos hemos quedado a medias leyendo el TAMANO de la STRING");
                size_disponible_buffer -= sizeof(uint32_t);
                break;
             };
             size_disponible_buffer -= sizeof(uint32_t);
+            Logger::log(LogLevel::DEBUG, "Restamos al size disponible del buffer: ", false, true);
+            Logger::log(LogLevel::DEBUG, sizeof(uint32_t), true, false);
+            Logger::log(LogLevel::DEBUG, "Ahora el 'size_disponible_buffer' es: ", false, true);
+            Logger::log(LogLevel::DEBUG, size_disponible_buffer, true, false);
             // Pasados este punto, hemos podido leer el tamaño de la string entero
             // Ahora veremos si podemos leer su tamño y contenido de una:
 
@@ -114,11 +125,22 @@ void disk_io::write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<s
 
             // Ahora vemos si tenemos espacio suficiente para leer la string como tal;
             if(string_size + sizeof(uint32_t) > size_disponible_buffer){
-               offset = sizeof(string_size) + sizeof(uint32_t);
+               //offset = sizeof(string_size) + sizeof(uint32_t);
+               offset = size_disponible_buffer_snapshot;
+               //offset = sizeof(string_size);
+               Logger::log(LogLevel::DEBUG, "Nos hemos quedado a medias leyendo la STRING");
+               Logger::log(LogLevel::DEBUG, "El tamano de la string que dejamos a medias es de: ", false, true);
+               Logger::log(LogLevel::DEBUG, string_size, true, false);
+
                size_disponible_buffer -=  string_size;
                break;
             };
             size_disponible_buffer -=  string_size;
+            Logger::log(LogLevel::DEBUG, "Restamos al size disponible del buffer: ", false, true);
+            Logger::log(LogLevel::DEBUG, string_size, false, false);
+            Logger::log(LogLevel::DEBUG, " (hemos restado 'string_size')", true, false);
+            Logger::log(LogLevel::DEBUG, "Ahora el 'size_disponible_buffer' es: ", false, true);
+            Logger::log(LogLevel::DEBUG, size_disponible_buffer, true, false);
             // Realizamos la lectura:
             std::string valor_tmp;
             valor_tmp.resize(string_size); // Resize de la string
@@ -132,6 +154,14 @@ void disk_io::write_in_memory_with_data_buffer(dataType tipo_dato, std::vector<s
       Logger::log(LogLevel::DEBUG, "NO se ha entrado a la asignacion de memoria");
    };
 };
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 void disk_io::lectura_datos_monolitica(table* tabla){
 
@@ -159,6 +189,8 @@ void disk_io::lectura_datos_monolitica(table* tabla){
    uint32_t tamano_archivo_disponible = final_archivo;
    uint32_t size_dinamico_lectura = 0;
    uint32_t puntero_lectura = 0;
+
+   uint32_t contador_columnas_permanente = 0; // Para llevar un conteo persistente de las columnas
 
    // incializamos el buffer de lectura
    std::array<char, 128> buffer;
@@ -191,8 +223,11 @@ void disk_io::lectura_datos_monolitica(table* tabla){
    std::streampos current_pos = in.tellg();
    uint32_t posicion_actual = static_cast<uint32_t>(current_pos);
 
+
+   bool is_eof_bool = false; // Booleano para indicar si estamos al final o no:
+
    Logger::log(LogLevel::DEBUG, "Se han leido el numero de filas");
-   while(!disk_io::is_eof_2(puntero_lectura, size_dinamico_lectura)){
+   while(!is_eof_bool){
    //while(!disk_io::is_eof(in, end_pos)){
       Logger::log(LogLevel::DEBUG, "Iteracion del bucle while principal: ", false, true);
       Logger::log(LogLevel::DEBUG, aux_counter, true, false);
@@ -201,21 +236,6 @@ void disk_io::lectura_datos_monolitica(table* tabla){
 
 
       Logger::flush();
-      // Dentro del bucle de lectura principal:
-      //posicion_final += buffer_size;
-      // leemos el buffer.
-      /*if(disk_io::is_eof_2(puntero_lectura, size_dinamico_lectura)){
-      //if(disk_io::is_eof(in, end_pos)){
-         Logger::log(LogLevel::DEBUG, "ESTAMOS EN LA ULTIMA LECTURA");
-         // Esta será la última lectura:
-         uint32_t final_calculado = final_archivo - posicion_inicial;
-         size_dinamico_lectura = buffer_size - offset - final_calculado;
-         //in.read(buffer.data() + offset , buffer_size - offset - final_calculado);
-      } else {
-         // No se ha llegado al final del archivo:
-         size_dinamico_lectura = buffer_size - offset;
-         //in.read(buffer.data() + offset , buffer_size - offset);
-      };*/
 
 
       uint32_t final_calculado = final_archivo - posicion_inicial;
@@ -227,19 +247,23 @@ void disk_io::lectura_datos_monolitica(table* tabla){
       // Actualizamos la posicion_final:
       posicion_inicial += size_dinamico_lectura;
 
+
       // Justo antes de la lectura, movemos los bytes del offset, del final al principio:
-      /*std::copy(
+      std::copy(
             buffer.end() - offset, 
             buffer.end(), 
             buffer.begin()
-         );*/
+         );
 
-      std::memmove(buffer.data(), buffer.data() + size_dinamico_lectura, offset);
+      //std::memmove(buffer.data(), buffer.data() + size_dinamico_lectura, offset);
 
       // Ahora si realizamos la lectura:
+      //in.seekg(-offset, std::ios::cur); // Nos movemos -offset el puntero de lectura para pdoer leear en lo que nos quedamos a medias
       in.read(buffer.data() + offset , size_dinamico_lectura);
       Logger::log(LogLevel::DEBUG, "Hemos leido estos bytes: ", false, true);
       Logger::log(LogLevel::DEBUG, size_dinamico_lectura, true, false);
+      Logger::log(LogLevel::DEBUG, "El offset en esta lectura es de: ", false, true);
+      Logger::log(LogLevel::DEBUG, offset, true, false);
       Logger::flush();
       puntero_lectura += size_dinamico_lectura;
 
@@ -255,35 +279,59 @@ void disk_io::lectura_datos_monolitica(table* tabla){
       // Leer por filas y columnas y con un contador de bytes para ver donde vamos y si dejamos una variable a medias:
       uint32_t contador_bytes_buffer = 0;
 
-      size_disponible = size_dinamico_lectura;
+      //size_disponible = size_dinamico_lectura;
+      size_disponible = 128;
+
 
       // inicializamos donde guardaremos los datos en disco:
       std::map<std::string, std::vector<Values>>& columnas = tabla->data_buffer_ptr->columns;
       while(size_disponible >= 0 && offset == 0){
-         for(int j = 0; j<n_cols; j++){
-            // Actualizamos el tamaño disponible del buffer
-            //size_disponible = size_disponible - contador_bytes_buffer;
+         //for(int j = 0; j<n_cols; j++){
+         // Actualizamos el tamaño disponible del buffer
+         //size_disponible = size_disponible - contador_bytes_buffer;
 
-            Logger::log(LogLevel::DEBUG, "size_disponible: ", false, true);
-            Logger::log(LogLevel::DEBUG, size_disponible, true, false);
-            Logger::log(LogLevel::DEBUG, "offset: ", false, true);
-            Logger::log(LogLevel::DEBUG, offset, true, false);
-            Logger::flush();
+         Logger::log(LogLevel::DEBUG, "++++++++++++++++++++++++++++++++++++++++++++++");
 
-            disk_io::write_in_memory_with_data_buffer(
-               tipos_datos[j],
-               col_names,
-               size_disponible, // Size disponible del buffer
-               contador_bytes_buffer,
-               columnas,
-               j,
-               buffer,
-               offset
-            );
+         Logger::log(LogLevel::DEBUG, "Iteracion por la columna: ", false, true);
+         Logger::log(LogLevel::DEBUG, col_names[contador_columnas_permanente], false, false);
+         Logger::log(LogLevel::DEBUG, " numero: ", false, false);
+         Logger::log(LogLevel::DEBUG, contador_columnas_permanente, true, false);
+
+
+         Logger::log(LogLevel::DEBUG, "size_disponible antes de lectura: ", false, true);
+         Logger::log(LogLevel::DEBUG, size_disponible, true, false);
+         Logger::log(LogLevel::DEBUG, "offset antes de lectura: ", false, true);
+         Logger::log(LogLevel::DEBUG, offset, true, false);
+
+         disk_io::write_in_memory_with_data_buffer(
+            tipos_datos[contador_columnas_permanente],
+            col_names,
+            size_disponible, // Size disponible del buffer
+            contador_bytes_buffer,
+            columnas,
+            contador_columnas_permanente,
+            buffer,
+            offset
+         );
+
+         Logger::log(LogLevel::DEBUG, "size_disponible despues de lectura: ", false, true);
+         Logger::log(LogLevel::DEBUG, size_disponible, true, false);
+         Logger::log(LogLevel::DEBUG, "offset despues de lectura: ", false, true);
+         Logger::log(LogLevel::DEBUG, offset, true, false);
+         Logger::log(LogLevel::DEBUG, "++++++++++++++++++++++++++++++++++++++++++++++");
+         Logger::flush();
+
+         if(offset == 0){
+            contador_columnas_permanente += 1;
+         };
+
+
+         if(contador_columnas_permanente>=n_cols){
+            contador_columnas_permanente = 0;
+         };
 
 
             // Si tenemos aprovisionamiento llenamos la sección de datos venidos de disco de la tabla en RAM
-         }; // Fin de la iteración de una fila
 
       };
 
@@ -291,11 +339,12 @@ void disk_io::lectura_datos_monolitica(table* tabla){
 
       // Recalculamos el tamño disponbile del archivo:
       tamano_archivo_disponible -= size_dinamico_lectura;
+
+      is_eof_bool = disk_io::is_eof_2(puntero_lectura, size_dinamico_lectura);
       
    };
    in.close();
 };
-
 
 //-----------------------------------------------------------------------------------------------------------
 void disk_io::aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstream& out){
