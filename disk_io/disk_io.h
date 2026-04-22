@@ -52,7 +52,7 @@ namespace disk_io {
 
     void write_table_data(table* tabla, uint32_t n_rows);
 
-    void write_table_data_with_buffer(table* table_ptr, uint32_t n_rows);
+    void write_table_data_with_buffer_2(table* tabla, uint32_t n_rows);
 
     void write_table_data_viejo(table* tabla, uint32_t n_rows);
 

@@ -195,12 +195,6 @@ void disk_io::lectura_datos_monolitica(table* tabla){
    // incializamos el buffer de lectura
    std::array<char, 128> buffer;
 
-   if(buffer.size() < 4){
-      Logger::log(LogLevel::DEBUG, "ERROR: EL tamano del buffer debe ser mayor que 4, el tamano de un entero o decimal de 32 bits o 4 bytes");
-      Logger::log(LogLevel::DEBUG, "ERROR: Abortamos la lectura");
-      return;
-   };
-
    Logger::flush();
    Logger::flush();
    Logger::log(LogLevel::DEBUG, "7777777777777777777777777777777777777777777");
@@ -233,7 +227,6 @@ void disk_io::lectura_datos_monolitica(table* tabla){
    bool is_eof_bool = false; // Booleano para indicar si estamos al final o no:
 
    Logger::log(LogLevel::DEBUG, "Se han leido el numero de filas");
-   std::map<std::string, std::vector<Values>>& columnas = tabla->data_buffer_ptr->columns;
    while(!is_eof_bool){
    //while(!disk_io::is_eof(in, end_pos)){
       Logger::log(LogLevel::DEBUG, "Iteracion del bucle while principal: ", false, true);
@@ -291,6 +284,7 @@ void disk_io::lectura_datos_monolitica(table* tabla){
 
 
       // inicializamos donde guardaremos los datos en disco:
+      std::map<std::string, std::vector<Values>>& columnas = tabla->data_buffer_ptr->columns;
       while(size_disponible >= 0 && offset == 0){
          //for(int j = 0; j<n_cols; j++){
          // Actualizamos el tamaño disponible del buffer
@@ -331,11 +325,13 @@ void disk_io::lectura_datos_monolitica(table* tabla){
             contador_columnas_permanente += 1;
          };
 
+
          if(contador_columnas_permanente>=n_cols){
             contador_columnas_permanente = 0;
          };
 
-         // Si tenemos aprovisionamiento llenamos la sección de datos venidos de disco de la tabla en RAM
+
+            // Si tenemos aprovisionamiento llenamos la sección de datos venidos de disco de la tabla en RAM
 
       };
 
@@ -890,6 +886,178 @@ void disk_io::write_table_data(table* tabla, uint32_t n_rows){
 };
 
 
+
+void disk_io::write_table_data_with_buffer(table* tabla, uint32_t n_rows){
+
+   if (!tabla) return;
+   std::string nombre_tabla = tabla->metadata_ptr->name;
+   std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
+
+   // Abrimos la escritura:
+   std::fstream out(ruta_tabla, std::ios::in | std::ios::out | std::ios::binary);
+
+   // Ahora vemos si el archivo esta abierto o no:
+   if(!out.is_open()){
+      // Lo escribimos solo como out:
+      out.clear();
+      out.open(ruta_tabla, std::ios::out | std::ios::binary);
+   } else {
+      out.seekp(0, std::ios::beg);
+   };
+
+   if (!out) {
+      Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
+      return;
+   };
+   //////////////////////////////////////////////////////////////////
+   // Preraramos el buffer de escritura:
+   std::array<char, 128> buffer;
+   uint32_t bytes_escritos_buffer = 0;
+   uint32_t size_disponible_buffer = 128;
+
+
+   ///////////////////////////////////////////////////////////////////
+
+
+   table_metadata* metadata = tabla->metadata_ptr;
+   std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
+   std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
+   uint32_t n_cols = tipos_datos.size();
+   uint32_t n_filas = metadata->n_filas_ram;
+
+   // Creamos el iterador por filas:
+   auto it = disk_buffer::tableRowIterator_only_ram(nombre_tabla);
+   std::map<std::string, Values> fila_a_escribir; // Mapa nombre <-> vector de valores
+   Values valor_tmp;
+
+   // Antes de escribir los datos, escribimos las filas de datos totales:
+   uint32_t n_f_disk = tabla->metadata_ptr->n_filas_disco;
+   uint32_t n_f_ram = tabla->metadata_ptr->n_filas_ram;
+
+   uint32_t n_filas_total = n_f_disk + n_f_ram;
+   Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+   Logger::log(LogLevel::DEBUG, "FILAS QUE SE ESCRIBEN EN DISCO:");
+   Logger::log(LogLevel::DEBUG, "Filas en RAM: ", false, true);
+   Logger::log(LogLevel::DEBUG, n_f_ram, true, false);
+   Logger::log(LogLevel::DEBUG, "Filas en Disco: ", false, true);
+   Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
+   Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+   out.seekp(0);
+   out.write(reinterpret_cast<char*>(&n_filas_total), sizeof(uint32_t));
+
+   // Ahora nos movemos al final para poder escribir sólo al final
+   out.flush();
+   out.clear();
+   out.seekp(0, std::ios::end);
+   //std::vector<char> buffer;
+   ///////////////////////////////////////////////////////////////////////
+   // Ahora aquí si comenzamos con la escritura de datos por buffer:
+   uint32_t contador_columnas = 0;
+   uint32_t contador_filas = metadata->n_filas_ram;
+   bool offset = false;
+   uint32_t contador_fila_aux = 0;
+   //bool is_eof_value = it.is_eof();
+   // Ahora iteraremos hasta que esteé vacía la fila a escribir
+   //while(!it.is_eof()){
+   while(!it.is_eof() || contador_columnas < n_cols){
+
+      Logger::log(LogLevel::DEBUG, "Valor de si es EOF ANTES de actualizarlo: ", false, true);
+      if(it.is_eof()){
+         Logger::log(LogLevel::DEBUG, "true", true, false);
+      } else {
+         Logger::log(LogLevel::DEBUG, "false", true, false);
+      };
+
+      if(contador_columnas>=n_cols){
+         contador_columnas = 0;
+      };
+      if(contador_columnas == 0 && !offset && !it.is_eof()){
+         Logger::log(LogLevel::DEBUG, "ENTRAMOS A RECUPERAR LA SIGUIENTE FILA");
+         fila_a_escribir = it.get_next_row_ram_viva();
+         contador_fila_aux += 1;
+      };
+
+      Logger::log(LogLevel::DEBUG, "Valor de si es EOF DESPUES de actualizarlo: ", false, true);
+      if(it.is_eof()){
+         Logger::log(LogLevel::DEBUG, "true", true, false);
+      } else {
+         Logger::log(LogLevel::DEBUG, "false", true, false);
+      };
+      /*while(!offset){
+         size_disponible_buffer
+      };*/
+      if(!offset){
+         valor_tmp = fila_a_escribir.at(columnas_nombre[contador_columnas]); // Obtenemos el valor de una fila y columna concretos
+      };
+      //disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
+      //disk_io::write_aux_val_buffer(valor_tmp, tipos_datos[contador_columnas], buffer);
+
+      Logger::flush();
+      Logger::log(LogLevel::DEBUG, "????????????????????????????????????????????????????????????");
+      Logger::log(LogLevel::DEBUG, "Insercion de valor en el buffer");
+      Logger::log(LogLevel::DEBUG, "fila: ", false, true);
+      Logger::log(LogLevel::DEBUG, contador_fila_aux, true, false);
+      Logger::log(LogLevel::DEBUG, "columna: ", false, true);
+      Logger::log(LogLevel::DEBUG, contador_columnas, true, false);
+      Logger::log(LogLevel::DEBUG, "ANTES de una iteracion en la insercion en el buffer:");
+      Logger::log(LogLevel::DEBUG, "DESPUES de una iteracion en la insercion en el buffer:");
+      Logger::log(LogLevel::DEBUG, "bytes_escritos_buffer: ", false, true);
+      Logger::log(LogLevel::DEBUG, bytes_escritos_buffer, true, false);
+      Logger::log(LogLevel::DEBUG, "size_disponible_buffer: ", false, true);
+      Logger::log(LogLevel::DEBUG, size_disponible_buffer, true, false);
+      Logger::log(LogLevel::DEBUG, "offset: ", false, true);
+      if(offset){
+         Logger::log(LogLevel::DEBUG, "true", true, false);
+      } else {
+         Logger::log(LogLevel::DEBUG, "false", true, false);
+      };
+      offset = disk_io::write_aux_val_buffer_v2(valor_tmp, tipos_datos[contador_columnas], buffer, bytes_escritos_buffer, size_disponible_buffer);
+
+      Logger::log(LogLevel::DEBUG, "DESPUES de una iteracion en la insercion en el buffer:");
+      Logger::log(LogLevel::DEBUG, "bytes_escritos_buffer: ", false, true);
+      Logger::log(LogLevel::DEBUG, bytes_escritos_buffer, true, false);
+      Logger::log(LogLevel::DEBUG, "size_disponible_buffer: ", false, true);
+      Logger::log(LogLevel::DEBUG, size_disponible_buffer, true, false);
+      Logger::log(LogLevel::DEBUG, "offset: ", false, true);
+      if(offset){
+         Logger::log(LogLevel::DEBUG, "true", true, false);
+      } else {
+         Logger::log(LogLevel::DEBUG, "false", true, false);
+      };
+      Logger::log(LogLevel::DEBUG, "????????????????????????????????????????????????????????????");
+      Logger::flush();
+
+      //std::memcpy(valor_tmp.data(), buffer.data() + contador_bytes_buffer, string_size);
+ 
+
+      if(!offset){
+         contador_columnas += 1;
+      } else {
+         // Escribimos ya en el disco duro los buytes ya escritos:
+         out.write(buffer.data(), bytes_escritos_buffer);
+         // Reiniciamos las variables de:
+         size_disponible_buffer = 128;
+         bytes_escritos_buffer = 0;
+         offset = false;
+         Logger::log(LogLevel::DEBUG, "Se realiza una escritura del buffer");
+      };
+      // Escribimos los datos si estamos en la ultima iteración del bucle:
+      if(it.is_eof() && contador_columnas>=n_cols){
+         out.write(buffer.data(), bytes_escritos_buffer);
+         out.flush();
+      };
+   };
+   if(it.is_eof() && contador_columnas>=n_cols){
+      Logger::log(LogLevel::DEBUG, "ES EL FIN DE LA RECUPERACION DE FILAS");
+   };
+
+   // Antes de cerrar la escritura, escribimos el buffer de escritura:
+   //disk_io::aux_vector_buffer_write_disk(buffer, out);
+   out.close();
+};
+
+
+
 void disk_io::write_table_data_with_buffer_2(table* tabla, uint32_t n_rows){
 
    if (!tabla) return;
@@ -915,20 +1083,18 @@ void disk_io::write_table_data_with_buffer_2(table* tabla, uint32_t n_rows){
    //////////////////////////////////////////////////////////////////
    // Preraramos el buffer de escritura:
    std::array<char, 128> buffer;
-   if(buffer.size() < 4){
-      Logger::log(LogLevel::DEBUG, "ERROR: EL tamano del buffer debe ser mayor que 4, el tamano de un entero o decimal de 32 bits o 4 bytes");
-      Logger::log(LogLevel::DEBUG, "ERROR: Abortamos la lectura");
-      return;
-   };
    uint32_t bytes_escritos_buffer = 0;
    uint32_t size_disponible_buffer = 128;
+
+
    ///////////////////////////////////////////////////////////////////
+
 
    table_metadata* metadata = tabla->metadata_ptr;
    std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
    std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
    uint32_t n_cols = tipos_datos.size();
-   //uint32_t n_filas = metadata->n_filas_ram;
+   uint32_t n_filas = metadata->n_filas_ram;
 
    // Creamos el iterador por filas:
    auto it = disk_buffer::tableRowIterator_only_ram(nombre_tabla);
@@ -936,10 +1102,10 @@ void disk_io::write_table_data_with_buffer_2(table* tabla, uint32_t n_rows){
    Values valor_tmp;
 
    // Antes de escribir los datos, escribimos las filas de datos totales:
-   uint32_t n_f_disk = metadata->n_filas_disco;
-   uint32_t n_f_ram = metadata->n_filas_ram;
+   uint32_t n_f_disk = tabla->metadata_ptr->n_filas_disco;
+   uint32_t n_f_ram = tabla->metadata_ptr->n_filas_ram;
 
-   uint32_t n_filas_total = n_f_disk + n_f_ram; // Si se necsita esta variable para calcular las filas totales
+   uint32_t n_filas_total = n_f_disk + n_f_ram;
    Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
    Logger::log(LogLevel::DEBUG, "FILAS QUE SE ESCRIBEN EN DISCO:");
    Logger::log(LogLevel::DEBUG, "Filas en RAM: ", false, true);
@@ -958,11 +1124,15 @@ void disk_io::write_table_data_with_buffer_2(table* tabla, uint32_t n_rows){
    ///////////////////////////////////////////////////////////////////////
    // Ahora aquí si comenzamos con la escritura de datos por buffer:
    uint32_t contador_columnas = 0;
+   uint32_t contador_filas = metadata->n_filas_ram;
    bool offset = false;
    uint32_t contador_fila = 0;
+   //bool is_eof_value = it.is_eof();
+   // Ahora iteraremos hasta que esteé vacía la fila a escribir
+   //while(!it.is_eof()){
 
    // Iteramos por filas
-   while(contador_fila < n_f_ram){
+   while(contador_fila < n_filas){
       // Recuperamos la fila:
       fila_a_escribir = it.get_next_row_ram_viva();
       contador_columnas = 0;
