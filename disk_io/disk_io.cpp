@@ -329,7 +329,13 @@ void disk_io::lectura_datos_monolitica(table* tabla){
 
          if(offset == 0){
             contador_columnas_permanente += 1;
+         } else if(offset > 128){
+            Logger::log(LogLevel::ERROR, "El tamano del offset es mayor que el del buffer");
+            in.close();
+            return;
          };
+
+
 
          if(contador_columnas_permanente>=n_cols){
             contador_columnas_permanente = 0;
