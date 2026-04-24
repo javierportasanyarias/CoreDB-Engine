@@ -50,9 +50,13 @@ namespace disk_io {
 
     bool write_aux_val_buffer_v2(Values value, dataType tipo_dato, std::array<char, 128>& buffer, uint32_t& bytes_escritos_buffer, uint32_t& size_disponible_buffer);
 
+    void write_aux_val_buffer_v3(Values value, dataType tipo_dato, std::array<char, 128>& buffer, uint32_t& bytes_escritos_buffer, uint32_t& size_disponible_buffer, uint32_t& offset);
+
     void write_table_data(table* tabla, uint32_t n_rows);
 
     void write_table_data_with_buffer_2(table* tabla, uint32_t n_rows);
+
+    void write_table_data_with_buffer_3(table* tabla, uint32_t n_rows);
 
     void write_table_data_viejo(table* tabla, uint32_t n_rows);
 

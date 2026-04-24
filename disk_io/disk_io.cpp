@@ -180,7 +180,6 @@ void disk_io::lectura_datos_monolitica(table* tabla){
    // PUNTEROS AUXILIARES:
    uint32_t posicion_inicial = 0;
    //uint32_t posicion_final = 0;
-   uint32_t buffer_size = 128;
    uint32_t offset = 0;
    uint32_t final_archivo = static_cast<uint32_t>(file_size);
    Logger::log(LogLevel::DEBUG, "EL TAMANO DEL ARCHIVO ES: ", false, true);
@@ -194,8 +193,9 @@ void disk_io::lectura_datos_monolitica(table* tabla){
 
    // incializamos el buffer de lectura
    std::array<char, 128> buffer;
+   uint32_t buffer_size = buffer.size();
 
-   if(buffer.size() < 4){
+   if(buffer_size < 4){
       Logger::log(LogLevel::DEBUG, "ERROR: EL tamano del buffer debe ser mayor que 4, el tamano de un entero o decimal de 32 bits o 4 bytes");
       Logger::log(LogLevel::DEBUG, "ERROR: Abortamos la lectura");
       return;
@@ -819,6 +819,116 @@ bool disk_io::write_aux_val_buffer_v2(Values value, dataType tipo_dato, std::arr
    };
 };
 
+
+
+void disk_io::write_aux_val_buffer_v3(Values value, dataType tipo_dato, std::array<char, 128>& buffer, uint32_t& bytes_escritos_buffer, uint32_t& size_disponible_buffer, uint32_t& offset){
+
+   /*
+   Función parecida a 'write_aux_val', pero esta vez escribe un buffer de carácteres.
+   Dejándolo listo para así escribir el buffer en una sola llamada al disco,
+   reduciendo latencia de interacción con el disco en escritura.
+   Si se lee este mismo buffer se ahorrará también significativamente en tiempo de
+   lectura.
+   */
+
+   char* tmp_char_ptr = nullptr;
+
+   switch(tipo_dato){
+
+      case dataType::INT: {
+         Logger::log(LogLevel::DEBUG, "CASO INT");
+         int int_val;
+         int_val = std::get<int>(value);
+         tmp_char_ptr = reinterpret_cast<char*>(&int_val);
+         if(sizeof(int)>size_disponible_buffer){
+            offset = sizeof(int);
+            return;
+         };
+         std::memcpy(
+            buffer.data() + bytes_escritos_buffer, // 1. Destino (puntero al inicio + desplazamiento)
+            tmp_char_ptr,                // 2. Origen (la dirección de memoria de tu variable)
+            sizeof(int)               // 3. Tamaño (cuántos bytes ocupa la variable)
+         );
+         bytes_escritos_buffer += sizeof(int);
+         size_disponible_buffer -= sizeof(int);
+         return;
+      };
+      case dataType::FLOAT: {
+         Logger::log(LogLevel::DEBUG, "CASO FLOAT");
+         float float_val;
+         float_val = std::get<float>(value);
+         tmp_char_ptr = reinterpret_cast<char*>(&float_val);
+         //out.write(reinterpret_cast<char*>(&buffer), sizeof(float));
+         if(sizeof(float)>size_disponible_buffer){
+            offset = sizeof(float);
+            return;
+         };
+         std::memcpy(
+            buffer.data() + bytes_escritos_buffer, // 1. Destino (puntero al inicio + desplazamiento)
+            tmp_char_ptr,                // 2. Origen (la dirección de memoria de tu variable)
+            sizeof(float)               // 3. Tamaño (cuántos bytes ocupa la variable)
+         );
+         bytes_escritos_buffer += sizeof(float);
+         size_disponible_buffer -= sizeof(float);
+         return;
+      };
+      case dataType::BOOL: {
+         Logger::log(LogLevel::DEBUG, "CASO BOOL");
+         bool buffer_bool;
+         uint8_t buffer_int8;
+         buffer_bool = std::get<bool>(value);
+         if(buffer_bool){
+            buffer_int8 = 1;
+         }else{
+            buffer_int8 = 0;
+         };
+         tmp_char_ptr = reinterpret_cast<char*>(&buffer_int8);
+         //out.write(reinterpret_cast<char*>(&buffer_int8), sizeof(uint8_t));
+         if(sizeof(uint8_t)>size_disponible_buffer){
+            offset = sizeof(uint8_t);
+            return;
+         };
+         std::memcpy(
+            buffer.data() + bytes_escritos_buffer, // 1. Destino (puntero al inicio + desplazamiento)
+            tmp_char_ptr,                // 2. Origen (la dirección de memoria de tu variable)
+            sizeof(uint8_t)               // 3. Tamaño (cuántos bytes ocupa la variable)
+         );
+         bytes_escritos_buffer += sizeof(uint8_t);
+         size_disponible_buffer -= sizeof(uint8_t);
+         return;
+      };
+      case dataType::STRING: {
+         Logger::log(LogLevel::DEBUG, "CASO STRING");
+         std::string string_val;
+         uint32_t string_size;
+         string_val = std::get<std::string>(value);
+         string_size = string_val.size();
+         // Primero escribimos el tamaño de la string:
+         tmp_char_ptr = reinterpret_cast<char*>(&string_size);
+         if(sizeof(uint32_t) + string_size > size_disponible_buffer){
+            offset = sizeof(uint32_t) + string_size;
+            return;
+         };
+         std::memcpy(
+            buffer.data() + bytes_escritos_buffer, // 1. Destino (puntero al inicio + desplazamiento)
+            tmp_char_ptr,                // 2. Origen (la dirección de memoria de tu variable)
+            sizeof(uint32_t)               // 3. Tamaño (cuántos bytes ocupa la variable)
+         );
+         bytes_escritos_buffer += sizeof(uint32_t);
+         size_disponible_buffer -= sizeof(uint32_t);
+         // Ahora ya si escribimos la cadena de texto:
+         tmp_char_ptr = string_val.data();
+         std::memcpy(
+            buffer.data() + bytes_escritos_buffer, // 1. Destino (puntero al inicio + desplazamiento)
+            tmp_char_ptr,                // 2. Origen (la dirección de memoria de tu variable)
+            string_size               // 3. Tamaño (cuántos bytes ocupa la variable)
+         );
+         bytes_escritos_buffer += string_size;
+         size_disponible_buffer -= string_size;
+         return;
+      };
+   };
+};
 //========================================================
 //== FUNION ESCRITURA DATOS: =============================
 //========================================================
@@ -921,7 +1031,8 @@ void disk_io::write_table_data_with_buffer_2(table* tabla, uint32_t n_rows){
    //////////////////////////////////////////////////////////////////
    // Preraramos el buffer de escritura:
    std::array<char, 128> buffer;
-   if(buffer.size() < 4){
+   uint32_t buffer_size = buffer.size();
+   if(buffer_size < 4){
       Logger::log(LogLevel::DEBUG, "ERROR: EL tamano del buffer debe ser mayor que 4, el tamano de un entero o decimal de 32 bits o 4 bytes");
       Logger::log(LogLevel::DEBUG, "ERROR: Abortamos la lectura");
       return;
@@ -989,6 +1100,119 @@ void disk_io::write_table_data_with_buffer_2(table* tabla, uint32_t n_rows){
             size_disponible_buffer = 128;
             bytes_escritos_buffer = 0;
             offset = false;
+         };
+      };
+      contador_fila += 1;
+   };
+   // Por ultimo escribimos lo sobrante:
+   out.write(buffer.data(), bytes_escritos_buffer);
+   out.flush();
+   out.close();
+};
+
+
+void disk_io::write_table_data_with_buffer_3(table* tabla, uint32_t n_rows){
+
+   if (!tabla) return;
+   std::string nombre_tabla = tabla->metadata_ptr->name;
+   std::string ruta_tabla = "data/" + nombre_tabla + "_data.bin";
+
+   // Abrimos la escritura:
+   std::fstream out(ruta_tabla, std::ios::in | std::ios::out | std::ios::binary);
+
+   // Ahora vemos si el archivo esta abierto o no:
+   if(!out.is_open()){
+      // Lo escribimos solo como out:
+      out.clear();
+      out.open(ruta_tabla, std::ios::out | std::ios::binary);
+   } else {
+      out.seekp(0, std::ios::beg);
+   };
+
+   if (!out) {
+      Logger::log(LogLevel::ERROR, "Error fatal abriendo archivo");
+      return;
+   };
+   //////////////////////////////////////////////////////////////////
+   // Preraramos el buffer de escritura:
+   std::array<char, 128> buffer;
+   uint32_t buffer_size = buffer.size();
+   if(buffer_size < 4){
+      Logger::log(LogLevel::DEBUG, "ERROR: EL tamano del buffer debe ser mayor que 4, el tamano de un entero o decimal de 32 bits o 4 bytes");
+      Logger::log(LogLevel::DEBUG, "ERROR: Abortamos la lectura");
+      return;
+   };
+   uint32_t bytes_escritos_buffer = 0;
+   uint32_t size_disponible_buffer = 128;
+   ///////////////////////////////////////////////////////////////////
+
+   table_metadata* metadata = tabla->metadata_ptr;
+   std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
+   std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
+   uint32_t n_cols = tipos_datos.size();
+   //uint32_t n_filas = metadata->n_filas_ram;
+
+   // Creamos el iterador por filas:
+   auto it = disk_buffer::tableRowIterator_only_ram(nombre_tabla);
+   std::map<std::string, Values> fila_a_escribir; // Mapa nombre <-> vector de valores
+   Values valor_tmp;
+
+   // Antes de escribir los datos, escribimos las filas de datos totales:
+   uint32_t n_f_disk = metadata->n_filas_disco;
+   uint32_t n_f_ram = metadata->n_filas_ram;
+
+   uint32_t n_filas_total = n_f_disk + n_f_ram; // Si se necsita esta variable para calcular las filas totales
+   Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+   Logger::log(LogLevel::DEBUG, "FILAS QUE SE ESCRIBEN EN DISCO:");
+   Logger::log(LogLevel::DEBUG, "Filas en RAM: ", false, true);
+   Logger::log(LogLevel::DEBUG, n_f_ram, true, false);
+   Logger::log(LogLevel::DEBUG, "Filas en Disco: ", false, true);
+   Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
+   Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+   out.seekp(0);
+   out.write(reinterpret_cast<char*>(&n_filas_total), sizeof(uint32_t));
+
+   // Ahora nos movemos al final para poder escribir sólo al final
+   out.flush();
+   out.clear();
+   out.seekp(0, std::ios::end);
+   //std::vector<char> buffer;
+   ///////////////////////////////////////////////////////////////////////
+   // Ahora aquí si comenzamos con la escritura de datos por buffer:
+   uint32_t contador_columnas = 0;
+   //bool offset = false;
+   uint32_t offset = 0;
+   uint32_t contador_fila = 0;
+
+   // Iteramos por filas
+   while(contador_fila < n_f_ram){
+      // Recuperamos la fila:
+      fila_a_escribir = it.get_next_row_ram_viva();
+      contador_columnas = 0;
+      // Iteramos por columna:
+      while(contador_columnas < n_cols){
+         // Recuperamos el valor concreto a recuperar:
+         if(offset == 0){
+            valor_tmp = fila_a_escribir.at(columnas_nombre[contador_columnas]);
+         };
+
+         disk_io::write_aux_val_buffer_v3(valor_tmp, tipos_datos[contador_columnas], buffer, bytes_escritos_buffer, size_disponible_buffer, offset);
+
+         if(offset == 0){
+            contador_columnas += 1;
+         } else if(offset > buffer_size){
+            Logger::log(LogLevel::ERROR, "El tamano del offset es mayor que el del buffer");
+            out.close();
+            out.flush();
+            return;
+
+         } else {
+            out.write(buffer.data(), bytes_escritos_buffer);
+            out.flush();
+            size_disponible_buffer = 128;
+            bytes_escritos_buffer = 0;
+            //offset = false;
+            offset = 0;
          };
       };
       contador_fila += 1;
@@ -1257,7 +1481,8 @@ void disk_io::write_dump(){
 
                   n_rows = disk_io::write_table_metadata(table_ptr);
                   //disk_io::write_table_data(table_ptr, n_rows);
-                  disk_io::write_table_data_with_buffer_2(table_ptr, n_rows);
+                  //disk_io::write_table_data_with_buffer_2(table_ptr, n_rows);
+                  disk_io::write_table_data_with_buffer_3(table_ptr, n_rows);
 
                   // Actualizamos los metadatos de la tabla para mostar el numero de filas escritas en disco:
                   table_ptr->metadata_ptr->n_filas_disco = n_rows;
