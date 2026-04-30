@@ -121,26 +121,40 @@ std::string textUtils::borrar_espacios_repetidos(const std::string& input){
    palabras, o lo que serán los tokens.
    */
 
-   //std::string* result = new std::string("");
    std::string result = "";
    bool auxbool = true;
+   const char* ptr_current = input.data();
+   const char* ptr_end = ptr_current + input.size();
 
-   for(int i = 0; i<input.size(); i++){
+   while(ptr_current < ptr_end){
 
-      //*buffer += input[i];
+      char current_char = *ptr_current;
+
+      if(current_char == ' '){
+         if(auxbool){
+	         result += current_char;
+            auxbool = false;
+         };
+      }else{
+	      result += current_char;
+         auxbool = true;
+      };
+      ptr_current++;
+   };
+
+
+   /*for(int i = 0; i<size_input; i++){
 
       if(input[i] == ' '){
          if(auxbool){
-            //*result += input[i];
 	         result += input[i];
             auxbool = false;
          };
       }else{
-         //*result += input[i];
 	      result += input[i];
          auxbool = true;
       };
-   };
+   };*/
    result += " ";
    return result;
 };
@@ -150,19 +164,31 @@ std::string textUtils::borrar_espacios_principio(const std::string& input){
    Función que borra los espacios al principio de la cadena del input.
    */
 
-   //std::string* result = new std::string("");
+   const char* ptr_current = input.data();
+   const char* ptr_end = ptr_current + input.size();
    std::string result = "";
-   //std::string* buffer = new std::string("");
    bool auxbool = false;
-   for(int i = 0; i<input.size(); i++){
+
+   while(ptr_current < ptr_end){
+
+      char current_char = *ptr_current;
+   
+      if(current_char != ' '){
+         auxbool = true;
+      };
+      if(auxbool){
+         result += current_char;
+      };
+      ptr_current++;
+   };
+   /*for(int i = 0; i<input.size(); i++){
       if(input[i] != ' '){
          auxbool = true;
       };
       if(auxbool){
-         //*result += input[i];
          result += input[i];
       };
-   };
+   };*/
    return result;
 };
 
