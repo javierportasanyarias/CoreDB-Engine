@@ -10,9 +10,9 @@
 #include "logging.h"
 
 #include <cctype> // Para isprint
-#include "disk_io.h"
 #include "disk_wal.h"
 #include "disk_buffer.h"
+#include "disk_aux.h"
 
 
 
@@ -185,6 +185,11 @@ void aux_table_values_print(const std::vector<std::string>& col_list, std::strin
 	while(!it.is_eof()){
       // consultamos la proxima fila:
 	   fila = it.get_next_row();
+      // Antes vemos si está vacía o no:
+      if (fila.empty()) {
+         // Escudo contra filas vacías antess de marcar que se ha llegado a EOF
+         continue;
+      };
 	   // Ya tenemos la fila, iteramos por la seleccion de columnas:
 	   Logger::log(LogLevel::OUTPUT, " | ", false, false);
 	   for(const std::string& nombre_col: col_list){
@@ -205,6 +210,11 @@ void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string n
    while(!it.is_eof()){
       // consultamos la proxima fila:
       fila = it.get_next_row();
+      // Antes vemos si está vacía o no:
+      if (fila.empty()) {
+         // Escudo contra filas vacías antess de marcar que se ha llegado a EOF
+         continue;
+      };
       // Ya tenemos la fila, iteramos por la seleccion de columnas:
       Logger::log(LogLevel::OUTPUT, " | ", false, false);
       for(const ItemNode& elemento: col_list){
@@ -278,8 +288,8 @@ void liberar_tabla(table*& tb){
    */
    //////////////////////////
    //1) Eliminación de los datos en disco:
-   disk_io::eliminar_archivo_binario_metadatos(tb);
-   disk_io::eliminar_archivo_binario_datos(tb);
+   disk_aux::eliminar_archivo_binario_metadatos(tb);
+   disk_aux::eliminar_archivo_binario_datos(tb);
    //////////////////////////
    // Eliminación de los datos en RAM:
 

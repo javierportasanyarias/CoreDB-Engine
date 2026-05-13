@@ -2,7 +2,7 @@
 #define DISK_BUFFER
 
 #include "globals.h"
-#include "disk_io.h"
+#include "disk_in.h"
 #include "logging.h"
 
 namespace disk_buffer {
@@ -15,40 +15,8 @@ namespace disk_buffer {
 
 
    void contar_datos_en_ram_todas_tablas();
-   // ==========================================
-   // == FUNCION PRINCIPAL: ITERADOR FILAS =====
-   // ==========================================
 
-   class tableRowIterator {
-      /*
-      Clase para iterar y retornar filas, venidas del disco o de la propia sesión.
-      Posee los siguientes atributos:
-         -> contador: para trackear la fila por la que se está iterando/recuperando
-         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
-         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
-            * Si es true: se ha llegado al final y no hay más filas que devolver
-            * Si es false: todavía queda una fila o más por iterar
-      Al crearse la clase automáticamente:
-         -> Se cuentan los datos en RAM viva.
-         -> Si existe archivo de datos, este se lee del disco.
-         -> Se calcula el valor inicial de la variable eof.
-      */
-      public:
-         uint32_t contador;
-         table* tabla_ptr;
-         bool eof;
 
-         // Metodo constructor
-         tableRowIterator(std::string tabla_nombre);
-
-         // Para consultar eof:
-         bool is_eof();
-
-         // Para devolver la prox fila:
-         std::map<std::string, Values> get_next_row();
-   };
-   
-   
    //====================================================
    //== tableRowIterator pero solo para RAM =============
    //====================================================
@@ -79,6 +47,96 @@ namespace disk_buffer {
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
       std::map<std::string, Values> get_next_row_ram_viva();
    };
+
+
+   //====================================================
+   //== tableRowIterator pero solo para DISCO ===========
+   //====================================================
+   
+   class tableRowIterator_only_disk_part {
+      public:
+         uint32_t contador;
+         table* tabla_ptr;
+         bool eof;
+
+         // Metodo constructor:
+         tableRowIterator_only_disk_part(std::string tabla_nombre);
+
+         // Para consultar eof:
+         bool is_eof();
+
+         // == PARA OBTENER LA PROXIMA FILA del disco:
+         std::map<std::string, Values> get_next_row_only_disk_part(disk_in::read_table_iterator* table_reader_obj);
+
+   };
+
+
+   // ==========================================
+   // == FUNCION PRINCIPAL: ITERADOR FILAS =====
+   // ==========================================
+
+   class tableRowIterator {
+      /*
+      Clase para iterar y retornar filas, venidas del disco o de la propia sesión.
+      Esta clase engloba lo que es una máquina de estados finitos, manejando así
+      la lectrua de filas tanto de la RAM como de las particiones en disco.
+      Posee los siguientes atributos:
+         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> first_execution: booleano que trackea si ha sido la primera ejecución o no
+         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
+            * Si es true: se ha llegado al final y no hay más filas que devolver
+            * Si es false: todavía queda una fila o más por iterar
+            Se incluyen tanto filas definidas en la propia sesión o leídas del disco.
+            Es verdadera si eof_ram y eof_disk son verdaderas las dos.
+         -> eof_ram: condicional para medir si se ha llegado al final de las filas
+               efinidas en la sesión.
+         -> eof_partition: condicional para medir si se ha terminado de leer una partición.
+         -> eof_ram: condicional para medir si se ha llegado al final de las filas
+            definidas provenientes de los datos en disco.
+         ->estado_fsm: Es el estado de la máquina de estados finitos, sus estados son los siguientes:
+            * 1:
+            * 2:
+            * 3:
+            * 4:
+            * 255:
+            Este estado se guarda en un entero sin signo de 1 byte, con fin de ahorrar memoria
+         -> table_name: nombre de la tabla
+         -> Iteradores: Estos son objetos que nos permitirán obtener las filas de la sesión o del disco:
+            * iterator_ram: iterador únicamente preparado para retornar las filas definidas en esa 
+              misma sesión.
+            * table_reader_obj: objeto que lee y carga temporalmente en memoria de la tabla los datos
+              de cada partición. Va recuperando y cargando dicha información partición a partición.
+            * iterator_disco: iterador que devuelve las filas exclusivamente recupoerdas al leer del disco.
+      */
+      public:
+         //uint32_t contador;
+         table* tabla_ptr;
+         bool first_execution;
+         bool eof;
+         bool eof_ram;
+         bool eof_partition; // Si se ha terminado o no de leer una particion
+         bool eof_disk;
+         uint8_t estado_fsm;
+         std::string table_name;
+         
+         // Iteradores auxiliares:
+         tableRowIterator_only_ram* iterator_ram;
+         disk_in::read_table_iterator* table_reader_obj;
+         tableRowIterator_only_disk_part* iterator_disco;
+
+         // Metodo constructor
+         tableRowIterator(std::string tabla_nombre);
+
+         // Para consultar eof:
+         bool is_eof();
+
+         // Unidad de control:
+         std::map<std::string, Values> control_unit();
+
+         // Para devolver la prox fila:
+         std::map<std::string, Values> get_next_row();
+   };
+
 
 
    //====================================================

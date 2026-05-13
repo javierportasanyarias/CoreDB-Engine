@@ -9,9 +9,14 @@ clang++ -std=c++20 \
   -I"data_structure" \
   -Ilog \
   -I"disk_io" \
+  -I"disk_in" \
+  -I"disk_out" \
+  -I"disk_metadata" \
+  -I"disk_aux" \
   -I"disk_wal" \
+  -I"disk_buffer" \
   -Itests \
-  -Idisk_buffer \
+  -Ipartition_sorting \
   app/main.cpp \
   execution/execution.cpp \
   planning_execution/execution_planning.cpp \
@@ -23,6 +28,11 @@ clang++ -std=c++20 \
   tests/data_structs.cpp \
   tests/bateria_tests.cpp \
   disk_io/disk_io.cpp \
+  disk_in/disk_in.cpp \
+  disk_out/disk_out.cpp \
+  disk_metadata/disk_metadata.cpp \
+  disk_aux/disk_aux.cpp \
   disk_wal/disk_wal.cpp \
   disk_buffer/disk_buffer.cpp \
+  partition_sorting/part_sort.cpp \
   -o app/sql_app.exe

@@ -19,6 +19,7 @@
 #include "logging.h"
 
 #include "disk_io.h"
+#include "disk_metadata.h"
 #include "disk_wal.h"
 #include "bateria_tests.h"
 
@@ -36,7 +37,7 @@ int main(){
    Logger::level = LogLevel::DEBUG;
    
    // Antes de nada, vemos laa tablas en disco y escribimos sus metadatos en memoria
-   disk_io::lectura_metadatos_todas_tablas();
+   disk_metadata::lectura_metadatos_todas_tablas();
 
    // Leemos también los datos recuperados del WAL:
    disk_wal::read_wal();
