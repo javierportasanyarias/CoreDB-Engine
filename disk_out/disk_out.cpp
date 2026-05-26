@@ -23,7 +23,7 @@
 
 
 
-void disk_out::write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<int>& vec_vals){
+/*void disk_out::write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<int>& vec_vals){
 
    std::ofstream out;
    out.open("data/" + nombre_tabla + "/" + column_name + ".dat", std::ios::out | std::ios::binary);
@@ -64,42 +64,67 @@ void disk_out::write_fixed_len_columns(std::string nombre_tabla, std::string col
    out.write(valores_chars, size_valores);
    out.flush();
    out.close();
-};
+};*/
 
 
-void disk_out::fix_vect_vals(std::vector<Values>& input, std::vector<int>& vec_vals){
 
-   uint32_t size_input = input.size();
-   for(int i = 0; i<size_input; i++){
-      vec_vals.push_back(std::get<int>(input[i]));
+
+void disk_out::fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<int>& vec_vals){
+   /* CASO para INTs:
+
+   inicio y fin son sólo del buffer, no los totales
+   de todos los datos ni los d la partición
+   */
+
+   vec_vals.clear();
+   while(inicio < fin){
+      vec_vals.push_back(std::get<int>(*inicio));
+      ++inicio;
    };
 };
 
-void disk_out::fix_vect_vals(std::vector<Values>& input, std::vector<float>& vec_vals){
 
-   uint32_t size_input = input.size();
-   for(int i = 0; i<size_input; i++){
-      vec_vals.push_back(std::get<float>(input[i]));
+
+
+void disk_out::fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<float>& vec_vals){
+   /* CASO para FLOATs:
+
+   inicio y fin son sólo del buffer, no los totales
+   de todos los datos ni los d la partición
+   */
+
+   vec_vals.clear();
+   while(inicio < fin){
+      vec_vals.push_back(std::get<float>(*inicio));
+      ++inicio;
    };
 };
 
-void disk_out::fix_vect_vals(std::vector<Values>& input, std::vector<uint8_t>& vec_vals){
 
-   uint32_t size_input = input.size();
-   for(int i = 0; i<size_input; i++){
-      if(std::get<bool>(input[i]) == 1){
+
+void disk_out::fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<uint8_t>& vec_vals){
+   /* CASO para BOOLs:
+
+   inicio y fin son sólo del buffer, no los totales
+   de todos los datos ni los d la partición
+   */
+
+   vec_vals.clear();
+   while(inicio < fin){
+      if(std::get<bool>(*inicio) == 1){
          vec_vals.push_back(1);
       }else{
          vec_vals.push_back(0);
       };
+      ++inicio;
    };
 };
 
-void disk_out::fix_vect_vals(std::vector<Values>& input, std::vector<std::string>& vec_vals, std::vector<uint32_t>& vec_sizes){
-   /*
+/*void disk_out::fix_vect_vals(std::vector<Values>& input, std::vector<std::string>& vec_vals, std::vector<uint32_t>& vec_sizes){
+
    Caso especial al registrar una string, que no solo almacenamos las
    variables en sí, si no su tamaño o dónde acaba cada una.
-   */
+
    uint32_t size_input = input.size();
    uint32_t acc_size = 0;
    std::string tmp_string;
@@ -110,7 +135,37 @@ void disk_out::fix_vect_vals(std::vector<Values>& input, std::vector<std::string
       vec_vals.push_back(tmp_string);
       vec_sizes.push_back(acc_size);
    };
+};*/
+
+uint32_t disk_out::fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<char>& vec_vals, std::vector<uint32_t>& vec_sizes){
+   /* CASO para STRINGs:
+
+   inicio y fin son sólo del buffer, no los totales
+   de todos los datos ni los d la partición
+
+   escribir_particion_string
+   */
+
+   uint32_t batch_size = 0;
+   std::string tmp_string;
+   vec_vals.clear();
+   vec_sizes.clear();
+   uint32_t acc_size = 0;
+   while(inicio < fin){
+      tmp_string = std::get<std::string>(*inicio);
+      acc_size = tmp_string.size();
+      //vec_vals.push_back(tmp_string.data());
+      vec_vals.insert(vec_vals.end(), tmp_string.begin(), tmp_string.end());
+      vec_sizes.push_back(acc_size);
+      batch_size += acc_size;
+      ++inicio;
+   };
+   return batch_size;
 };
+
+
+
+
 
 // FUNCIONES AUXILIARES DE LAS FUNCIONES DE ESCRITURA:
 
@@ -233,43 +288,77 @@ int disk_out::obtener_size_disponible(std::string ruta_variable, std::string ult
 
 void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::string ruta_escritura){
    std::ofstream out;
-   std::vector<Values> sub_vector(inicio, fin);
-   Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+   //std::vector<Values> sub_vector(inicio, fin);
    std::vector<int> vec_vals;
-   disk_out::fix_vect_vals(sub_vector, vec_vals);
-   Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+   uint32_t size_particion = 1;
+   uint32_t num_filas_escritas;
+   vec_vals.reserve(size_particion);
    out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
    Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
-   uint32_t size_valores = vec_vals.size() * sizeof(int);
-   // Este es un caso especial, iteramos por cadaelemento
-   char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
-   Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
-   out.write(valores_chars, size_valores);
-   Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
-   out.flush();
+   std::vector<Values>::iterator tmp_ini_index;
+   tmp_ini_index = inicio;
+   std::vector<Values>::iterator tmp_end_index;
+   //Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+   while(tmp_ini_index < fin){
+      // Calculamos el tamaño del subvector a crear:
+      tmp_end_index = tmp_ini_index + size_particion;
+      if(tmp_end_index > fin){
+         tmp_end_index = fin;
+      };
+      num_filas_escritas = tmp_end_index - tmp_ini_index;
+      std::vector<Values> sub_vector(tmp_ini_index, tmp_end_index);
+      ////// PROCESO DE ESCRIURA ///////////////////
+      vec_vals.clear();
+      disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, vec_vals);
+      Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+      char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
+      Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
+      out.write(valores_chars, num_filas_escritas * sizeof(int));
+      Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
+      out.flush();
+      //////////////////////////////////////////////
+      tmp_ini_index += num_filas_escritas;
+   };
    out.close();
 };
 
 void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::string ruta_escritura){
    std::ofstream out;
-   std::vector<Values> sub_vector(inicio, fin);
-   Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+   //std::vector<Values> sub_vector(inicio, fin);
    std::vector<float> vec_vals;
-   disk_out::fix_vect_vals(sub_vector, vec_vals);
-   Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+   uint32_t size_particion = 1;
+   uint32_t num_filas_escritas;
+   vec_vals.reserve(size_particion);
    out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
    Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
-   uint32_t size_valores = vec_vals.size() * sizeof(float);
-   // Este es un caso especial, iteramos por cadaelemento
-   char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
-   Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
-   out.write(valores_chars, size_valores);
-   Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
-   out.flush();
+   std::vector<Values>::iterator tmp_ini_index;
+   tmp_ini_index = inicio;
+   std::vector<Values>::iterator tmp_end_index;
+   //Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+   while(tmp_ini_index < fin){
+      // Calculamos el tamaño del subvector a crear:
+      tmp_end_index = tmp_ini_index + size_particion;
+      if(tmp_end_index > fin){
+         tmp_end_index = fin;
+      };
+      num_filas_escritas = tmp_end_index - tmp_ini_index;
+      std::vector<Values> sub_vector(tmp_ini_index, tmp_end_index);
+      ////// PROCESO DE ESCRIURA ///////////////////
+      vec_vals.clear();
+      disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, vec_vals);
+      Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+      char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
+      Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
+      out.write(valores_chars, num_filas_escritas * sizeof(float));
+      Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
+      out.flush();
+      //////////////////////////////////////////////
+      tmp_ini_index += num_filas_escritas;
+   };
    out.close();
 };
 
-void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta_escritura){
+/*void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta_escritura){
    std::ofstream out;
    std::vector<Values> sub_vector(inicio, fin);
    Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
@@ -286,9 +375,49 @@ void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta
    Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
    out.flush();
    out.close();
+};*/
+
+
+void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta_escritura){
+   std::ofstream out;
+   //std::vector<Values> sub_vector(inicio, fin);
+   std::vector<uint8_t> vec_vals;
+   uint32_t size_particion = 1;
+   uint32_t num_filas_escritas;
+   vec_vals.reserve(size_particion);
+   out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
+   Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+   std::vector<Values>::iterator tmp_ini_index;
+   tmp_ini_index = inicio;
+   std::vector<Values>::iterator tmp_end_index;
+   //Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+   while(tmp_ini_index < fin){
+      // Calculamos el tamaño del subvector a crear:
+      tmp_end_index = tmp_ini_index + size_particion;
+      if(tmp_end_index > fin){
+         tmp_end_index = fin;
+      };
+      num_filas_escritas = tmp_end_index - tmp_ini_index;
+      std::vector<Values> sub_vector(tmp_ini_index, tmp_end_index);
+      ////// PROCESO DE ESCRIURA ///////////////////
+      vec_vals.clear();
+      disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, vec_vals);
+      Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+      char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
+      Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
+      out.write(valores_chars, num_filas_escritas);
+      Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
+      out.flush();
+      //////////////////////////////////////////////
+      tmp_ini_index += num_filas_escritas;
+   };
+   out.close();
 };
 
-void disk_out::escribir_particion_string(auto& inicio, auto& fin, std::string ruta_escritura){
+
+
+
+/*void disk_out::escribir_particion_string(auto& inicio, auto& fin, std::string ruta_escritura){
    std::ofstream out1;
    std::ofstream out2;
    std::vector<Values> sub_vector(inicio, fin);
@@ -330,7 +459,144 @@ void disk_out::escribir_particion_string(auto& inicio, auto& fin, std::string ru
    out1.close();
    out2.flush();
    out2.close();
+};*/
+
+/*uint32_t disk_io::hallar_bytes_datos_a_escribir(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin){
+   // escribir_particion_string
+   uint32_t size_strings_bytes = 0;
+   std::string tmp_string;
+   while(inicio < fin){
+      tmp_string = std::get<std::string>(*inicio);
+      size_strings_bytes += tmp_string.size();
+      ++inicio;
+   };
+   return size_strings_bytes;
+};*/
+
+struct byteStreamer {
+   /*
+   Los datos residen en un std::vector<Values>, esto significa
+   que las strings que puedan albergar NO son contiguas.
+   Para no complicar más el buffer de escritura, creamos este
+   struct, cuyo objetivo es abstraer totalmente en la obtención
+   del buffer, pudiendo así mantener un bucle de escritura muy sencillo
+   */
+   std::vector<Values>::iterator inicio;
+   std::vector<Values>::iterator fin;
+   uint32_t char_idx = 0;
+   uint32_t filas_escritas = 0;
+   uint32_t string_acumulada_bytes = 0;
+
+   bool is_data_left(){
+      return inicio < fin;
+   };
+
+   // Función que retornará un buffer lleno
+   uint32_t extraer_bytes(std::vector<char>& buffer, std::vector<uint32_t>& buffer_sizes, uint32_t limite){
+      filas_escritas = 0;
+      buffer.clear();
+      buffer_sizes.clear();
+      
+      uint32_t bytes_copiados = 0;
+      uint32_t tamano_total_string = 0;
+      // Se para la copia cuando se haya alcanzado el fin de las filas  o no quede más especio en la partición:
+      while(inicio < fin && bytes_copiados < limite){
+         const std::string& str = std::get<std::string>(*inicio);
+
+         uint32_t bytes_disponibles_en_str = str.size() - char_idx;
+
+         uint32_t espacio_libre_en_buffer = limite - bytes_copiados;
+
+         // Sólo insertamos en el buffer si cabe en el buffer:
+         if(bytes_disponibles_en_str <= espacio_libre_en_buffer){
+            // CASo A: La string o lo que queda de esta cabe entera:
+            buffer.insert(buffer.end(), str.begin() + char_idx, str.end());
+
+            bytes_copiados += bytes_disponibles_en_str;
+
+            tamano_total_string = string_acumulada_bytes + bytes_disponibles_en_str;
+            buffer_sizes.push_back(tamano_total_string);
+            ++filas_escritas;
+
+            char_idx = 0;
+
+            ++inicio;
+            string_acumulada_bytes = 0;
+         }else{
+            // CASO B: La string no cabe entera:
+            // Copiamos solo el trozo exacto de caracteres que llene el espacio libre del buffer
+            buffer.insert(buffer.end(), 
+                          str.begin() + char_idx, 
+                          str.begin() + char_idx + espacio_libre_en_buffer);
+            
+            // Sumamos los últimos bytes para llegar exactamente al 'limite' (64 KB)
+            bytes_copiados += espacio_libre_en_buffer;
+            
+            // ¡ESTADO FRAGMENTADO!: Recordamos la posición exacta de la letra donde nos quedamos
+            char_idx += espacio_libre_en_buffer; 
+            
+            // Rompemos el bucle 'while'. El buffer está lleno al 100%.
+            // OJO: NO avanzamos '++actual'. Nos quedamos apuntando a la misma string.
+            //Logger::log(LogLevel::DEBUG, "El tamaño disponible en la particion es: ", false, true);
+            /*if(filas_escritas == 0){
+               buffer_sizes.push_back(espacio_libre_en_buffer);
+            }else{
+               buffer_sizes.back() += espacio_libre_en_buffer;
+            };*/
+            string_acumulada_bytes += espacio_libre_en_buffer;
+            break;
+         };
+      };
+      return bytes_copiados;
+   };
+
 };
+
+
+
+
+
+void disk_out::escribir_particion_string(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::string ruta_escritura){
+   
+   // NO nos hace falta el argumento int size_disponible_para_escribir como input.
+   // Ya que inicio y fin son las filas a escribir en una partición.
+   
+   std::ofstream out1;
+   std::ofstream out2;
+   std::vector<uint32_t> vec_sizes;
+   uint32_t size_particion_bytes = 8; // 8 bytes
+
+   out1.open(ruta_escritura + ".bin", std::ios::out | std::ios::binary | std::ios::app);
+   out2.open(ruta_escritura + ".idx", std::ios::out | std::ios::binary | std::ios::app);
+   Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+
+
+
+   std::vector<char> buffer_vals;
+   std::vector<uint32_t> buffer_sizes;
+   uint32_t bytes_copiados = 0;
+
+   // inicializamos una sinstancia de byteStreamer:
+   byteStreamer byte_streamer;
+   byte_streamer.inicio = inicio;
+   byte_streamer.fin = fin;
+   byte_streamer.char_idx = 0;
+   byte_streamer.filas_escritas = 0;
+   while(byte_streamer.is_data_left()){
+      bytes_copiados = byte_streamer.extraer_bytes(buffer_vals, buffer_sizes, size_particion_bytes);
+
+      out1.write(buffer_vals.data(), bytes_copiados);
+      out1.flush();
+      char* buffer_sizes_chars = reinterpret_cast<char*>(buffer_sizes.data());
+      out2.write(buffer_sizes_chars, byte_streamer.filas_escritas * sizeof(uint32_t));
+      out2.flush();
+   };
+   out1.close();
+   out2.close();
+};
+
+
+
 
 
 void disk_out::bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int){

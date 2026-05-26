@@ -46,12 +46,14 @@ namespace disk_aux{
 
 
     std::streamsize return_file_size(std::ifstream& in);
+    uint32_t return_file_size_bytes(std::ifstream& in);
 
 
     void fill_vector_int(uint32_t num_elementos, std::vector<char>& vec_in, std::vector<Values>& vec_out);
 
     void fill_vector_float(uint32_t num_elementos, std::vector<char>& vec_in, std::vector<Values>& vec_out);
 
+    void fill_vector_bool(uint32_t num_elementos, std::vector<char>& vec_in, std::vector<Values>& vec_out);
 
     void fill_vector_string(uint32_t num_elementos, std::vector<char>& vec_str,std::vector<char>& vec_idx, std::vector<Values>& vec_out);
     ////////////////////////////////////////////////////////////////////

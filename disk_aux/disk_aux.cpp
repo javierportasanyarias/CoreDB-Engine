@@ -252,6 +252,19 @@ std::streamsize disk_aux::return_file_size(std::ifstream& in){
 };
 
 
+uint32_t disk_aux::return_file_size_bytes(std::ifstream& in){
+
+   uint32_t size_bytes = 0;
+
+   if(in.is_open()){
+      in.seekg(0, std::ios::end);
+      size_bytes = static_cast<uint32_t>(in.tellg());
+      in.seekg(0, std::ios::beg);
+   };
+   return size_bytes;
+};
+
+
 void disk_aux::fill_vector_int(uint32_t num_elementos, std::vector<char>& vec_in, std::vector<Values>& vec_out){
 
    int* datos_enteros = reinterpret_cast<int*>(vec_in.data());
@@ -279,6 +292,27 @@ void disk_aux::fill_vector_float(uint32_t num_elementos, std::vector<char>& vec_
    
    for (uint32_t i = 0; i < num_elementos; i++){
       vec_out.push_back(datos_enteros[i]);
+   };
+};
+
+
+
+void disk_aux::fill_vector_bool(uint32_t num_elementos, std::vector<char>& vec_in, std::vector<Values>& vec_out){
+
+   uint8_t* datos_enteros = reinterpret_cast<uint8_t*>(vec_in.data());
+
+   // Vaciamos el vector de salida por si tenía basura
+   vec_out.clear(); 
+   
+   // Reservamos el espacio necesario para los 'Values' (que son más grandes que los int)
+   vec_out.reserve(num_elementos);
+
+   for (uint32_t i = 0; i < num_elementos; i++){
+      if(datos_enteros[i] == 1){
+         vec_out.push_back(true);
+      }else{
+         vec_out.push_back(false);
+      };
    };
 };
 

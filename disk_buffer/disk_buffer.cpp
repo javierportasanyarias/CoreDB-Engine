@@ -101,11 +101,11 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_disk_part::get_
          Logger::log(LogLevel::DEBUG, "Leemos el nombre de la columna: ", false, true);
          Logger::log(LogLevel::DEBUG, nombre_col, true, false);
          if(this->tabla_ptr->data_buffer_ptr){
-            Logger::log(LogLevel::ERROR, "SI existe el puntero 'data_buffer_ptr' en la tabla");
+            Logger::log(LogLevel::DEBUG, "SI existe el puntero 'data_buffer_ptr' en la tabla");
             if(this->tabla_ptr->data_buffer_ptr->columns.empty()){
                Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
             }else{
-               Logger::log(LogLevel::ERROR, "Escribimos el valor en la <<<fila a devolver>>>");
+               Logger::log(LogLevel::DEBUG, "Escribimos el valor en la <<<fila a devolver>>>");
                map_fila_retornar[nombre_col] = this->tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
             };
          } else{
