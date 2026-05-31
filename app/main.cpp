@@ -58,7 +58,10 @@ int main(){
       // Ahora procesamos el texto:
       textUtils::simpleLinkedList* lista1 = textUtils::procesar_texto_pipeline(input);
       Logger::flush();
-      lista1->add_node("EOS");
+      {
+         std::string tmp_str = "EOS";
+         lista1->add_node(tmp_str);
+      };
 
       // Construimos la cola de ejecucion:                                                                            
       execPlan::Queue* excec_queue = new execPlan::Queue;                   

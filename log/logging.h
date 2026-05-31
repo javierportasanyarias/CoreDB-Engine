@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <variant>
+#include <vector>
 
 
 enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
@@ -29,9 +30,14 @@ public:
                     bool flag = true);
 
     static void log(LogLevel msgLevel,
-                    std::variant<int, float, bool, std::string>  msg,
+                    std::variant<int, float, bool, std::string, std::vector<char>>  msg,
                     bool flush_bool = true,
                     bool flag = true);
+
+    /*static void log(LogLevel msgLevel,
+                    const std::variant<int, float, bool, std::string, std::vector<char>>&  msg,
+                    bool flush_bool = true,
+                    bool flag = true);*/
 
     static void flush(bool endl = true);
 

@@ -30,18 +30,20 @@ namespace textUtils {
             clear();
          };
 
-         void add_node(std::string valor);
+         void add_node(std::string& valor);
 
          void print_list();
 
          void clear();
    };
 
-   std::string borrar_espacios_repetidos(const std::string& input);
+   //std::string borrar_espacios_repetidos(const std::string& input);
 
-   std::string borrar_espacios_principio(const std::string& input);
+   //std::string borrar_espacios_principio(const std::string& input);
 
-   void borrar_espacios_final(std::string& input);
+   //void borrar_espacios_final(std::string& input);
+
+   std::string normalize_spaces(const std::string& input);
 
    simpleLinkedList* crear_lista_tokens(const std::string& input);
 

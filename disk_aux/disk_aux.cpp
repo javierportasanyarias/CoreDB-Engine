@@ -81,6 +81,21 @@ Values disk_aux::read_aux_val(dataType tipo_dato, std::ifstream& in){
          value = buffer;
          break;
       };
+      case dataType::UNKNOWN: {
+         std::vector<char> buffer;
+         uint32_t vector_size;
+         // Primero escribimos el tamaño de la string:
+         in.read(reinterpret_cast<char*>(&vector_size), sizeof(uint32_t));
+         // Ajustamos el tamaño de la cadena de texto donde escribiremos:
+         buffer.resize(vector_size);   // ← reservar memoria
+         // Ahora ya si escribimos la cadena de texto:
+         in.read(buffer.data(), vector_size);
+         /* No es necesario 'reinterpret_cast<char*>' porque data()
+         de una std::string ya es un puntero a un caracter de texto
+         */
+         value = buffer;
+         break;
+      };
    };
    return value;
 };
@@ -232,6 +247,25 @@ void disk_aux::write_aux_val_buffer(Values value, dataType tipo_dato, std::vecto
          buffer.insert(buffer.end(),
                      tmp_char_ptr,
                      tmp_char_ptr + string_size
+                     );
+         break;
+      };
+      case dataType::UNKNOWN: {
+         std::vector<char> vector_val;
+         uint32_t vector_size;
+         vector_val = std::get<std::vector<char>>(value);
+         vector_size = vector_val.size();
+         // Primero escribimos el tamaño de la string:
+         tmp_char_ptr = reinterpret_cast<char*>(&vector_size);
+         buffer.insert(buffer.end(),
+                     tmp_char_ptr,
+                     tmp_char_ptr + sizeof(uint32_t)
+                     );
+         // Ahora ya si escribimos la cadena de texto:
+         tmp_char_ptr = vector_val.data();
+         buffer.insert(buffer.end(),
+                     tmp_char_ptr,
+                     tmp_char_ptr + vector_size
                      );
          break;
       };

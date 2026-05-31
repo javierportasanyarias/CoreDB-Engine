@@ -198,6 +198,8 @@ void execPlan::Queue::execute_queue_tasks(){
             Logger::log(LogLevel::DEBUG,  "NodeType3: Ejecutamos insercion de datos", true, false);
 
             NodeType3* nodo = std::get<NodeType3*>(c_q_n->nodePtr);  // Directo desde el variant
+
+            Logger::log(LogLevel::DEBUG,  "NodeType3 recuperado");
             fill_table_with_values_v4(nodo);
 
         } else if(std::holds_alternative<QueryNode*>(c_q_n->nodePtr)) {

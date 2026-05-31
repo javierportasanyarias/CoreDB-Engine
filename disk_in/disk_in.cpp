@@ -48,7 +48,6 @@ void disk_in::read_fixed_len_int_columns(std::string path_var, std::string parti
 
    // Hallamos el tamaño en bytes del archivo/partición:
    uint32_t file_size = disk_aux::return_file_size_bytes(in);
-   uint32_t bytes_buffer = 2 * sizeof(int);
    uint32_t bytes_puntero = 0;
    uint32_t bytes_a_leer = 0;
    
@@ -65,8 +64,8 @@ void disk_in::read_fixed_len_int_columns(std::string path_var, std::string parti
          buffer.clear();
          Logger::log(LogLevel::DEBUG, "Calculamos los bytes a leer");
          // Primero calculamos los bytes a leer:
-         if(bytes_puntero + bytes_puntero > bytes_buffer){
-            bytes_a_leer = bytes_buffer;
+         if(bytes_puntero + bytes_puntero > size_particion_bytes){
+            bytes_a_leer = size_particion_bytes;
          }else{
             bytes_a_leer = file_size - bytes_puntero;
          };
@@ -109,7 +108,6 @@ void disk_in::read_fixed_len_float_columns(std::string path_var, std::string par
 
    // Hallamos el tamaño en bytes del archivo/partición:
    uint32_t file_size = disk_aux::return_file_size_bytes(in);
-   uint32_t bytes_buffer = 2 * sizeof(float);
    uint32_t bytes_puntero = 0;
    uint32_t bytes_a_leer = 0;
    
@@ -126,8 +124,8 @@ void disk_in::read_fixed_len_float_columns(std::string path_var, std::string par
          buffer.clear();
          Logger::log(LogLevel::DEBUG, "Calculamos los bytes a leer");
          // Primero calculamos los bytes a leer:
-         if(bytes_puntero + bytes_puntero > bytes_buffer){
-            bytes_a_leer = bytes_buffer;
+         if(bytes_puntero + bytes_puntero > size_particion_bytes){
+            bytes_a_leer = size_particion_bytes;
          }else{
             bytes_a_leer = file_size - bytes_puntero;
          };
@@ -170,7 +168,6 @@ void disk_in::read_fixed_len_bool_columns(std::string path_var, std::string part
 
    // Hallamos el tamaño en bytes del archivo/partición:
    uint32_t file_size = disk_aux::return_file_size_bytes(in);
-   uint32_t bytes_buffer = 2 * sizeof(uint8_t);
    uint32_t bytes_puntero = 0;
    uint32_t bytes_a_leer = 0;
    
@@ -187,8 +184,8 @@ void disk_in::read_fixed_len_bool_columns(std::string path_var, std::string part
          buffer.clear();
          Logger::log(LogLevel::DEBUG, "Calculamos los bytes a leer");
          // Primero calculamos los bytes a leer:
-         if(bytes_puntero + bytes_puntero > bytes_buffer){
-            bytes_a_leer = bytes_buffer;
+         if(bytes_puntero + bytes_puntero > size_particion_bytes){
+            bytes_a_leer = size_particion_bytes;
          }else{
             bytes_a_leer = file_size - bytes_puntero;
          };
@@ -213,99 +210,7 @@ void disk_in::read_fixed_len_bool_columns(std::string path_var, std::string part
 };
 
 
-/*void disk_in::read_fixed_len_string_columns(std::string path_var, std::string partition_current, std::vector<Values>& vec_vals){
 
-   Logger::log(LogLevel::DEBUG, "Dentro de la lectura de las STRINGs");
-   std::ifstream in_str;
-   std::ifstream in_idx;
-   std::string ruta_str = path_var + partition_current + ".bin";
-   std::string ruta_idx = path_var + partition_current + ".idx";
-   in_str.open(ruta_str, std::ios::in | std::ios::binary);
-   in_idx.open(ruta_idx, std::ios::in | std::ios::binary);
-
-   // Hallamos el tamaño del archivo:
-   std::streamsize file_size_str = disk_aux::return_file_size(in_str);
-   std::streamsize file_size_idx = disk_aux::return_file_size(in_idx);
-   uint32_t tmp_size = 0;
-   if(file_size_idx > 0){
-      // Calculamos el tamaño:
-      uint32_t num_elementos = file_size_idx/sizeof(uint32_t);
-      // Sólo si existe el archivo y no es nulo, lo leemos entero:
-      std::vector<char> buffer_str(file_size_str);
-      std::vector<char> buffer_idx(file_size_idx);
-      in_str.read(buffer_str.data(), file_size_str);
-      in_idx.read(buffer_idx.data(), file_size_idx);
-      // Ajustamos el vector
-      //vec_vals.resize(num_elementos);
-
-      // Añadimos uno a uno los elementos:
-      disk_aux::fill_vector_string(num_elementos, buffer_str, buffer_idx, vec_vals);      
-   };
-
-   in_str.close();
-   in_idx.close();
-   // Hallamos el tamano de los archivos:
-   uint32_t file_size_bytes = disk_aux::return_file_size_bytes(in1);
-   uint32_t idx_size_bytes = disk_aux::return_file_size_bytes(in2);
-
-   // Declaramos los buffers:
-   std::vector<char> buffer_vals;
-   std::vector<char> buffer_idx;
-
-   // Contadores uaxiliares:
-   uint32_t contador_filas = 0;
-   uint32_t  bytes_leidos = 0;
-   uint32_t buffer_size = 8; // El buffer es de 8 bytes
-
-
-   uint32_t limite = 0;
-   uint32_t bytes_leidos_buffer_string = 0;
-   uint32_t bytes_leidos_idx_sizes = 0;
-   // Bucle prinicipal de ejecución:
-   while(){
-      // Limpiamos los vectores de buffer:
-      buffer_vals.clear();
-      buffer_idx.clear();
-      // Primero determinamos cuantos bytes leer de cada uno:
-      if(buffer_size > file_size_bytes){
-         bytes_leidos_buffer_string = file_size_bytes;
-      }else{
-         bytes_leidos_buffer_string = buffer_size;
-      };
-      if(buffer_size > idx_size_bytes){
-         bytes_leidos_idx_sizes = idx_size_bytes;
-      }else{
-         bytes_leidos_idx_sizes = buffer_size;
-      };
-      // Reservamos memoria:
-      buffer_vals.reserve(bytes_leidos_buffer_string);
-      buffer_idx.reserve(bytes_leidos_idx_sizes);
-      // Realizamos la lectura:
-      in_str.read(buffer_vals.data(), bytes_leidos_buffer_string);
-      in_idx.read(buffer_idx.data(), bytes_leidos_idx_sizes);
-
-      // Ahora pasamos de estos caracteres a std::vector<Values> de la tabla:
-      
-
-
-
-
-
-
-
-
-
-   in_str.close();
-   in_idx.close();
-   };
-
-
-
-
-
-
-
-};*/
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -334,13 +239,14 @@ class stringReader_v2{
    */
    std::vector<Values>& vec_vals;
    public:
+      // Variable auxiliar para ver si es una std::string o un vector de caracteres:
+      bool is_unknown_type = false; // false = std::string, true = std::vector<char>
       // Variables como input y de control:
       std::string path_var;
       std::string partition_current;
       uint8_t state = 0;
 
       // Valores predefindos:
-      uint32_t limite = 8; // 8 bytes
 
       // Contadores de archivo:
       uint32_t file_idx_ptr = 0;
@@ -380,8 +286,8 @@ class stringReader_v2{
 
 ;
 
-      stringReader_v2(std::vector<Values>& vector_variable_variantes, std::string path_variable, std::string particion_actual) 
-        : vec_vals(vector_variable_variantes), path_var(path_variable),  partition_current(particion_actual)// Inicialización de la referencia y strings para las rutas
+      stringReader_v2(std::vector<Values>& vector_variable_variantes, std::string path_variable, std::string particion_actual, bool is_var_unknown) 
+        : vec_vals(vector_variable_variantes), path_var(path_variable),  partition_current(particion_actual), is_unknown_type(is_var_unknown)// Inicialización de la referencia y strings para las rutas
       {
       };
 
@@ -410,15 +316,15 @@ class stringReader_v2{
 
       // Funciones auxiliares de calculo del tamño del buffer:
       void calcular_tamano_buffer_str(){
-         this->file_buffer_str_size = this->limite;
-         if(this->file_str_ptr + this->limite > this->file_str_size){
+         this->file_buffer_str_size = size_particion_bytes;
+         if(this->file_str_ptr + size_particion_bytes > this->file_str_size){
             this->file_buffer_str_size = this->file_str_size - this->file_str_ptr;
          };
       };
 
       void calcular_tamano_buffer_idx(){
-         this->file_buffer_idx_size = this->limite;
-         if(this->file_idx_ptr + this->limite > this->file_idx_size){
+         this->file_buffer_idx_size = size_particion_bytes;
+         if(this->file_idx_ptr + size_particion_bytes > this->file_idx_size){
             this->file_buffer_idx_size = this->file_idx_size - this->file_idx_ptr;
          };
       };
@@ -610,25 +516,39 @@ class stringReader_v2{
                Si la string es mas larga, es un intercambio entre el estado 2 y 5
                */
                // std::string& tmp_str; // String tempral que vendrá de una ya existente u otra nueva:
+
+               const char* origen_bytes = this->buffer_str_ptr_ini + this->buffer_str_read_bytes_tmp;
                if(offset){
-                  // No es una string nueva
-                  std::string& tmp_str = std::get<std::string>(vec_vals.back());
-                  tmp_str.append(
-                     this->buffer_str_ptr_ini + this->buffer_str_read_bytes_tmp,
-                     this->bytes_a_leer
-                  );
-                  //Logger::log(LogLevel::DEBUG, " La string leida es: ", false, true);
-                  //Logger::log(LogLevel::DEBUG, tmp_str, true, false);
+                  if(is_unknown_type){
+                     std::vector<char>& tmp_vec = std::get<std::vector<char>>(vec_vals.back());
+                     tmp_vec.insert(tmp_vec.end(),
+                     origen_bytes,
+                     origen_bytes + this->bytes_a_leer);
+                  }else{
+                     // No es una string nueva
+                     std::string& tmp_str = std::get<std::string>(vec_vals.back());
+                     tmp_str.append(
+                        origen_bytes,
+                        this->bytes_a_leer
+                     );
+                     //Logger::log(LogLevel::DEBUG, " La string leida es: ", false, true);
+                     //Logger::log(LogLevel::DEBUG, tmp_str, true, false);
+                  };
                }else{
-                  // String nueva
-                  std::string tmp_str;
-                  tmp_str.append(
-                     this->buffer_str_ptr_ini + this->buffer_str_read_bytes_tmp,
-                     this->bytes_a_leer
-                  );
-                  vec_vals.push_back(tmp_str);
-                  //Logger::log(LogLevel::DEBUG, " La string leida es: ", false, true);
-                  //Logger::log(LogLevel::DEBUG, tmp_str, true, false);
+                  if(is_unknown_type){
+                     std::vector<char> tmp_vec(origen_bytes, origen_bytes + this->bytes_a_leer);
+                     vec_vals.push_back(tmp_vec);
+                  }else{
+                     // String nueva
+                     std::string tmp_str;
+                     tmp_str.append(
+                        origen_bytes,
+                        this->bytes_a_leer
+                     );
+                     vec_vals.push_back(tmp_str);
+                     //Logger::log(LogLevel::DEBUG, " La string leida es: ", false, true);
+                     //Logger::log(LogLevel::DEBUG, tmp_str, true, false);
+                  };
                };
 
                // Actualizamos los bytes leidos:
@@ -918,7 +838,30 @@ bool disk_in::read_table_iterator::read_table(){
                Logger::flush();
                Logger::flush();
                Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
-               stringReader_v2 string_reader = stringReader_v2(vec_vals, path_var, partition_current);
+               stringReader_v2 string_reader = stringReader_v2(vec_vals, path_var, partition_current, false);
+               // Realizamos la lectura de la partición:
+               string_reader.execute_fsm();
+
+               Logger::flush();
+               Logger::flush();
+               Logger::flush();
+               Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
+
+               buffer_ram_del_disco[column_name] = vec_vals;
+               Logger::log(LogLevel::DEBUG, "Vector adicionado a la TABLA con exito");
+               break;
+            };
+            case dataType::UNKNOWN: {
+               Logger::log(LogLevel::DEBUG, "++++++ CASE UNKNOWN DEL SWITCH ++++++");
+               aux_bool = this->obtain_string_partition_rows(aux_bool, path_var, partition_current);
+               Logger::log(LogLevel::DEBUG, "Procedemos a adicionar el vector de UNKNOWNs a la TABLA");
+               //disk_in::read_fixed_len_string_columns(path_var, partition_current, vec_vals);
+               // Creamos el objeto:
+               Logger::flush();
+               Logger::flush();
+               Logger::flush();
+               Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
+               stringReader_v2 string_reader = stringReader_v2(vec_vals, path_var, partition_current, true);
                // Realizamos la lectura de la partición:
                string_reader.execute_fsm();
 

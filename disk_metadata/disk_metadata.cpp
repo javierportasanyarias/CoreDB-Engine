@@ -31,44 +31,77 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
    // COMIENZA LA LECTURA:
    std::ifstream in(ruta_tabla_str, std::ios::binary);
 
+   // We obtain the metadata file size in bytes:
+   uint32_t file_size_bytes = 0;
+   file_size_bytes = disk_aux::return_file_size_bytes(in);
+   // Creamos un vector de caracteres que reserve en memria esos mismos bytes:
+   std::vector<char> buffer_meta;
+   buffer_meta.reserve(file_size_bytes);
+   // We proceed to execute the read operation of the whole file
+   in.read(buffer_meta.data(), file_size_bytes);
+   in.close();
+   const char* ptr_curr = buffer_meta.data();
+   const char* ptr_end = ptr_curr + file_size_bytes;
+
+   // Once read, we iterate over the buffer in order to extract the values that we need
+
+
+
+
    // Leemos el tamaño del nombre:
    uint32_t size_nombre = 0;
-   in.read(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
+   //in.read(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
+   std::memcpy(&size_nombre, ptr_curr, sizeof(uint32_t));
+   ptr_curr += sizeof(uint32_t);
 
    // Leemos el nombre:
    std::string nombre_tabla(size_nombre, '\0');
-   in.read(&nombre_tabla[0], size_nombre);
+   //in.read(&nombre_tabla[0], size_nombre);
+   std::memcpy(nombre_tabla.data(), ptr_curr, size_nombre);
+   ptr_curr += size_nombre;
    metadatos_puntero->name = nombre_tabla;
 
    // Leemos el numero de columnas:
    uint32_t num_cols_lectura = 0;
-   in.read(reinterpret_cast<char*>(&num_cols_lectura), sizeof(uint32_t));
+   //in.read(reinterpret_cast<char*>(&num_cols_lectura), sizeof(uint32_t));
+   std::memcpy(&num_cols_lectura, ptr_curr, sizeof(uint32_t));
+   ptr_curr += sizeof(uint32_t);
    // Este vslor no se escribe, lo usaremos para iterar por cada columna
 
    // Leemos el numero de filas en disco:
    uint32_t num_filas_disco_lectura = 0;
-   in.read(reinterpret_cast<char*>(&num_filas_disco_lectura), sizeof(uint32_t));
+   //in.read(reinterpret_cast<char*>(&num_filas_disco_lectura), sizeof(uint32_t));
+   std::memcpy(&num_filas_disco_lectura, ptr_curr, sizeof(uint32_t));
+   ptr_curr += sizeof(uint32_t);
    metadatos_puntero->n_filas_disco = num_filas_disco_lectura;
 
    // Ahora iteramos poe cada columna, añadiendo metadatos de cada una:
    for(uint32_t i=0; i<num_cols_lectura; i++){
       // Leemos el nombre de la columna:
       uint32_t size_column_name;
-      in.read(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
+      //in.read(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
+      std::memcpy(&size_column_name, ptr_curr, sizeof(uint32_t));
+      ptr_curr += sizeof(uint32_t);
       std::string columna_nombre_leido(size_column_name, '\0');
-      in.read(&columna_nombre_leido[0], size_column_name);
+      //in.read(&columna_nombre_leido[0], size_column_name);
+      std::memcpy(columna_nombre_leido.data(), ptr_curr, size_column_name);
+      ptr_curr += size_column_name;
       metadatos_puntero->column_names.push_back(columna_nombre_leido);
 
       // Leemos el tipo de dato:
       uint32_t col_type_int;
-      in.read(reinterpret_cast<char*>(&col_type_int), sizeof(uint32_t));
+      //in.read(reinterpret_cast<char*>(&col_type_int), sizeof(uint32_t));
+      std::memcpy(&col_type_int, ptr_curr, sizeof(uint32_t));
+      ptr_curr += sizeof(uint32_t);
       dataType col_type = static_cast<dataType>(col_type_int);
       metadatos_puntero->column_types.push_back(col_type);
 
       // Recuperamos si esclave primaria:
       uint8_t column_is_key_num;
       bool column_is_key;
-      in.read(reinterpret_cast<char*>(&column_is_key_num), sizeof(uint8_t));
+      //in.read(reinterpret_cast<char*>(&column_is_key_num), sizeof(uint8_t));
+      std::memcpy(&column_is_key_num, ptr_curr, sizeof(uint8_t));
+      ptr_curr += sizeof(uint8_t);
       if(column_is_key_num == 1){
          column_is_key = true;
       } else {
@@ -86,7 +119,6 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
    }else{
       Logger::flush(false);
    };
-   in.close();
 };
 
 
@@ -112,13 +144,11 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
 
    // -- Escribimos el nombre -----------------------------------------
    uint32_t size_nombre = nombre_tabla.size();
-   //out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
    tmp_char_ptr = reinterpret_cast<char*>(&size_nombre);
    buffer.insert(buffer.end(),
                  tmp_char_ptr,
                  tmp_char_ptr + sizeof(uint32_t)
                 );
-   //out.write(nombre_tabla.data(), size_nombre);
    tmp_char_ptr = nombre_tabla.data();
    buffer.insert(buffer.end(),
                  tmp_char_ptr,
@@ -127,7 +157,6 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
 
    // -- Escribimos el número de columnas -----------------------------
    uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
-   //out.write(reinterpret_cast<char*>(&num_cols), sizeof(uint32_t));
    tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
    buffer.insert(buffer.end(),
                  tmp_char_ptr,
@@ -159,7 +188,6 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
       Logger::log(LogLevel::DEBUG, " filas en disco: ", false, false);
       Logger::log(LogLevel::DEBUG, n_rows_disk, true, false);
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-      //out.write(reinterpret_cast<char*>(&n_rows_total), sizeof(uint32_t));
       tmp_char_ptr = reinterpret_cast<char*>(&n_rows_total);
       buffer.insert(buffer.end(),
                   tmp_char_ptr,
@@ -170,13 +198,11 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
          // -- Escribimos el nombre:
          std::string column_name = (tabla->metadata_ptr->column_names)[i];
          uint32_t size_column_name = column_name.size();
-         //out.write(reinterpret_cast<char*>(&size_column_name), sizeof(uint32_t));
          tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
          buffer.insert(buffer.end(),
                      tmp_char_ptr,
                      tmp_char_ptr + sizeof(uint32_t)
                      );
-         //out.write(column_name.data(), size_column_name);
          tmp_char_ptr = column_name.data();
          buffer.insert(buffer.end(),
                      tmp_char_ptr,
@@ -185,7 +211,6 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
          // -- Escribimos el tipo de dato:
          dataType col_type = (tabla->metadata_ptr->column_types)[i];
          uint32_t col_type_disk = static_cast<uint32_t>(col_type);
-         //out.write(reinterpret_cast<char*>(&col_type_disk), sizeof(uint32_t));
          tmp_char_ptr = reinterpret_cast<char*>(&col_type_disk);
          buffer.insert(buffer.end(),
                      tmp_char_ptr,
@@ -194,7 +219,6 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
          // -- Escribimos si es clave primaria:
          bool column_is_key = (tabla->metadata_ptr->primary_list)[i];
          uint8_t key_val = column_is_key ? 1 : 0;
-         //out.write(reinterpret_cast<char*>(&key_val), sizeof(uint8_t));
          tmp_char_ptr = reinterpret_cast<char*>(&key_val);
          buffer.insert(buffer.end(),
                      tmp_char_ptr,

@@ -64,7 +64,7 @@ void Logger::log(LogLevel msgLevel,
 
 // Sobrecarga para el std::variant de Values:
 void Logger::log(LogLevel msgLevel,                                                          
-                 std::variant<int, float, bool, std::string>  msg,
+                 std::variant<int, float, bool, std::string, std::vector<char>>  msg,
                  bool flush_bool,
                  bool flag)
 {
@@ -80,11 +80,76 @@ void Logger::log(LogLevel msgLevel,
         };                                                                       
     };
 
-    std::visit([](auto&& arg) {
-        std::cout << arg;                                                       
-    }, msg);
+    //std::visit([](auto&& arg) {
+        //std::cout << arg;                                                       
+    //}, msg);
+    std::visit(
+        // Función lambda:
+        [](const auto& arg){
+            using type = std::decay_t<decltype(arg)>;
+
+            if constexpr (std::is_same_v<type, std::vector<char>>){
+                // Caso vector de caracteres:
+                for (char c : arg){
+                    std::cout << c;
+                };
+                std::cout.flush();
+            } else if constexpr (std::is_same_v<type, bool>){
+                // Hacemos más expresiva la muestra de booleanos:
+                if(arg){
+                    std::cout << "TRUE";
+                }else{
+                    std::cout << "FALSE";
+                };
+            }else{
+                std::cout << arg;
+            };
+        },
+        msg
+    );
     if (flush_bool) std::cout << std::endl;
 };
+
+// Sobrecarga para std::variant constante y pasado por referencia:
+/*void Logger::log(LogLevel msgLevel,                                                          
+                 const std::variant<int, float, bool, std::string, std::vector<char>>& msg,
+                 bool flush_bool,
+                 bool flag)
+{
+    if (msgLevel < level) return;
+
+    if (flag) {
+        switch (msgLevel) {
+            case LogLevel::DEBUG: std::cout << "[DEBUG] "; break;
+            case LogLevel::INFO:  std::cout << "[INFO] ";  break;
+            case LogLevel::WARN:  std::cout << "[WARN] ";  break;
+            case LogLevel::ERROR: std::cout << "[ERROR] "; break;                       
+            case LogLevel::OUTPUT: break;
+        };                                                                       
+    };
+
+    std::visit(
+        [](const auto& arg){
+            using type = std::decay_t<decltype(arg)>;
+
+            if constexpr (std::is_same_v<type, std::vector<char>>){
+                for (char c : arg){
+                    std::cout << c;
+                };
+            } else if constexpr (std::is_same_v<type, bool>){
+                if(arg){
+                    std::cout << "TRUE";
+                }else{
+                    std::cout << "FALSE";
+                };
+            }else{
+                std::cout << arg;
+            };
+        },
+        msg
+    );
+    if (flush_bool) std::cout << std::endl;
+};*/
 
 
 void Logger::flush(bool endl) {

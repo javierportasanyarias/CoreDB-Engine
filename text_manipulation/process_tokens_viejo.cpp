@@ -24,21 +24,18 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
     los nodos de tipo 'NodeType2'.
     */
 
-    Logger::flush();
-    Logger::log(LogLevel::DEBUG, "+++++++++++++++++++++++++++++++");
-
     NodeType2* nodo = new NodeType2;
 
-    //bool definido_nombre = false;
-    //bool definido_tipo = false;
-    //bool deninido_primary_key = false;
+    bool definido_nombre = false;
+    bool definido_tipo = false;
+    bool deninido_primary_key = false;
 
-    //while(c_l_n->val != ")" && c_l_n->val != ","){
-        //if (!c_l_n->nxt_node) {
-            //break; // Evita avanzar a nullptr
-        //};
+    while(c_l_n->val != ")" && c_l_n->val != ","){
+        if (!c_l_n->nxt_node) {
+            break; // Evita avanzar a nullptr
+        };
 
-        /*if(deninido_primary_key){
+        if(deninido_primary_key){
             deninido_primary_key = false;
             if(c_l_n->val == "PRIMARY KEY"){
                 nodo->is_primary = true;
@@ -53,47 +50,12 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
             definido_nombre = true;
             definido_tipo = true;
             nodo->name_campo = c_l_n->val;
-        };*/
-
-
-        // NEW CODE:
-
-
-
-    // Next node must be the value:
-    Logger::log(LogLevel::DEBUG, "Valor del nombre del campo: ", false, true);
-    Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-    nodo->name_campo = c_l_n->val;
-    c_l_n = c_l_n->nxt_node;
-
-    // Safeguard:
-    if(!c_l_n) return nodo;
-
-    Logger::log(LogLevel::DEBUG, "Valor del tipo de dato: ", false, true);
-    Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-    // Next node must be data type:
-    nodo->tipo = c_l_n->val;
-    c_l_n = c_l_n->nxt_node;
-
-    // Safeguard:
-    if(!c_l_n) return nodo;
-
-    if(c_l_n->val == "PRIMARY KEY"){
-        Logger::log(LogLevel::DEBUG, "Es clave primaria");
-
-        nodo->is_primary = true;
-        //c_l_n = c_l_n->nxt_node;
-        // Safeguard:
-        //if(!c_l_n) return nodo;
+        };
+        c_l_n = c_l_n->nxt_node;
     };
-    Logger::log(LogLevel::DEBUG, "+++++++++++++++++++++++++++++++");
-    Logger::flush();
-    //c_l_n = c_l_n->nxt_node;
-
-    //if(c_l_n->val == ","){
-        // A conditional beacause it might be the final column, thus lacking a coma at the end of the definition
-        //c_l_n = c_l_n->nxt_node;
-    //};
+    if(c_l_n->val == ","){
+        c_l_n = c_l_n->nxt_node;
+    };
     return nodo;
 };
 
@@ -106,40 +68,12 @@ void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* no
     Cada nodo 'NodeType2' es su hijo y corresponde a cada campo que se haya definido al
     crear la tabla.
     */
-    if(c_l_n->val != "("){
-        throw std::runtime_error("ERROR: Schema columns definition was never oppened with '('");
-    };
-    c_l_n = c_l_n->nxt_node;
-    nodo->hijos.reserve(128);
-
-    // First value lacks precceding coma, thus we keep it out of the loop:
-    NodeType2* nodo_hijo = aux_ddl_tree_2(c_l_n);
-    (nodo->hijos).push_back(std::move(nodo_hijo)); // Error que daba antes
-    c_l_n = c_l_n->nxt_node; // We skip the to the coma
-    Logger::log(LogLevel::DEBUG, "ADD 0 :", false, true);
-    Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-
-    while(c_l_n->val != "EOS" && c_l_n->val == ","){
-        c_l_n = c_l_n->nxt_node; // We skip to the value
-        Logger::log(LogLevel::DEBUG, "ADD 1 :", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+    while(c_l_n->val != ";" && c_l_n->val != ")"){
         // NodeType2* nodo_hijo = new NodeType2;
         NodeType2* nodo_hijo = aux_ddl_tree_2(c_l_n);
         //añadimos el nodo hijo al vector de hijos del padre:
         (nodo->hijos).push_back(std::move(nodo_hijo));
-        //c_l_n = c_l_n->nxt_node;// We skip to the coma
-        Logger::log(LogLevel::DEBUG, "ADD 2 :", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
     };
-
-    if(c_l_n->val != ")"){
-        Logger::log(LogLevel::DEBUG, "Valor del error: :", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-        throw std::runtime_error("ERROR: Schema columns definition was never closed with ')'");
-    };
-    // In case of ecountering ')' we skip it in order to advance to the next sentence
-    c_l_n = c_l_n->nxt_node;
-  
 };
 
 
@@ -154,6 +88,7 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
     if(c_l_n->val != "CREATE TABLE"){
         throw std::runtime_error("Se esperaba 'TABLE' después de 'CREATE'");
         // Task queue deletion in order to erase memory leaks:
+
         return;
     };
     NodeType1* nodo = new NodeType1;
@@ -174,17 +109,10 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
     };
 
     // Avanzamos al siguiente nodo:
-    //c_l_n = c_l_n->nxt_node;
+    c_l_n = c_l_n->nxt_node;
 
     // Ahora rellenamos con los nodos hijos que corresponden con el esquema del nombre y tipo de todas las variables:
     crear_hijos_esquema_dado_padre(c_l_n, nodo);
-
-    if(c_l_n->val != ";"){
-        throw std::runtime_error("ERROR: Sentence clousure clousure ';' for schema definition not found");
-    }else{
-        // In case of ecountering ';' we skip it in order to advance to the next sentence
-        c_l_n = c_l_n->nxt_node;
-    };
 
     // Creamos y rellenamos el nodo de la cola
     execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
@@ -210,17 +138,11 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
 
 
 void insert_values_add_columns_to_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
-    nodo->columnas.reserve(128);
-    // First iteration will be out of the loop:
-    (nodo->columnas).push_back(std::move(c_l_n->val));
-    c_l_n = c_l_n->nxt_node;
-
-    while(c_l_n->val == ","){
-        //if(c_l_n->val != ","){
+    while(c_l_n->val != ")"){
+        if(c_l_n->val != ","){
             //añadimos las columnas
-        c_l_n = c_l_n->nxt_node;
-        (nodo->columnas).push_back(std::move(c_l_n->val));
-        //};
+            (nodo->columnas).push_back(std::move(c_l_n->val));
+        };
         c_l_n = c_l_n->nxt_node;
    };
 };
@@ -228,16 +150,8 @@ void insert_values_add_columns_to_node(NodeType3* nodo, textUtils::NodeLista1*& 
 
 void aux_iterative_value_filler(textUtils::NodeLista1*& c_l_n, std::vector<std::string>& vector_fila){
 
-    /*
-    Function destined to add a single row to the data
-    */
-
-    // First value lacks preceeding coma, thus we keep it out of the loop:
-    vector_fila.push_back(std::move(c_l_n->val));
-    c_l_n = c_l_n->nxt_node; // We skip to the coma
-
-    while(c_l_n->val == "," && c_l_n->val != "EOS"){
-        /*if(c_l_n->val != ","){
+    while(c_l_n->val != ")" && c_l_n->val != "EOS" && c_l_n->val != ";"){
+        if(c_l_n->val != ","){
             // std::cout<<"Insertamos el valor: ";
             Logger::log(LogLevel::DEBUG, "Insertamos el valor: ", false, true);
             // std::cout<<c_l_n->val<<" ";
@@ -248,96 +162,34 @@ void aux_iterative_value_filler(textUtils::NodeLista1*& c_l_n, std::vector<std::
             vector_fila.push_back(std::move(c_l_n->val));
         };
         // Avanzamos en el bucle:
-        c_l_n = c_l_n->nxt_node;*/
-
-        // New code:
-        c_l_n = c_l_n->nxt_node; // We skip to the value
-        Logger::log(LogLevel::DEBUG, "Valor que añadimos: ", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-        vector_fila.push_back(std::move(c_l_n->val));
-        // Reglardless of the next node value, we skip one node:
-        c_l_n = c_l_n->nxt_node; // We skip to the coma
-
+        c_l_n = c_l_n->nxt_node;
     };
-
-
 };
-
-
 
 void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
 
-    // Reerving rows inn odo->filas to evade eraly memmory relocations of the array due to insuficient contiguous directions
-    nodo->filas.reserve(128);
-
-
-    // First iteration out of the loop:
-    if(c_l_n->val != "("){
-        Logger::log(LogLevel::DEBUG, "Valor del error :", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-        throw std::runtime_error("ERROR: Parenthesis was never oppened in row addition");
-    };
-    c_l_n = c_l_n->nxt_node; // We skip '('
-    Logger::log(LogLevel::DEBUG, "VAL 1 :", false, true);
-    Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-    // Declaramos un nuevo vector:
-    std::vector<std::string> vector_fila;
-    // Llamamos a la función auxiliar
-    Logger::log(LogLevel::DEBUG, "Entramos en donde se insertan los valores: ");
-
-    aux_iterative_value_filler(c_l_n, vector_fila);
-    // std::cout<<"Insertamos el vector en el vector de vectores:"<<std::endl;
-    Logger::log(LogLevel::DEBUG, "Insertamos el vector en el vector de vectores:");
-    (nodo->filas).push_back(std::move(vector_fila));
-    // std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
-    Logger::log(LogLevel::DEBUG, "Ya fue insertado el vector en el vector de vectores");
-    if(c_l_n->val != ")"){
-        throw std::runtime_error("ERROR: Parenthesis was never closed in row addition");
-    };
-    // Avanzamos en el bucle:
-    c_l_n = c_l_n->nxt_node; // We skip ')'
-    // The next value should be a coma or ;
-    // Lanzar posible error aquí si no es ; o coma
-
-
     while(c_l_n->val != ";" && c_l_n->val != "EOS"){
-        c_l_n = c_l_n->nxt_node; // We skip the coma
-        // Each iteration is a row added
 
-        if(c_l_n->val != "("){
-            Logger::log(LogLevel::DEBUG, "Valor del error :", false, true);
-            Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-            throw std::runtime_error("ERROR: Parenthesis was never oppened in row addition");
-        };
-        // Avanzamos un token extra:
-        c_l_n = c_l_n->nxt_node; // We skip '('
-        Logger::log(LogLevel::DEBUG, "VAL 1 :", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-        // Declaramos un nuevo vector:
-        std::vector<std::string> vector_fila;
-        // Llamamos a la función auxiliar
-        Logger::log(LogLevel::DEBUG, "Entramos en donde se insertan los valores: ");
-    
-        aux_iterative_value_filler(c_l_n, vector_fila);
-        // std::cout<<"Insertamos el vector en el vector de vectores:"<<std::endl;
-        Logger::log(LogLevel::DEBUG, "Insertamos el vector en el vector de vectores:");
-        (nodo->filas).push_back(std::move(vector_fila));
-        // std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
-        Logger::log(LogLevel::DEBUG, "Ya fue insertado el vector en el vector de vectores");
-        if(c_l_n->val != ")"){
-            throw std::runtime_error("ERROR: Parenthesis was never closed in row addition");
+        if(c_l_n->val == "("){
+            // Avanzamos un token extra:
+            c_l_n = c_l_n->nxt_node;
+            // Declaramos un nuevo vector:
+            std::vector<std::string> vector_fila;
+            // Llamamos a la función auxiliar
+            Logger::log(LogLevel::DEBUG, "Entramos en donde se insertan los valores: ");
+        
+            aux_iterative_value_filler(c_l_n, vector_fila);
+            // std::cout<<"Insertamos el vector en el vector de vectores:"<<std::endl;
+            Logger::log(LogLevel::DEBUG, "Insertamos el vector en el vector de vectores:");
+            (nodo->filas).push_back(std::move(vector_fila));
+	        // std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
+            Logger::log(LogLevel::DEBUG, "Ya fue insertado el vector en el vector de vectores");
         };
         // Avanzamos en el bucle:
-        c_l_n = c_l_n->nxt_node; // We skip ')'
-        //c_l_n = c_l_n->nxt_node; // We skip the coma or straight to the ';'
-        Logger::log(LogLevel::DEBUG, "VAL 2 :", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+        c_l_n = c_l_n->nxt_node;
     };
-    // Ot of the loop, we finish consuming the instruction whole
-    if(c_l_n->val != ";"){
-        throw std::runtime_error("ERROR: Sentence clousure ';' for row addition was not found");
-    }else{
-        // In case of ecountering ';' we skip it in order to advance to the next sentence
+    // Avanzamos un token adicional si encontramos el cierre de la sentencia:
+    if(c_l_n->val == ")"){
         c_l_n = c_l_n->nxt_node;
     };
     // std::cout<<"Hemos terminado de crear eo nodo de insertar valores con un valor del nodo: ";
@@ -371,24 +223,24 @@ void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtil
         c_l_n = c_l_n->nxt_node;
         // Ahora un pequeño bucle para ir añadiendo los nombres de las columnas a procesar:
         insert_values_add_columns_to_node(nodo, c_l_n);
-        if(c_l_n->val != ")"){
-            throw std::runtime_error("ERROR: Column definition for row addition was never closed with ')'");
-        };
+    };
+
+     // Si econtramos un ')' avanzamos un token adicional:
+    if(c_l_n->val == ")"){
         c_l_n = c_l_n->nxt_node;
     };
 
      // Ahora viene la parte de añadir valores:
     if(c_l_n->val == "VALUES"){
-        Logger::log(LogLevel::DEBUG, "VALUES DETECTADO");
         c_l_n = c_l_n->nxt_node;
     } else{
         // std::cout<<"Este es el valor del nodo que ha dado este error: ";
         Logger::log(LogLevel::DEBUG, "Este es el valor del nodo que ha dado este error: ", false, true);
         // std::cout<<c_l_n->val<<std::endl;
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+        throw std::runtime_error("Se esperaba 'VALUES' despues de definir las columnas");
         // node deletion in order to evade memory leaks:
         delete nodo;
-        throw std::runtime_error("Se esperaba 'VALUES' despues de definir las columnas");
     };
 
     // Ahora insertamos los valores:
@@ -417,7 +269,7 @@ void aux_col_consulta(QueryNode*& nodo_consulta, textUtils::NodeLista1*& c_l_n){
     // Creamos el nodo del Select:
     SelectNode* nodo_seleccionar = new SelectNode;
 
-    /*while(c_l_n->val != "FROM" && c_l_n->val != "EOS"){
+    while(c_l_n->val != "FROM"){
         //Creamos un nuevo nodo de item:
         ItemNode nodo_item;
         nodo_item.nombre = c_l_n->val;
@@ -426,20 +278,7 @@ void aux_col_consulta(QueryNode*& nodo_consulta, textUtils::NodeLista1*& c_l_n){
         if(c_l_n->val == ","){
             c_l_n = c_l_n->nxt_node;
         };
-   };*/
-   //Fist value lacks preceeding coma, thus we keep it out of the loop:
-   ItemNode nodo_item;
-   nodo_item.nombre = c_l_n->val;
-   (nodo_seleccionar->items).push_back(std::move(nodo_item));
-    c_l_n = c_l_n->nxt_node; // We skip to the coma
-    // While loop base on the fact that the last element won't hace a coma following it
-    while(c_l_n->val == "," && c_l_n->val != "EOS"){
-        c_l_n = c_l_n->nxt_node; // We skip to the value
-        ItemNode nodo_item;
-        nodo_item.nombre = c_l_n->val;
-        (nodo_seleccionar->items).push_back(std::move(nodo_item));
-        c_l_n = c_l_n->nxt_node; // We skip to the coma
-    };
+   };
    // Al final dwl todo lo enoazamos cob el modo raiz de la consulta:
    nodo_consulta->nodo_select = nodo_seleccionar;
 };
@@ -451,7 +290,7 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
     // Avanzamos uno:
     Logger::log(LogLevel::DEBUG, "IINCIAMOS LA CREACION DEL ARBOL DE CONSULTA");
     
-    c_l_n = c_l_n->nxt_node; // We skip 'SELECT'
+    c_l_n = c_l_n->nxt_node;
     QueryNode* nodo_consulta = new QueryNode;
 
     // Ahora vamos a un bucle para definir las columnas de la consulta:
@@ -470,27 +309,15 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
         // ahora viene el nombre de la tabla:
 	// Antes comprobamos si existe dicha tabla:
         if(global_table_dict.find(c_l_n->val) == global_table_dict.end()){
-            // No existe esa tabla:
-            delete nodo_desde;
-            nodo_desde = nullptr;
-            delete nodo_consulta;
-            nodo_consulta = nullptr;
-            throw std::runtime_error("ERROR: Query error. Table: " + c_l_n->val + "does not exist");
-            return;
-        };	
+           // No existe esa tabla:
+	   delete nodo_desde;
+	   nodo_desde = nullptr;
+	   delete nodo_consulta;
+	   nodo_consulta = nullptr;
+	   return;
+	};	
         nodo_desde->nombre = c_l_n->val;
         nodo_consulta->nodo_from = nodo_desde;
-    }else{
-        throw std::runtime_error("ERROR: 'FROM' missing from table query");
-    };
-    c_l_n = c_l_n->nxt_node;
-    if(c_l_n->val != ";"){
-        Logger::log(LogLevel::DEBUG, "Valor del error: ", false, true);
-        Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-        throw std::runtime_error("ERROR: Sentence clousure ';' for table query operation was not found");
-    }else{
-        // In case of ecountering ';' we skip it in order to advance to the next sentence
-        c_l_n = c_l_n->nxt_node;
     };
 
     // Creamos y rellenamos el nodo de la cola
@@ -507,32 +334,21 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
 };
 
 // Para eliminar tablas:
-void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& c_l_n){
-
-    // We skip to the suposed name of the table:
-    c_l_n = c_l_n->nxt_node;
-    std::string table_nombre = c_l_n->val;
+void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nombre_ptr){
+    table_nombre_ptr = table_nombre_ptr->nxt_node;
   
-    std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre);
+    std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre_ptr->val);
     if(item_pair== global_table_dict.end()){
+        //throw std::runtime_error("ERROR: La tabla "+ table_nombre_ptr->val +" no existe. No se puede eliminar");
        Logger::log(LogLevel::OUTPUT, "ERROR: La tabla: ", false, true);
-       Logger::log(LogLevel::OUTPUT, table_nombre, false,false);
+       Logger::log(LogLevel::OUTPUT, table_nombre_ptr->val, false,false);
        Logger::log(LogLevel::OUTPUT," .No se puede elimonar");
 
       return;
     };
-    // From here we assume the name was valid, thus we skip one node farther:
-    c_l_n = c_l_n->nxt_node;
-
-    if(c_l_n->val != ";"){
-        throw std::runtime_error("ERROR: Sentence clousure ';' for table deletion operation was not found");
-    }else{
-        // In case of ecountering ';' we skip it in order to advance to the next sentence
-        c_l_n = c_l_n->nxt_node;
-    };
     // En caso de existir la clave procedemos a crear un nodo de elimonacion de tabla:
     DropTableNode* nodo_drop = new DropTableNode;
-    nodo_drop->nombre_tabla = table_nombre;
+    nodo_drop->nombre_tabla = table_nombre_ptr->val;
 
     // Creamos y rellenamos el nodo de la cola
     execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
@@ -563,7 +379,6 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista){
         Logger::log(LogLevel::DEBUG, "Valor del token: ", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 
-
         if(c_l_n->val == "CREATE TABLE"){
             Logger::log(LogLevel::DEBUG, "Procedemos a definir el esquema:");
             procesar_lista_para_definir_esquema(excec_queue, c_l_n);
@@ -576,13 +391,16 @@ execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista){
             Logger::log(LogLevel::DEBUG, "<<<<<ELIMINACION DE LA TABLA >>>>>>: " + c_l_n->nxt_node->val);
             add_drop_table_node_to_queue(excec_queue, c_l_n); //Aqui no se elimina lq tabla
             Logger::log(LogLevel::DEBUG, "<<<<<TABLA PLANEADA PARA ELIMINAR >>>>>>: ");
-        /*/} else if(c_l_n->val == ";"){
-            // Ahora, si encontramos un ";" avanzamos un nodo adicinoal en la lista de tokens:
+        };
+    
+        // Ahora, si encontramos un ";" avanzamos un nodo adicinoal en la lista de tokens:
+        if(c_l_n->val == ";"){
             Logger::log(LogLevel::DEBUG, "saltamos los valores ';' :");
-            c_l_n = c_l_n->nxt_node;*/
-        } else{
-            // Avanzamos si o si al siguienre nodo:
-            Logger::log(LogLevel::ERROR, "ERROR: Comando no reconocido: " + c_l_n->val);
+            c_l_n = c_l_n->nxt_node;
+        };
+
+        // Avanzamos si o si al siguienre nodo:
+        if(c_l_n->val != "CREATE TABLE" && c_l_n->val !="INSERT INTO" && c_l_n->val != "EOS" && c_l_n->val != "SELECT" && c_l_n->val != "DROP TABLE"){
             c_l_n = c_l_n->nxt_node;
         };
     };

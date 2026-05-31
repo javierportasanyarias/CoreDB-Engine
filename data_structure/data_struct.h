@@ -55,7 +55,7 @@ struct table_metadata {
 };
 
 
-using Values = std::variant<int, float, bool, std::string>;
+using Values = std::variant<int, float, bool, std::string, std::vector<char>>;
 
 
 struct table_data {

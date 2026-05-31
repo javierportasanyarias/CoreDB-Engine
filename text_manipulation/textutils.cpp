@@ -16,32 +16,35 @@ std::string textUtils::espaciar_texto(const std::string& input){
    */
    //std::string buffer = "";
    std::string result = "";
+   uint32_t input_size = input.size();
+   const char* ptr_current = input.data();
+   const char* ptr_end = ptr_current + input_size;
+   result.reserve(input_size *2);
 
-   for(int i = 0; i<input.size(); i++){
-      //buffer += input[i];
-      switch(input[i]){
+   while(ptr_current < ptr_end){
+
+      char c = *ptr_current;
+      switch(c){
          case ')':
-            result = result + " " + input[i] + " ";
-            break;
          case '(':
-            result = result + " " + input[i] + " ";
-            break;
          case ';':
-            result = result + " " + input[i]+ " ";
-            break;
          case ',':
-            result = result + " " + input[i] + " ";
+            result += ' ';
+            result += c;
+            result += ' ';
             break;
          default:
-            result += input[i];
+            result += c;
+            break;
       };
+      ++ptr_current;
    };
    result += " ";
    return  result;
 };
 
 
-void textUtils::simpleLinkedList::add_node(std::string valor){
+void textUtils::simpleLinkedList::add_node(std::string& valor){
    /*
    Método de la lista enlazada simple para añadir un nodo (al final de la lista enlazada).
    */
@@ -112,103 +115,43 @@ void textUtils::simpleLinkedList::clear() {
 };
 
 
-std::string textUtils::borrar_espacios_repetidos(const std::string& input){
-   /*
-   Función que borra los espacios 'repetidos'.
-   Se considera espacios repetidos cuando hay dos o más espacios entre caracteres
-   no vacíos. En dicho caso sólo se deja un único espacio.
-   De esta forma se convierte a mucho más regular y predecible el espacio entre
-   palabras, o lo que serán los tokens.
-   */
+std::string textUtils::normalize_spaces(const std::string& input){
 
+   bool allow_space = false;
    std::string result = "";
-   bool auxbool = true;
+   uint32_t input_size = input.size();
    const char* ptr_current = input.data();
-   const char* ptr_end = ptr_current + input.size();
+   const char* ptr_end = ptr_current + input_size;
+   result.reserve(input_size);
 
+   // Erase starting space:
+   while(ptr_current < ptr_end && *ptr_current == ' '){
+      ++ptr_current;
+   };
+
+   // Erase middle remaninig spaces:
    while(ptr_current < ptr_end){
 
       char current_char = *ptr_current;
 
       if(current_char == ' '){
-         if(auxbool){
+         if(allow_space){
 	         result += current_char;
-            auxbool = false;
+            allow_space = false;
          };
       }else{
 	      result += current_char;
-         auxbool = true;
+         allow_space = true;
       };
       ptr_current++;
    };
 
-
-   /*for(int i = 0; i<size_input; i++){
-
-      if(input[i] == ' '){
-         if(auxbool){
-	         result += input[i];
-            auxbool = false;
-         };
-      }else{
-	      result += input[i];
-         auxbool = true;
-      };
-   };*/
-   result += " ";
-   return result;
-};
-
-std::string textUtils::borrar_espacios_principio(const std::string& input){
-   /*
-   Función que borra los espacios al principio de la cadena del input.
-   */
-
-   const char* ptr_current = input.data();
-   const char* ptr_end = ptr_current + input.size();
-   std::string result = "";
-   bool auxbool = false;
-
-   while(ptr_current < ptr_end){
-
-      char current_char = *ptr_current;
-   
-      if(current_char != ' '){
-         auxbool = true;
-      };
-      if(auxbool){
-         result += current_char;
-      };
-      ptr_current++;
+   // Erase final space:
+   if(!result.empty() && result.back() == ' '){
+      result.pop_back();
    };
-   /*for(int i = 0; i<input.size(); i++){
-      if(input[i] != ' '){
-         auxbool = true;
-      };
-      if(auxbool){
-         result += input[i];
-      };
-   };*/
+
    return result;
-};
-
-
-void textUtils::borrar_espacios_final(std::string& input) {
-   /*
-   Función que elimina los espacios al final.
-   Esta función es 'inplace'. Osea, no necesita retornar
-   output, ya que modifica el propio input.
-   */
-   if (input.empty()) return;
-
-   int i = static_cast<int>(input.size()) - 1; // índice del último carácter
-
-   // Retrocede mientras haya espacios al final
-   while (i >= 0 && std::isspace(static_cast<unsigned char>(input[i]))) {
-      i--;
-   };
-   // Devuelve la subcadena sin los espacios del final
-   input = input.substr(0, i + 1);
 };
 
 textUtils::simpleLinkedList* textUtils::crear_lista_tokens(const std::string& input){
@@ -217,27 +160,35 @@ textUtils::simpleLinkedList* textUtils::crear_lista_tokens(const std::string& in
    y 'tokeniza' o crea una lista enlaza simple, donde cada nodo
    es una parte indivisible de una instrucción de SQL.
    */
-   std::string buffer = "";
+   std::string buffer;
+   buffer.reserve(64);
+   uint32_t input_size = input.size();
+   const char* ptr_current = input.data();
+   const char* ptr_end = ptr_current + input_size;
+
    textUtils::simpleLinkedList* lista = new textUtils::simpleLinkedList();
 
-   for(int i = 0; i < input.size(); i++){
-      if(input[i] == ' '){
-         // Solo entramos aquí si hay algo que procesar
+   while(ptr_current < ptr_end){
+      char c = *ptr_current;
+
+      if(c == ' '){
+         // Only in this case there is a node to add
          if(!buffer.empty()){
             if(buffer == "CREATE" || buffer == "PRIMARY" || buffer == "INSERT" || buffer == "DROP"){
-               buffer += input[i];
-            } else {
+               buffer += c;
+            }else{
                Logger::log(LogLevel::DEBUG, "Add to lista: ", false, true);
-	            Logger::log(LogLevel::DEBUG, buffer, true, false);
+               Logger::log(LogLevel::DEBUG, buffer, true, false);
                lista->add_node(buffer);
-               buffer = "";
+               buffer.clear();
             };
          };
-      } else {
-         buffer += input[i];
+      }else{
+         buffer += c;
       };
+      ++ptr_current;
    };
-   // Añadir el último token si quedó algo
+   // In case some elements from the buffer were left unnadded, we append them here at the end
    if(!buffer.empty()) {
       lista->add_node(buffer);
    };
@@ -282,23 +233,21 @@ textUtils::simpleLinkedList* textUtils::procesar_texto_pipeline(std::string& inp
 
    Logger::log(LogLevel::DEBUG, "Vemos como llega el input de texto:", true, false);
    Logger::log(LogLevel::DEBUG, input, true, false);
-   // Ahora realizamos la limpieza:
-   //input = limpiar_comienzo_input(input);
-   //Logger::log(LogLevel::DEBUG, "Despues de limpiar el comienzo:", true, false);
-   //Logger::log(LogLevel::DEBUG, input, true, false);
    input = espaciar_texto(input);
    Logger::log(LogLevel::DEBUG, "Despues de espaciar texto:", true, false);
    Logger::log(LogLevel::DEBUG, input, true, false);
-   input = borrar_espacios_repetidos(input);
-   Logger::log(LogLevel::DEBUG, "Despues de borrar espacios repetidos:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   input = borrar_espacios_principio(input);
-   Logger::log(LogLevel::DEBUG, "Despues de borrar espacios al principio:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   borrar_espacios_final(input);
-   Logger::log(LogLevel::DEBUG, "Texto formateado:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
+   //input = borrar_espacios_repetidos(input);
+   //Logger::log(LogLevel::DEBUG, "Despues de borrar espacios repetidos:", true, false);
+   //Logger::log(LogLevel::DEBUG, input, true, false);
+   //input = borrar_espacios_principio(input);
+   //borrar_espacios_final(input);
+   //Logger::log(LogLevel::DEBUG, "Texto formateado:", true, false);
+   //Logger::log(LogLevel::DEBUG, input, true, false);
    // Ahora realizamos la limpieza:
+   input = textUtils::normalize_spaces(input);
+   Logger::log(LogLevel::DEBUG, "Despues de normalizar los epacios:", true, false);
+   Logger::log(LogLevel::DEBUG, input, true, false);
+
    input = limpiar_comienzo_input(input);
    Logger::log(LogLevel::DEBUG, "Despues de limpiar el comienzo:", true, false);
    Logger::log(LogLevel::DEBUG, input, true, false);
@@ -306,5 +255,8 @@ textUtils::simpleLinkedList* textUtils::procesar_texto_pipeline(std::string& inp
    lista_a_retornar = crear_lista_tokens(input);
    Logger::log(LogLevel::DEBUG, "head de la lista:", true, false);
    Logger::log(LogLevel::DEBUG, lista_a_retornar->head->val, true, false);
+   Logger::flush();
+   lista_a_retornar->print_list();
+   Logger::flush();
    return lista_a_retornar;
 };

@@ -72,11 +72,25 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
 
    //size_t num_fila = filas.size();
    uint32_t num_fila = filas.size();
+
+
+
+//////////////////////////////////////////////////////////////////////////
+   /*Logger::flush();
+   Logger::log(LogLevel::DEBUG,  "///////////////////////////////////////////////////////////");
+         Logger::log(LogLevel::DEBUG, "Numero de columnas: ", false, true);
+         Logger::log(LogLevel::DEBUG, len_n_cols, true, false);
+   Logger::flush();
+   Logger::flush();
    for(int i = 0; i<len_n_cols; i++){
       // Ahora iteramos por las filas:
       for(int j = 0; j<num_fila; j++){
 	      // Recuperamos el valor como string:
 	      std::string valor_str = filas[j][i];
+         Logger::log(LogLevel::DEBUG, "Columna: ", false, true);
+         Logger::log(LogLevel::DEBUG, i, true, false);
+         Logger::log(LogLevel::DEBUG, "Valor de la variable: ", false, true);
+         Logger::log(LogLevel::DEBUG, valor_str, true, false);
          if(Logger::level == LogLevel::DEBUG){
             Logger::flush();
          }else{
@@ -87,9 +101,53 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
          dataType tipo_dato= metadatos->column_types[i];
          switch(tipo_dato){
             case dataType::INT:
+               Logger::log(LogLevel::DEBUG,  "Tipo de valor: INT");
+               break;
+            case dataType::FLOAT:
+               Logger::log(LogLevel::DEBUG,  "Tipo de valor: FLOAT");
+               break;
+            case dataType::BOOL:
+               Logger::log(LogLevel::DEBUG,  "Tipo de valor: BOOL");
+               break;
+            case dataType::STRING:
+               Logger::log(LogLevel::DEBUG,  "Tipo de valor: STRING");
+               break;
+            // New case: UNKNOWN -> We will treat these data types as a vector of chars:
+            case dataType::UNKNOWN:
+               Logger::log(LogLevel::DEBUG,  "Tipo de valor: UNKNOWN");
+               break;
+         };
+      }; // Cierre de la escritura de cada fila
+   };
+   Logger::flush();
+   Logger::log(LogLevel::DEBUG,  "///////////////////////////////////////////////////////////");
+   Logger::flush();
+   Logger::flush();*/
+//////////////////////////////////////////////////////////////////////////
+   for(int i = 0; i<len_n_cols; i++){
+      // Ahora iteramos por las filas:
+      for(int j = 0; j<num_fila; j++){
+	      // Recuperamos el valor como string:
+	      std::string valor_str = filas[j][i];
+         //std::string valor_str = filas[i][j];
+         if(Logger::level == LogLevel::DEBUG){
+            Logger::flush();
+         }else{
+            Logger::flush(false);
+         };
+	      Values valor_variante; // Valor variante
+         // Hacemos la conversion de valor de acuerdo a los metadatos:
+         dataType tipo_dato= metadatos->column_types[i];
+         //dataType tipo_dato= metadatos->column_types[j];
+         switch(tipo_dato){
+            case dataType::INT:
+               Logger::log(LogLevel::DEBUG, "Valor a pasar a entero: ", false, true);
+               Logger::log(LogLevel::DEBUG, valor_str, true, false);
                valor_variante = std::stoi(valor_str);
                break;
             case dataType::FLOAT:
+               Logger::log(LogLevel::DEBUG, "Valor a pasar a float: ", false, true);
+               Logger::log(LogLevel::DEBUG, valor_str, true, false);
                valor_variante = std::stof(valor_str);
                break;
             case dataType::BOOL:
@@ -102,6 +160,10 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
             case dataType::STRING:
                valor_variante = valor_str;
                break;
+            // New case: UNKNOWN -> We will treat these data types as a vector of chars:
+            case dataType::UNKNOWN:
+               std::vector<char> bytes_desconocidos(valor_str.begin(), valor_str.end());
+               valor_variante = std::move(bytes_desconocidos);
          };
          // Ya tenemos el valor variante, ahora rellenamos los datos de la tabla en la RAM viva:
          auto it = tb_recup->data_ptr->columns.find(nombres_columnas[i]);
@@ -134,9 +196,13 @@ void recursive_metadata_fill_lv2(NodeType2* nodo_ptr, table* tb_created){
    auto& metadata = *tb_created->metadata_ptr;
    (metadata.column_names).push_back(std::move(nodo_ptr->name_campo));
    (metadata.column_types).push_back(transform_str_to_datatype(nodo_ptr->tipo));
-   if(nodo_ptr->is_primary){
-      (metadata.primary_list).push_back(true);
-   };
+   // Pusheamos si el nodo es primario o no:
+   (metadata.primary_list).push_back(nodo_ptr->is_primary);
+   //if(nodo_ptr->is_primary){
+      //(metadata.primary_list).push_back(nodo_ptr->is_primary);
+  // }else{
+      //(metadata.primary_list).push_back(false);
+   //};
    // Estos nodos no rienen hijos
    return;
 };
