@@ -124,9 +124,11 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
    Logger::flush();
    Logger::flush();*/
 //////////////////////////////////////////////////////////////////////////
-   for(int i = 0; i<len_n_cols; i++){
+   //for(int i = 0; i<len_n_cols; i++){
       // Ahora iteramos por las filas:
-      for(int j = 0; j<num_fila; j++){
+      //for(int j = 0; j<num_fila; j++){
+   for(int j = 0; j<num_fila; j++){
+      for(int i = 0; i<len_n_cols; i++){
 	      // Recuperamos el valor como string:
 	      std::string valor_str = filas[j][i];
          //std::string valor_str = filas[i][j];
@@ -209,13 +211,28 @@ void recursive_metadata_fill_lv2(NodeType2* nodo_ptr, table* tb_created){
 
 void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
 
-   // Creamos un struct de la tabla:
-   table* tb_created = global_table_dict[nodo_ptr->nombre_tabla];
    if(!nodo_ptr){
       return;
    };
 
+   // Before creating table metadata, we make sure it does not exist previously:
+   auto it = global_table_dict.find(nodo_ptr->nombre_tabla);
+   if(it != global_table_dict.end()){
+      Logger::log(LogLevel::ERROR, "Error while creating the table: '" + nodo_ptr->nombre_tabla + "' . It already exists");
+      throw std::runtime_error("CREATE TABLE ERROR: Can not define an already existing table");
+   };
+
+   // As the table doesn't exist, we crate it within the global dictionary
+   //table* tb_created = global_table_dict[nodo_ptr->nombre_tabla];
+
+   // We crate the table and add it's entry to the dictionay:
+   table* tb_created = new table;
+   global_table_dict[nodo_ptr->nombre_tabla] = tb_created;
+   // We initialize the table's metadata struct:
    tb_created->metadata_ptr = new table_metadata;
+   // Just in case, we set the table's data pointers to null:
+   tb_created->data_ptr = nullptr;
+   tb_created->data_buffer_ptr = nullptr;
 
    // Declaramos el nombre de la tabla:
    ((*(tb_created->metadata_ptr)).name) = nodo_ptr->nombre_tabla;
@@ -374,7 +391,38 @@ void liberar_tabla(table*& tb){
       tb->data_buffer_ptr = nullptr;
    };
    delete tb;
+   tb = nullptr;
 };
+
+
+void liberar_tabla_solo_memoria(table*& tb){
+   /*
+   Función encargada de eliminar la tabla y sus datos:
+   La función se dividirá en:
+      Eliminación de los datos en la memoria volátil
+   */
+   //////////////////////////
+   // Eliminación de los datos en RAM:
+
+   // Eliminamos los metadatos:
+   if (!tb) return;
+   delete tb->metadata_ptr;
+   tb->metadata_ptr = nullptr;
+   // Eliminamos los datos en RAM viva:
+   if(tb->data_ptr){
+      delete tb->data_ptr;
+      tb->data_ptr = nullptr;
+   };
+   // Eliminamos los datos en RAM venidos del disco:
+   if(tb->data_buffer_ptr){
+      delete tb->data_buffer_ptr;
+      tb->data_buffer_ptr = nullptr;
+   };
+   delete tb;
+   tb = nullptr;
+};
+
+
 
 void drop_table_from_global_dict(DropTableNode*& nodo_ptr){
 
@@ -430,4 +478,39 @@ void sanitize_global_dict() {
          ++it;
       }
     }
+};
+
+
+
+// Function destined to erase all tables, both from memory and disk
+void delete_all_tables_dict(){
+   auto it = global_table_dict.begin();
+
+   while (it != global_table_dict.end()){
+      table* ptr = it->second;
+      if(ptr){
+         //global_table_dict.erase(ptr->metadata_ptr->name);
+         liberar_tabla(ptr);
+      };
+      ++it;
+   };
+   // Libreamos las entradas del diccionario:
+   global_table_dict.clear();
+};
+
+
+// Function destined to erase all tables only from disk
+void delete_all_tables_dict_only_mem(){
+   auto it = global_table_dict.begin();
+
+   while (it != global_table_dict.end()){
+      table* ptr = it->second;
+      if(ptr){
+         //global_table_dict.erase(ptr->metadata_ptr->name);
+         liberar_tabla_solo_memoria(ptr);
+      };
+      ++it;
+   };
+   // Libreamos las entradas del diccionario:
+   global_table_dict.clear();
 };

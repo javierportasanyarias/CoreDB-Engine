@@ -15,6 +15,26 @@
 #include "logging.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Auxiliar class for keeping track of the tables created o already present:
+
+
+void tableCatalog::register_table(std::string name){
+    table_catalog.insert(name);
+};
+
+bool tableCatalog::ckeck_table(std::string name){
+    return table_catalog.find(name) != table_catalog.end();
+};
+
+void tableCatalog::delete_table(std::string name){
+    // Only if the table exists we erase it:
+    if(tableCatalog::ckeck_table(name)){
+        table_catalog.erase(name);
+    };
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DEFINIMOS LAS FUNCIONES AUXILIARES:
 
 
@@ -99,7 +119,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
 
 
 // FUNCIONES PARA DEFINIR EL ESQUEMA:
-void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* nodo){
+void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* nodo, execPlan::Queue* excec_queue){
     /*
     Función auxiliar que crea los hijos de 'NodeType1', el nodo que es la raiz del árbol
     para definir el esquema.
@@ -107,6 +127,13 @@ void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* no
     crear la tabla.
     */
     if(c_l_n->val != "("){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("ERROR: Schema columns definition was never oppened with '('");
     };
     c_l_n = c_l_n->nxt_node;
@@ -135,6 +162,13 @@ void crear_hijos_esquema_dado_padre(textUtils::NodeLista1*& c_l_n, NodeType1* no
     if(c_l_n->val != ")"){
         Logger::log(LogLevel::DEBUG, "Valor del error: :", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("ERROR: Schema columns definition was never closed with ')'");
     };
     // In case of ecountering ')' we skip it in order to advance to the next sentence
@@ -152,9 +186,13 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
     */
 
     if(c_l_n->val != "CREATE TABLE"){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        // ...
         throw std::runtime_error("Se esperaba 'TABLE' después de 'CREATE'");
-        // Task queue deletion in order to erase memory leaks:
-        return;
     };
     NodeType1* nodo = new NodeType1;
     // Avanzamos al siguiente nodo:
@@ -162,6 +200,17 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
 
     // Esperamos el nombre:
     nodo->nombre_tabla = c_l_n->val;
+
+    // Safeguard for not defining an already existing table:
+    if((global_table_dict.find(c_l_n->val) != global_table_dict.end()) || (tableCatalog::ckeck_table(c_l_n->val))){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        std::string table_name_tmp = nodo->nombre_tabla;
+        throw std::runtime_error("Error: Table: " + table_name_tmp + " already exists, can not be defined again");
+    };
 
     // Avanzamos al siguiente nodo:
     c_l_n = c_l_n->nxt_node;
@@ -177,9 +226,16 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
     //c_l_n = c_l_n->nxt_node;
 
     // Ahora rellenamos con los nodos hijos que corresponden con el esquema del nombre y tipo de todas las variables:
-    crear_hijos_esquema_dado_padre(c_l_n, nodo);
+    crear_hijos_esquema_dado_padre(c_l_n, nodo, excec_queue);
 
     if(c_l_n->val != ";"){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("ERROR: Sentence clousure clousure ';' for schema definition not found");
     }else{
         // In case of ecountering ';' we skip it in order to advance to the next sentence
@@ -195,16 +251,18 @@ void procesar_lista_para_definir_esquema(execPlan::Queue* excec_queue, textUtils
     excec_queue->add_node_to_queue(excec_queue_node);
 
     // Ahora creamos la tabla y enlazamos esa tsbla a la consulta:
-    table* tb_created = new table;
+    //table* tb_created = new table;
     //nodo->tb_struct = tb_created;
     //
     // Incluimosl nombre y el alias en el doccoonario:
     //extern std::unordered_map<std::string, table> global_table_dict;
-    global_table_dict[nodo->nombre_tabla] = tb_created;
+    //global_table_dict[nodo->nombre_tabla] = tb_created;
     // Sólo creamos la entrada del alias si este existe:
-    if(nodo->alias != ""){
-       global_table_dict[nodo->alias] = tb_created;
-    };
+    //if(nodo->alias != ""){
+       //global_table_dict[nodo->alias] = tb_created;
+    //};
+    // We include the table in the schema:
+    tableCatalog::register_table(nodo->nombre_tabla);
     return;
 };
 
@@ -265,7 +323,7 @@ void aux_iterative_value_filler(textUtils::NodeLista1*& c_l_n, std::vector<std::
 
 
 
-void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
+void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n, execPlan::Queue* excec_queue){
 
     // Reerving rows inn odo->filas to evade eraly memmory relocations of the array due to insuficient contiguous directions
     nodo->filas.reserve(128);
@@ -275,6 +333,13 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
     if(c_l_n->val != "("){
         Logger::log(LogLevel::DEBUG, "Valor del error :", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("ERROR: Parenthesis was never oppened in row addition");
     };
     c_l_n = c_l_n->nxt_node; // We skip '('
@@ -292,6 +357,13 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
     // std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
     Logger::log(LogLevel::DEBUG, "Ya fue insertado el vector en el vector de vectores");
     if(c_l_n->val != ")"){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("ERROR: Parenthesis was never closed in row addition");
     };
     // Avanzamos en el bucle:
@@ -307,6 +379,13 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
         if(c_l_n->val != "("){
             Logger::log(LogLevel::DEBUG, "Valor del error :", false, true);
             Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+            // First, we delete the whole task queue:
+            execPlan::delete_whole_task_queue(excec_queue);
+            // We delete all tehe tables from the global table dict:
+            delete_all_tables_dict_only_mem();
+            // Then, the other, defined, or half defined objects:
+            delete nodo;
+            nodo = nullptr;
             throw std::runtime_error("ERROR: Parenthesis was never oppened in row addition");
         };
         // Avanzamos un token extra:
@@ -325,6 +404,13 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
         // std::cout<<"Ya fue insertado el vector en el vector de vectores"<<std::endl;
         Logger::log(LogLevel::DEBUG, "Ya fue insertado el vector en el vector de vectores");
         if(c_l_n->val != ")"){
+            // First, we delete the whole task queue:
+            execPlan::delete_whole_task_queue(excec_queue);
+            // We delete all tehe tables from the global table dict:
+            delete_all_tables_dict_only_mem();
+            // Then, the other, defined, or half defined objects:
+            delete nodo;
+            nodo = nullptr;
             throw std::runtime_error("ERROR: Parenthesis was never closed in row addition");
         };
         // Avanzamos en el bucle:
@@ -335,6 +421,13 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
     };
     // Ot of the loop, we finish consuming the instruction whole
     if(c_l_n->val != ";"){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("ERROR: Sentence clousure ';' for row addition was not found");
     }else{
         // In case of ecountering ';' we skip it in order to advance to the next sentence
@@ -350,6 +443,12 @@ void insert_row_values_in_node(NodeType3* nodo, textUtils::NodeLista1*& c_l_n){
 void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtils::NodeLista1*& c_l_n){
 
     if(c_l_n->val != "INSERT INTO"){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        // ...
         throw std::runtime_error("Se esperaba 'INTO' después de 'INSERT'");
         return;
     };
@@ -372,6 +471,13 @@ void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtil
         // Ahora un pequeño bucle para ir añadiendo los nombres de las columnas a procesar:
         insert_values_add_columns_to_node(nodo, c_l_n);
         if(c_l_n->val != ")"){
+            // First, we delete the whole task queue:
+            execPlan::delete_whole_task_queue(excec_queue);
+            // We delete all tehe tables from the global table dict:
+            delete_all_tables_dict_only_mem();
+            // Then, the other, defined, or half defined objects:
+            delete nodo;
+            nodo = nullptr;
             throw std::runtime_error("ERROR: Column definition for row addition was never closed with ')'");
         };
         c_l_n = c_l_n->nxt_node;
@@ -387,14 +493,20 @@ void procesar_lista_para_insertar_valores(execPlan::Queue* excec_queue, textUtil
         // std::cout<<c_l_n->val<<std::endl;
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
         // node deletion in order to evade memory leaks:
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
         delete nodo;
+        nodo = nullptr;
         throw std::runtime_error("Se esperaba 'VALUES' despues de definir las columnas");
     };
 
     // Ahora insertamos los valores:
     // std::cout<<"Insertamos los valores:"<<std::endl;
     Logger::log(LogLevel::DEBUG, "Insertamos los valores:");
-    insert_row_values_in_node(nodo, c_l_n);
+    insert_row_values_in_node(nodo, c_l_n, excec_queue);
     // std::cout<<"SE HA SALIDO DE LA FUNCION 'insert_row_values_in_node'"<<std::endl;
     Logger::log(LogLevel::DEBUG, "SE HA SALIDO DE LA FUNCION 'insert_row_values_in_node'");
 
@@ -453,6 +565,7 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
     
     c_l_n = c_l_n->nxt_node; // We skip 'SELECT'
     QueryNode* nodo_consulta = new QueryNode;
+    FromNode* nodo_desde = nullptr;
 
     // Ahora vamos a un bucle para definir las columnas de la consulta:
     if(c_l_n->val != "*"){
@@ -463,30 +576,58 @@ void procesar_lista_para_consulta(execPlan::Queue*& excec_queue, textUtils::Node
         c_l_n = c_l_n->nxt_node;
     };
 
+
     // Ahora vemos si encontramos el from:
     if(c_l_n->val == "FROM"){
         c_l_n = c_l_n->nxt_node;
-        FromNode* nodo_desde = new FromNode;
+        nodo_desde = new FromNode;
         // ahora viene el nombre de la tabla:
 	// Antes comprobamos si existe dicha tabla:
+        Logger::log(LogLevel::DEBUG, "FROM detectado. Vemos si existe la tabla en el diccionario o no:");
         if(global_table_dict.find(c_l_n->val) == global_table_dict.end()){
-            // No existe esa tabla:
-            delete nodo_desde;
-            nodo_desde = nullptr;
-            delete nodo_consulta;
-            nodo_consulta = nullptr;
-            throw std::runtime_error("ERROR: Query error. Table: " + c_l_n->val + "does not exist");
-            return;
-        };	
+            if(!tableCatalog::ckeck_table(c_l_n->val)){
+                Logger::log(LogLevel::DEBUG, "NO existe la entrada en el diccionario de tablas");
+                // No existe esa tabla:
+                // First, we delete the whole task queue:
+                execPlan::delete_whole_task_queue(excec_queue);
+                // We delete all tehe tables from the global table dict:
+                delete_all_tables_dict_only_mem();
+                // Then, the other, defined, or half defined objects:
+                delete nodo_consulta;
+                nodo_consulta = nullptr;
+                delete nodo_desde;
+                nodo_desde = nullptr;
+                throw std::runtime_error("ERROR: Query error. Table: " + c_l_n->val + " does not exist");
+            };
+        };
+        Logger::log(LogLevel::DEBUG, "SI existe la entrada en el diccionario de tablas");	
         nodo_desde->nombre = c_l_n->val;
         nodo_consulta->nodo_from = nodo_desde;
     }else{
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo_desde;
+        nodo_desde = nullptr;
+        delete nodo_consulta;
+        nodo_consulta = nullptr;
         throw std::runtime_error("ERROR: 'FROM' missing from table query");
     };
     c_l_n = c_l_n->nxt_node;
     if(c_l_n->val != ";"){
         Logger::log(LogLevel::DEBUG, "Valor del error: ", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all tehe tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        delete nodo_desde;
+        nodo_desde = nullptr;
+        delete nodo_consulta;
+        nodo_consulta = nullptr;
         throw std::runtime_error("ERROR: Sentence clousure ';' for table query operation was not found");
     }else{
         // In case of ecountering ';' we skip it in order to advance to the next sentence
@@ -512,19 +653,30 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
     // We skip to the suposed name of the table:
     c_l_n = c_l_n->nxt_node;
     std::string table_nombre = c_l_n->val;
-  
-    std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre);
-    if(item_pair== global_table_dict.end()){
-       Logger::log(LogLevel::OUTPUT, "ERROR: La tabla: ", false, true);
-       Logger::log(LogLevel::OUTPUT, table_nombre, false,false);
-       Logger::log(LogLevel::OUTPUT," .No se puede elimonar");
 
-      return;
+    // In contrast with table creation, table deletion CAN look it up in the global table dictionary:
+    std::unordered_map<std::string, table*>::iterator item_pair= global_table_dict.find(table_nombre);
+    if(item_pair == global_table_dict.end()){
+        // If the table is yet not created, we search it among the defined yet not created tables:
+        if(!tableCatalog::ckeck_table(table_nombre)){
+            Logger::log(LogLevel::ERROR, "ERROR: La tabla: ", false, true);
+            Logger::log(LogLevel::ERROR, table_nombre, false,false);
+            Logger::log(LogLevel::ERROR," .No se puede eliminar. NO existe previamente ni ha sido definida todavía");
+            throw std::runtime_error("DROP TABLE ERROR: Table '" + table_nombre + "' does not exist.");
+
+        };
     };
+
     // From here we assume the name was valid, thus we skip one node farther:
     c_l_n = c_l_n->nxt_node;
 
     if(c_l_n->val != ";"){
+        // First, we delete the whole task queue:
+        execPlan::delete_whole_task_queue(excec_queue);
+        // We delete all the tables from the global table dict:
+        delete_all_tables_dict_only_mem();
+        // Then, the other, defined, or half defined objects:
+        // ...
         throw std::runtime_error("ERROR: Sentence clousure ';' for table deletion operation was not found");
     }else{
         // In case of ecountering ';' we skip it in order to advance to the next sentence
@@ -540,6 +692,10 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
 
     // ñadimos el nodo de la cola a la cola:                                
     excec_queue->add_node_to_queue(excec_queue_node);
+
+    // We delete the table from the table catalog:
+    tableCatalog::delete_table(table_nombre);
+
 };
 
 

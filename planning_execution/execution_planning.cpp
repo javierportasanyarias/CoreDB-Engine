@@ -160,6 +160,20 @@ void execPlan::Queue::delete_current_queue_node(queueNode1* nodo_cola_a_eliminar
     delete nodo_cola_a_eliminar;
 };
 
+
+void execPlan::delete_queue_node(queueNode1* nodo_cola_a_eliminar) {
+
+    if (!nodo_cola_a_eliminar) return;
+    std::visit(
+        [](auto* nodo_ptr) {
+            aux_delete_que_node_content(nodo_ptr);
+            nodo_ptr = nullptr; 
+        },
+        nodo_cola_a_eliminar->nodePtr
+    );
+    delete nodo_cola_a_eliminar;
+};
+
 ////////////////////////////////////////////////////////////////////////
 //Función para eliminar la cola entera:
 void execPlan::delete_task_queue(execPlan::Queue* cola){
@@ -168,6 +182,23 @@ void execPlan::delete_task_queue(execPlan::Queue* cola){
     //delete cola->last_ptr;
     cola->last_ptr = nullptr;
     delete cola;
+    cola = nullptr;
+};
+
+// Funcion auxiliar para eliminar TODA la cola, includios su nodos:
+void execPlan::delete_whole_task_queue(execPlan::Queue* cola){
+    /*
+    Function that deletes the task gueue whole, not
+    just it's pointers, but the underlying data structures it
+    holds for CRUD operations.
+    */
+    execPlan::queueNode1* c_q_n = cola->first_ptr;
+
+    while(c_q_n){
+        execPlan::delete_queue_node(c_q_n);
+    };
+    // Once deleted all the items, we can delete it whole:
+    execPlan::delete_task_queue(cola);
 };
 
 
@@ -181,45 +212,53 @@ void execPlan::Queue::execute_queue_tasks(){
     Logger::log(LogLevel::DEBUG,  "Nodo ", false, true);
     Logger::log(LogLevel::DEBUG,  index, false, false);
     Logger::log(LogLevel::DEBUG,  ": ", false, false);
-    
+
+    size_t indice;
+
     while(c_q_n){
-        if (std::holds_alternative<NodeType1*>(c_q_n->nodePtr)) {
-            Logger::log(LogLevel::DEBUG,  "NodeType1: Ejecutamos creacion de tabla", true, false);
+        indice = c_q_n->nodePtr.index();
+        switch(indice){
+            case 0:{
+                Logger::log(LogLevel::DEBUG,  "NodeType1: Ejecutamos creacion de tabla", true, false);
 
-            NodeType1* nodo = std::get<NodeType1*>(c_q_n->nodePtr);  // Directo desde el variant
-            recursive_metadata_fill_lv1(nodo);
+                NodeType1* nodo = std::get<NodeType1*>(c_q_n->nodePtr);  // Directo desde el variant
+                recursive_metadata_fill_lv1(nodo);
+                break;
+            };
+            case 1:{
+                Logger::log(LogLevel::DEBUG,  "Nos encontramos al ejecutar un: NodeType2", false, false);
+                break;
+            };
+            case 2:{
+                Logger::log(LogLevel::DEBUG,  "NodeType3: Ejecutamos insercion de datos", true, false);
 
-        } else if (std::holds_alternative<NodeType2*>(c_q_n->nodePtr)){
+                NodeType3* nodo = std::get<NodeType3*>(c_q_n->nodePtr);  // Directo desde el variant
 
-            Logger::log(LogLevel::DEBUG,  "Nos encontramos al ejecutar un: NodeType2", false, false);
+                Logger::log(LogLevel::DEBUG,  "NodeType3 recuperado");
+                fill_table_with_values_v4(nodo);
+                break;
+            };
+            case 3:{
+                Logger::log(LogLevel::DEBUG,  "Ejecutamos la consulta: ");
 
-        } else if (std::holds_alternative<NodeType3*>(c_q_n->nodePtr)) {
+                QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
+                mostrar_tabla_query(nodo);
+                break;
+            };
+            case 4:{
+                DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
+                drop_table_from_global_dict(nodo);
 
-            Logger::log(LogLevel::DEBUG,  "NodeType3: Ejecutamos insercion de datos", true, false);
+                Logger::log(LogLevel::DEBUG,  "Tabla eliminada: " + nodo->nombre_tabla);
+                // Por si acaso hubiera entradas corruptas, las eliminamos del diccionario global:
+                sanitize_global_dict();
+                break;
+            };
+            default:
+                Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");
+                break;
+        }; // Switch statement ends    
 
-            NodeType3* nodo = std::get<NodeType3*>(c_q_n->nodePtr);  // Directo desde el variant
-
-            Logger::log(LogLevel::DEBUG,  "NodeType3 recuperado");
-            fill_table_with_values_v4(nodo);
-
-        } else if(std::holds_alternative<QueryNode*>(c_q_n->nodePtr)) {
-            Logger::log(LogLevel::DEBUG,  "Ejecutamos la consulta: ");
-
-            QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
-            mostrar_tabla_query(nodo);
-
-        }  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
-            DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
-            drop_table_from_global_dict(nodo);
-
-            Logger::log(LogLevel::DEBUG,  "Tabla eliminada: " + nodo->nombre_tabla);
-            // Por si acaso hubiera entradas corruptas, las eliminamos del diccionario global:
-            sanitize_global_dict();
-
-        } else {
-            Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");
-            
-        };
         Logger::log(LogLevel::DEBUG,  "Operacion terminada", false, true);
         index++;
         Logger::flush();

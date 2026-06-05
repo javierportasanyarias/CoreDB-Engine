@@ -43,8 +43,14 @@ void mostrar_tabla_query(QueryNode* nodo_root);
 // ELIMINACIÓN:
 void liberar_tabla(table*& tb);
 
+void liberar_tabla_solo_memoria(table*& tb);
+
 void drop_table_from_global_dict(DropTableNode*& nodo_ptr);
 
 void sanitize_global_dict();
+
+void delete_all_tables_dict();
+
+void delete_all_tables_dict_only_mem();
 
 #endif

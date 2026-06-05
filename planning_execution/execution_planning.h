@@ -46,8 +46,13 @@ namespace execPlan {
             // Función para eliminar nodos de la cola:
             void delete_current_queue_node(queueNode1* nodo_cola_a_eliminar);
     };
+
+    void delete_queue_node(queueNode1* nodo_cola_a_eliminar);
     // Método a parte de la cola para eliminarla:
     void delete_task_queue(Queue* cola);
+
+    // Method for deleting not only the object, but all it contains:
+    void delete_whole_task_queue(Queue* cola);
 };
 
 
