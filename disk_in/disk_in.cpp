@@ -635,7 +635,7 @@ disk_in::read_table_iterator::read_table_iterator(table* tabla){
    this->nombre_tabla = this->tabla->metadata_ptr->name;
    // El nombre de las columnas:
    this->nombre_columnas = this->tabla->metadata_ptr->column_names;
-   this->num_cols = nombre_columnas.size();
+   this->num_cols = this->tabla->metadata_ptr->n_cols;
    // Recuperamos el tipo de las columnas:
    this->tipo_columnas = this->tabla->metadata_ptr->column_types;
    // Inicializamos la variable por la cual añadiremos los datos venidos del disco:

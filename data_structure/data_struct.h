@@ -45,10 +45,12 @@ struct table_metadata {
    std::vector<std::string> column_names;
    std::vector<dataType> column_types;
    std::vector<bool> primary_list;
+   uint32_t n_cols;
    uint32_t n_filas_disco;
    uint32_t n_filas_ram;
    table_metadata():
       name(""), 
+      n_cols(0),
       n_filas_disco(0), 
       n_filas_ram(0) 
       {};

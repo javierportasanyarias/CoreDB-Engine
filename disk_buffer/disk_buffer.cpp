@@ -10,13 +10,13 @@
 
 
 // == Para contar filas de una tabla =================
-void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
-   /*
+/*void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
+   
    Método auxiliar para actualizar el contador de filas en RAM viva
    o de datos añadidos en la misma sesión. 
    No retorna nada, actualiza el contador de filas en RAM en los metadatos de una tabla
    dado como input su nombre
-   */
+   
    table* table_ptr = global_table_dict.at(nombre_tabla);
    
    // 1. Verificamos que data_ptr exista y que el mapa de columnas no esté vacío
@@ -34,15 +34,15 @@ void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
          table_ptr->metadata_ptr->n_filas_ram = 0;
    };
 
-};
+};*/
 
 
 // == Para contar todas filas ========================
-void disk_buffer::contar_datos_en_ram_todas_tablas(){
-   /*
+/*void disk_buffer::contar_datos_en_ram_todas_tablas(){
+   
    Función que actualiza el contador de filas en RAM viva de
    todas las tablas cargadas en memoria.
-   */
+   
    // iteramos por todas las tablas:
    for (const auto& [table_name, table_ptr] : global_table_dict){
       // Contamos el numero de filas en RAM viva:
@@ -50,7 +50,7 @@ void disk_buffer::contar_datos_en_ram_todas_tablas(){
    table_ptr->metadata_ptr->n_filas_ram = n_rows;
    };
 
-};
+};*/
 
 //====================================================
 //========= tableRowIterator solo disco ==============
@@ -136,9 +136,9 @@ disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string ta
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    // Solo en caso de tenerlo, contamos las filas en RAM viva:
-   if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
-      contar_datos_ram_una_tabla(tabla_nombre);
-   };
+   //if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
+      //contar_datos_ram_una_tabla(tabla_nombre);
+   //};
 
    this->eof = (tabla_ptr->metadata_ptr->n_filas_ram == 0);
 };
@@ -396,9 +396,9 @@ disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::tableRowIterator_o
    los ultimos datos y si no fallo la inserción está asegurado
    que esas filas están en la RAM viva
    */
-   if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
-      contar_datos_ram_una_tabla(tabla_nombre);
-   };
+   //if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
+      //contar_datos_ram_una_tabla(tabla_nombre);
+   //};
    this->contador = tabla_ptr->metadata_ptr->n_filas_ram - 1;
 
    this->eof = (this->contador < 0);
@@ -480,9 +480,9 @@ disk_buffer::tableRowIterator_only_ram_for_wal::tableRowIterator_only_ram_for_wa
    los ultimos datos y si no fallo la inserción está asegurado
    que esas filas están en la RAM viva
    */
-   if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
-      contar_datos_ram_una_tabla(tabla_nombre);
-   };
+   //if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
+      //contar_datos_ram_una_tabla(tabla_nombre);
+   //};
    this->contador = tabla_ptr->metadata_ptr->n_filas_ram - num_filas_a_insertar;
 
    this->eof = (this->contador >= tabla_ptr->metadata_ptr->n_filas_ram);

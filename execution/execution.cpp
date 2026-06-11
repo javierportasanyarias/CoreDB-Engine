@@ -62,71 +62,21 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
    // Iteramos para recuperar los valores:
    // En el caso de no haber especificsdo cooumnas, las pillamps de los ketadatos:
    std::vector<std::string> nombres_columnas = nodo_ptr->columnas;
-   size_t len_n_cols = nombres_columnas.size();
+   nombres_columnas = metadatos->column_names;
+   Logger::log(LogLevel::DEBUG,  "Accedemos al número de columnas");
+   uint32_t len_n_cols = metadatos->n_cols;
+   Logger::log(LogLevel::DEBUG,  "El numero de columnas es: ", false, true);
+   Logger::log(LogLevel::DEBUG,  len_n_cols, true, false);
    if(len_n_cols == 0){
-      nombres_columnas = metadatos->column_names;
       len_n_cols = nombres_columnas.size();
    };
-   //size_t len_n_cols = nombres_columnas.size();
    std::vector<std::vector<std::string>> filas = nodo_ptr->filas;
 
-   //size_t num_fila = filas.size();
    uint32_t num_fila = filas.size();
 
 
-
 //////////////////////////////////////////////////////////////////////////
-   /*Logger::flush();
-   Logger::log(LogLevel::DEBUG,  "///////////////////////////////////////////////////////////");
-         Logger::log(LogLevel::DEBUG, "Numero de columnas: ", false, true);
-         Logger::log(LogLevel::DEBUG, len_n_cols, true, false);
-   Logger::flush();
-   Logger::flush();
-   for(int i = 0; i<len_n_cols; i++){
-      // Ahora iteramos por las filas:
-      for(int j = 0; j<num_fila; j++){
-	      // Recuperamos el valor como string:
-	      std::string valor_str = filas[j][i];
-         Logger::log(LogLevel::DEBUG, "Columna: ", false, true);
-         Logger::log(LogLevel::DEBUG, i, true, false);
-         Logger::log(LogLevel::DEBUG, "Valor de la variable: ", false, true);
-         Logger::log(LogLevel::DEBUG, valor_str, true, false);
-         if(Logger::level == LogLevel::DEBUG){
-            Logger::flush();
-         }else{
-            Logger::flush(false);
-         };
-	      Values valor_variante; // Valor variante
-         // Hacemos la conversion de valor de acuerdo a los metadatos:
-         dataType tipo_dato= metadatos->column_types[i];
-         switch(tipo_dato){
-            case dataType::INT:
-               Logger::log(LogLevel::DEBUG,  "Tipo de valor: INT");
-               break;
-            case dataType::FLOAT:
-               Logger::log(LogLevel::DEBUG,  "Tipo de valor: FLOAT");
-               break;
-            case dataType::BOOL:
-               Logger::log(LogLevel::DEBUG,  "Tipo de valor: BOOL");
-               break;
-            case dataType::STRING:
-               Logger::log(LogLevel::DEBUG,  "Tipo de valor: STRING");
-               break;
-            // New case: UNKNOWN -> We will treat these data types as a vector of chars:
-            case dataType::UNKNOWN:
-               Logger::log(LogLevel::DEBUG,  "Tipo de valor: UNKNOWN");
-               break;
-         };
-      }; // Cierre de la escritura de cada fila
-   };
-   Logger::flush();
-   Logger::log(LogLevel::DEBUG,  "///////////////////////////////////////////////////////////");
-   Logger::flush();
-   Logger::flush();*/
-//////////////////////////////////////////////////////////////////////////
-   //for(int i = 0; i<len_n_cols; i++){
-      // Ahora iteramos por las filas:
-      //for(int j = 0; j<num_fila; j++){
+   Logger::log(LogLevel::DEBUG,  "iniciamos la iteracion de insercion de valores");
    for(int j = 0; j<num_fila; j++){
       for(int i = 0; i<len_n_cols; i++){
 	      // Recuperamos el valor como string:
@@ -140,7 +90,6 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
 	      Values valor_variante; // Valor variante
          // Hacemos la conversion de valor de acuerdo a los metadatos:
          dataType tipo_dato= metadatos->column_types[i];
-         //dataType tipo_dato= metadatos->column_types[j];
          switch(tipo_dato){
             case dataType::INT:
                Logger::log(LogLevel::DEBUG, "Valor a pasar a entero: ", false, true);
@@ -167,16 +116,27 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
                std::vector<char> bytes_desconocidos(valor_str.begin(), valor_str.end());
                valor_variante = std::move(bytes_desconocidos);
          };
+         Logger::log(LogLevel::DEBUG, "'valor_variante' recuperado");
          // Ya tenemos el valor variante, ahora rellenamos los datos de la tabla en la RAM viva:
+         Logger::log(LogLevel::DEBUG, "Rellenamos los valores en la region de datos de la RAM viva de la tabla");
+         Logger::log(LogLevel::DEBUG, "Pasamos a recuperar 'it' de tipo auto");
          auto it = tb_recup->data_ptr->columns.find(nombres_columnas[i]);
+         Logger::log(LogLevel::DEBUG, "it de tipo auto recuperado");
          if(it != tb_recup->data_ptr->columns.end()){
+            Logger::log(LogLevel::DEBUG, "Pushemos el primer valor");
             it->second.push_back(valor_variante);
+            Logger::log(LogLevel::DEBUG, "Primer valor pusheado");
          }else{
+            Logger::log(LogLevel::DEBUG, "Pushemos otro valor");
             tb_recup->data_ptr->columns[nombres_columnas[i]].push_back(valor_variante);
+            Logger::log(LogLevel::DEBUG, "Otro valor pusheado");
          };
-      }; // Cierre de la escritura de cada fila
+         Logger::log(LogLevel::DEBUG, "Valor procesado con exito");
+      }; // Cierre de la escritura de cada columna
    };
-   tb_recup->metadata_ptr->n_filas_ram += num_fila;
+   // We update the rows' metadata counter:
+   Logger::log(LogLevel::DEBUG, "We update the metadata row counter");
+   metadatos->n_filas_ram += num_fila;
    /*
    Aquí incrementamos el contador de las filas en RAM viva.
    De esta forma se actualizan cuando los valores se añaden y
@@ -184,7 +144,13 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
    */
    // Ejecutamos la escritura en el WAL de los archivos
    disk_wal::write_table_data_wal(tb_recup, num_fila);
-
+   Logger::flush();
+   Logger::flush();
+   Logger::log(LogLevel::DEBUG, "Data insertion in RAM is finished");
+   Logger::log(LogLevel::DEBUG, "Total number of rows inserted are: ", false, true);
+   Logger::log(LogLevel::DEBUG, metadatos->n_filas_ram, true, false);
+   Logger::flush();
+   Logger::flush();
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -222,33 +188,32 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
       throw std::runtime_error("CREATE TABLE ERROR: Can not define an already existing table");
    };
 
-   // As the table doesn't exist, we crate it within the global dictionary
-   //table* tb_created = global_table_dict[nodo_ptr->nombre_tabla];
 
    // We crate the table and add it's entry to the dictionay:
    table* tb_created = new table;
    global_table_dict[nodo_ptr->nombre_tabla] = tb_created;
    // We initialize the table's metadata struct:
-   tb_created->metadata_ptr = new table_metadata;
+   table_metadata* metadata_pointer = new table_metadata;
+   tb_created->metadata_ptr = metadata_pointer;
    // Just in case, we set the table's data pointers to null:
    tb_created->data_ptr = nullptr;
    tb_created->data_buffer_ptr = nullptr;
 
    // Declaramos el nombre de la tabla:
-   ((*(tb_created->metadata_ptr)).name) = nodo_ptr->nombre_tabla;
+   metadata_pointer->name = nodo_ptr->nombre_tabla;
+   // We set the number of cols in he metadata:
+   uint32_t& num_cols = metadata_pointer->n_cols;
+   num_cols = (*nodo_ptr).hijos.size();
    // Recorremos los hijos:N_
-   for(int i = 0; i<(*nodo_ptr).hijos.size(); i++){
+   for(int i = 0; i<num_cols; i++){
       recursive_metadata_fill_lv2((nodo_ptr->hijos)[i], tb_created);
    };
-   //global_table_dict[nodo_ptr->nombre_tabla] = tb_created;
-   /*
-   Ya hemos rellenado los metadatos, ahora los registramos en el WAL
-   */
+
    Logger::log(LogLevel::DEBUG, "YA SE HA CREADO LOS METADATOS DE LA TABLA");
    Logger::log(LogLevel::DEBUG, "Pasamos a escribir los metadatos en el WAL:");
 
    Logger::log(LogLevel::DEBUG, "<<<<<< ESCRIBIMOS EN EL WAL LA TABLA: ", false, true);
-   Logger::log(LogLevel::DEBUG, tb_created->metadata_ptr->name, false, false);
+   Logger::log(LogLevel::DEBUG, metadata_pointer->name, false, false);
    Logger::log(LogLevel::DEBUG, " >>>>>>>>", true, false);
    Logger::flush();
    disk_wal::write_table_wal_metadata(tb_created);
@@ -314,9 +279,9 @@ void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string n
 };
 
 // Función auxiliar para imprimir la tabla: PARA TODAS LAS COLUMNAS:
-void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre_tabla){
+void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre_tabla, uint32_t n_cols){
    // Imprimios los nombres de las columnas:
-   for(int  i = 0; i<col_list.size(); i++){
+   for(int  i = 0; i<n_cols; i++){
       Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
       Logger::log(LogLevel::OUTPUT, col_list[i], false);
    };
@@ -326,11 +291,11 @@ void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre
 };
 
 // impresión de toda la tabla, pero habiendo seleccionado clumnas
-void imprimir_tabla(QueryNode*& nodo_root, const std::vector<ItemNode>& col_list, std::string nombre_tabla){
+void imprimir_tabla(const std::vector<ItemNode>& col_list, std::string nombre_tabla, uint32_t n_cols){
    // Imprimios los nombres de las columnas:
-       for(int i = 0; i<(nodo_root->nodo_select->items).size(); i++){
+       for(int i = 0; i<n_cols; i++){
          Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
-         Logger::log(LogLevel::OUTPUT, (nodo_root->nodo_select)->items[i].nombre, false);
+         Logger::log(LogLevel::OUTPUT, col_list[i].nombre, false);
        };
        Logger::log(LogLevel::OUTPUT, " | ", true);
    // Imprimimos los valores:
@@ -341,21 +306,27 @@ void mostrar_tabla_query(QueryNode* nodo_root){
 
    //recuperamos el nombre de la tabla
    std::string nombre_tabla = nodo_root->nodo_from->nombre;
-   // Antes de nada vemos si es una columna valida:
-   if(!global_table_dict.at(nombre_tabla)){
+
+   // Before continuing, we make sure the table is already registered in the global table dictionary
+   auto it = global_table_dict.find(nombre_tabla);
+   if(it == global_table_dict.end()){
+   //if(!global_table_dict.at(nombre_tabla)){
       Logger::log(LogLevel::ERROR, "La tabla a consultar no existe");
       return;
    };
+   table* tabla = it->second;
 
    if (nodo_root->nodo_select == nullptr) {
-      // La lista no existe o está vacía:
+      // User has used '*' in selection:
       // Guardamos en memoria valores del diccionario accedidos con regularidad:
-      const std::vector<std::string>& col_list = (global_table_dict.at(nombre_tabla)->metadata_ptr)->column_names;
-      imprimir_tabla(col_list, nombre_tabla);
+      const std::vector<std::string>& col_list = tabla->metadata_ptr->column_names;
+      uint32_t n_cols = tabla->metadata_ptr->n_cols;
+      imprimir_tabla(col_list, nombre_tabla, n_cols);
    } else {
-      //Ahora imprimimos los valores:
-      const std::vector<ItemNode>& col_list = (nodo_root->nodo_select->items);
-      imprimir_tabla(nodo_root, col_list, nombre_tabla);
+      // User hasspecified columns to retrieve:
+      const std::vector<ItemNode>& col_list = nodo_root->nodo_select->items;
+      uint32_t n_cols = col_list.size();
+      imprimir_tabla(col_list, nombre_tabla, n_cols);
    };
 };
 

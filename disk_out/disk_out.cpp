@@ -1013,7 +1013,7 @@ void disk_out::write_table_data(table* tabla){
 
 
    // VARIABLES NECESARIAS ANTES DEL BUCLE:
-   uint32_t num_cols = tipo_columnas.size();
+   uint32_t num_cols = tabla->metadata_ptr->n_cols;
    int bytes_totales_a_escribir = 0; // Cantidad que nos servirá poara ver cuánto tenemos que escribir:
    int partition_entities = 3;
 

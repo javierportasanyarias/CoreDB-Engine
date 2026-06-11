@@ -74,7 +74,7 @@ void disk_wal::write_table_wal_metadata(table* tabla){
 
    Logger::log(LogLevel::DEBUG, "Nombre de la tabla registrado en el buffer con exito");
    // -- Escribimos el número de columnas -----------------------------
-   uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
+   uint32_t num_cols = tabla->metadata_ptr->n_cols;
    tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
    buffer.insert(buffer.end(),
                  tmp_char_ptr,
@@ -360,7 +360,7 @@ void disk_wal::recuperar_data_wal_tabla_buffer(std::ifstream& in, std::string no
    table_metadata* metadata = tabla->metadata_ptr;
    std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
    Logger::log(LogLevel::DEBUG, "Recuperamos el numero de columnas a recuperar");
-   uint32_t n_cols = tipos_datos.size();
+   uint32_t n_cols = tabla->metadata_ptr->n_cols;
    Logger::log(LogLevel::DEBUG, "El numero de columnas es de: ", false, true);
    Logger::log(LogLevel::DEBUG, n_cols, true, false);
 
@@ -542,7 +542,7 @@ void disk_wal::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
    table_metadata* metadata = tabla->metadata_ptr;
    std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
    std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
-   uint32_t n_cols = tipos_datos.size();
+   uint32_t n_cols = tabla->metadata_ptr->n_cols;
    uint32_t n_filas = metadata->n_filas_ram;
 
    // Creamos el iterador por filas:

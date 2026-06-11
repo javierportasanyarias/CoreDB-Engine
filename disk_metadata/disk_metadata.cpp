@@ -26,7 +26,7 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
    std::string tabla_nombre = ruta_tabla.stem().string();
    std::string ruta_tabla_str = ruta_tabla.string();
 
-   table_metadata* metadatos_puntero = global_table_dict.at(nombre_tabla_str)->metadata_ptr;
+   table_metadata*& metadatos_puntero = global_table_dict.at(nombre_tabla_str)->metadata_ptr;
 
    // COMIENZA LA LECTURA:
    std::ifstream in(ruta_tabla_str, std::ios::binary);
@@ -65,6 +65,7 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
    uint32_t num_cols_lectura = 0;
    //in.read(reinterpret_cast<char*>(&num_cols_lectura), sizeof(uint32_t));
    std::memcpy(&num_cols_lectura, ptr_curr, sizeof(uint32_t));
+   metadatos_puntero->n_cols = num_cols_lectura;
    ptr_curr += sizeof(uint32_t);
    // Este vslor no se escribe, lo usaremos para iterar por cada columna
 
@@ -72,8 +73,13 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
    uint32_t num_filas_disco_lectura = 0;
    //in.read(reinterpret_cast<char*>(&num_filas_disco_lectura), sizeof(uint32_t));
    std::memcpy(&num_filas_disco_lectura, ptr_curr, sizeof(uint32_t));
-   ptr_curr += sizeof(uint32_t);
    metadatos_puntero->n_filas_disco = num_filas_disco_lectura;
+   ptr_curr += sizeof(uint32_t);
+   Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+   Logger::log(LogLevel::DEBUG, "Filas en RAM:: ", false, true);
+   Logger::log(LogLevel::DEBUG, num_filas_disco_lectura, true, false);
+   Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+   //metadatos_puntero->n_filas_disco = num_filas_disco_lectura;
 
    // Ahora iteramos poe cada columna, añadiendo metadatos de cada una:
    for(uint32_t i=0; i<num_cols_lectura; i++){
@@ -113,7 +119,7 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
       // En realidad no necesitamos leer nafa mas
 
    };
-   Logger::log(LogLevel::ERROR, "Metadatos leidos con exito");
+   Logger::log(LogLevel::DEBUG, "Metadatos leidos con exito");
    if(Logger::level == LogLevel::DEBUG){
       Logger::flush();
    }else{
@@ -127,7 +133,9 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
    Función que escribe los metadatos en disco.
    */
    if (!tabla) return 0;
-   std::string nombre_tabla = tabla->metadata_ptr->name;
+   // We do not make metadata pointer an alias as we do not need to modify any value
+   table_metadata* metadatos_puntero = tabla->metadata_ptr;
+   std::string nombre_tabla = metadatos_puntero->name;
    std::string ruta_tabla = "metadata/" + nombre_tabla + "_meta.bin";
 
    // Abrimos la escritura:
@@ -156,7 +164,7 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
                 );
 
    // -- Escribimos el número de columnas -----------------------------
-   uint32_t num_cols = (tabla->metadata_ptr->column_names).size();
+   uint32_t num_cols = metadatos_puntero->n_cols;
    tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
    buffer.insert(buffer.end(),
                  tmp_char_ptr,
@@ -164,8 +172,8 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
                 );
 
    std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
-   if(!columnas.empty()){
-      std::string column_name = (tabla->metadata_ptr->column_names)[0];
+   /*if(!columnas.empty()){
+      std::string column_name = (metadatos_puntero->column_names)[0];
       std::vector<Values> col_datos = columnas.at(column_name);
       uint32_t n_rows = col_datos.size();
       uint32_t n_rows_total = n_rows;
@@ -187,6 +195,18 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
       Logger::log(LogLevel::DEBUG, n_rows, false, false);
       Logger::log(LogLevel::DEBUG, " filas en disco: ", false, false);
       Logger::log(LogLevel::DEBUG, n_rows_disk, true, false);
+      Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");*/
+      uint32_t num_cols_mem = metadatos_puntero->n_filas_ram;
+      uint32_t num_cols_disk = metadatos_puntero->n_filas_disco;
+      uint32_t n_rows_total = num_cols_mem + num_cols_disk;
+      Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+      Logger::log(LogLevel::DEBUG, "Escritura de los metadatos");
+      Logger::log(LogLevel::DEBUG, "Filas en memoria: ", false, true);
+      Logger::log(LogLevel::DEBUG, num_cols_mem, true, false);
+      Logger::log(LogLevel::DEBUG, "Filas en disco: ", false, true);
+      Logger::log(LogLevel::DEBUG, num_cols_disk, true, false);
+      Logger::log(LogLevel::DEBUG, "Filas totales: ", false, false);
+      Logger::log(LogLevel::DEBUG, n_rows_total, true, false);
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
       tmp_char_ptr = reinterpret_cast<char*>(&n_rows_total);
       buffer.insert(buffer.end(),
@@ -196,7 +216,7 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
       for(uint32_t i=0; i<num_cols; i++){
          // -- Escribimos los datos de cada columna ---------------------
          // -- Escribimos el nombre:
-         std::string column_name = (tabla->metadata_ptr->column_names)[i];
+         std::string column_name = (metadatos_puntero->column_names)[i];
          uint32_t size_column_name = column_name.size();
          tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
          buffer.insert(buffer.end(),
@@ -209,7 +229,7 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
                      tmp_char_ptr + size_column_name
                      );
          // -- Escribimos el tipo de dato:
-         dataType col_type = (tabla->metadata_ptr->column_types)[i];
+         dataType col_type = (metadatos_puntero->column_types)[i];
          uint32_t col_type_disk = static_cast<uint32_t>(col_type);
          tmp_char_ptr = reinterpret_cast<char*>(&col_type_disk);
          buffer.insert(buffer.end(),
@@ -217,7 +237,7 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
                      tmp_char_ptr + sizeof(uint32_t)
                      );
          // -- Escribimos si es clave primaria:
-         bool column_is_key = (tabla->metadata_ptr->primary_list)[i];
+         bool column_is_key = (metadatos_puntero->primary_list)[i];
          uint8_t key_val = column_is_key ? 1 : 0;
          tmp_char_ptr = reinterpret_cast<char*>(&key_val);
          buffer.insert(buffer.end(),
@@ -231,8 +251,8 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
                                             );
       out.flush();
       out.close();
-      return n_rows;
-   };
+      return num_cols_mem;
+   //};
    out.close();
    return 0;
 };

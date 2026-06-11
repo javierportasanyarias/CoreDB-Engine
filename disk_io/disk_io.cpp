@@ -86,7 +86,7 @@ void disk_io::debug_print_metadatos_memoria() {
       Logger::log(LogLevel::DEBUG, "  Nombre en Struct: " + meta->name);
       Logger::log(LogLevel::DEBUG, "  Filas en disco:   " + std::to_string(meta->n_filas_disco));
       
-      size_t n_cols = meta->column_names.size();
+      size_t n_cols = meta->n_cols;
       size_t n_types = meta->column_types.size();
       size_t n_pks = meta->primary_list.size();
 
