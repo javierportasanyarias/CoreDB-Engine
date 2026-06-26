@@ -455,522 +455,469 @@ void disk_wal_read::read_wal_viejo(){
 
 
 
+void disk_wal_read::walDataReader::fill_buffer(){
 
-class walDataReader {
+   uint32_t var_size = 0;
 
-   public:
-      uint8_t state = 0;
-      bool eof_rows = false;
-      std::string table_name;
+   switch(this->data_types[this->col_counter]){
 
-      char* buffer = nullptr;
-      char* data_buffer_pointer = nullptr;
-      
-      // Auxiliary counters:
-      //uint32_t num_rows_written = 0;
+      case dataType::INT: {
+         Logger::log(LogLevel::DEBUG, "Caso INT");
+         var_size = sizeof(int);
+         int int_val = 4;
+         if(var_size <= this->buffer_bytes_available){
+            Logger::log(LogLevel::DEBUG, "Se sigue pudiendo leer del buffer un INT");
 
-      // Table info:
-      table* table = nullptr;
-      uint32_t num_cols = 0;
-      uint32_t col_counter = 0;
-      uint32_t num_rows = 0;
-      uint32_t row_counter = 0;
+            std::memcpy(&int_val, this->data_buffer_pointer, var_size);
+            Logger::log(LogLevel::DEBUG, "memcpy completado");
+            this->value = int_val;
+            Logger::log(LogLevel::DEBUG, "Info copiada del buffer al valor variante");
 
-      // Buffer counters:
-      uint32_t buffer_tmp_size = 0;
-      uint32_t buffer_bytes_read = 0;
-      //uint32_t buffer_size = size_buffer_bytes;
-      uint32_t buffer_bytes_available = buffer_tmp_size;
-      bool offset = false;
+            // We write the value in the table's memory:
+            if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
+               (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
+            }else{
+               this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
+            };
+            Logger::log(LogLevel::DEBUG, "Valor añadido a la tabla");
 
-      // Reading:
-      //uint32_t bytes_read = size_buffer_bytes;
-      uint32_t bytes_read = 0;
-      uint32_t tmp_var_len_bytes = 0;
-
-      // Auxiliary variables:
-      uint32_t var_len_bytes = 0;
-      bool len_read = false;
-      Values value;
-      uint32_t var_len_bytes_read = 0;
+            // We update counters:
+            this->bytes_read += var_size;
+            this->buffer_bytes_read += var_size;
+            this->buffer_bytes_available -= var_size;
+            this->data_buffer_pointer += var_size;
 
 
-      // Row iterator:
-      //disk_buffer::tableRowIterator_only_ram_for_wal* row_iterator;
 
-      //std::map<std::string, std::vector<Values>>& columnas; // = tabla->data_ptr->columns;
-      table_metadata* metadata = nullptr;
-      std::map<std::string, std::vector<Values>>* columnas = nullptr;
-      std::vector<std::string> col_names; //= tabla->metadata_ptr->column_names;
-      std::vector<dataType> data_types; //= tabla->metadata_ptr->column_types;
+            // We add up one row:
+            this->col_counter += 1;
+            break;
 
-      // Reading pipeline:
-      std::ifstream& in;
-
-      walDataReader(std::ifstream& in_obj, std::string table_name_str) 
-        : in(in_obj), eof_rows(false), buffer_tmp_size(0), buffer(nullptr), table(nullptr), state(0), table_name(table_name_str) {
-         Logger::log(LogLevel::DEBUG, "Creacion de un objeto nuevo 'walDataReader'");
-      };
-
-      ~walDataReader() {
-         if(this->buffer){
-            delete[] this->buffer;
-            this->buffer = nullptr;
          };
-         //delete this->row_iterator;
+         Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
+         this->offset = true;
+         break;
       };
 
-      bool is_eof_rows(){
-         return this->col_counter >= this->num_cols && this->row_counter + 1 >= this->num_rows;
+      case dataType::FLOAT: {
+         Logger::log(LogLevel::DEBUG, "Caso FLOAT");
+         var_size = sizeof(float);
+         float float_val = 5;
+         if(var_size <= this->buffer_bytes_available){
+            std::memcpy(&float_val, this->data_buffer_pointer, var_size);
+            this->value = float_val;
+
+            // We write the value in the table's memory:
+            if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
+               (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
+            }else{
+               this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
+            };
+
+            // We update counters:
+            this->bytes_read += var_size;
+            this->buffer_bytes_read += var_size;
+            this->buffer_bytes_available -= var_size;
+            this->data_buffer_pointer += var_size;
+
+
+
+            // We add up one row:
+            this->col_counter += 1;
+            break;
+
+         };
+         Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
+         this->offset = true;
+         break;
       };
 
-      void control_unit(){
-         switch(this->state){
-            case 0: {
-               Logger::log(LogLevel::DEBUG, "State 0");
-               //aux_read_single_table_wal_data
-               //recuperar_data_wal_tabla_buffer
+      case dataType::BOOL: {
+         Logger::log(LogLevel::DEBUG, "Caso BOOL");
+         var_size = sizeof(uint8_t);
+         uint8_t tmp_val_bool_int = 0;
+         bool tmp_bool_var = false;
+         if(var_size <= this->buffer_bytes_available){
+            std::memcpy(&tmp_val_bool_int, this->data_buffer_pointer, var_size);
+            if(tmp_val_bool_int == 1){
+               tmp_bool_var= true;
+            };
+            this->value = tmp_bool_var;
 
-               // We recover the table's object:
-               auto it = global_table_dict.find(this->table_name);
-
-
-               if (it != global_table_dict.end()) {
-                  this->table = it->second;
-               } else {
-                  this->state = 255;
-                  break;
-               };
-               this->table = it->second;
-               Logger::log(LogLevel::DEBUG, "Ya hemos encontrado la tabla");
-               this->metadata = this->table->metadata_ptr;
-               Logger::log(LogLevel::DEBUG, "Puntero de matadatos recuperado");
-               this->num_cols = this->metadata->n_cols;
-               Logger::log(LogLevel::DEBUG, "Número de columnas de la tabla: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
-               this->col_names = this->metadata->column_names;
-               this->data_types = this->metadata->column_types;
-
-               // In case the data pointer has not yet been created:
-               table_data*& tb_d_ptr = this->table->data_ptr;
-               if(this->table->data_ptr == nullptr){
-                  this->table->data_ptr = new table_data;
-               };
-
-               this->columnas = &(tb_d_ptr->columns);
-
-               // We read the numbers of rows to process:
-               Logger::log(LogLevel::DEBUG, "Leemos el número de filas");
-               this->in.read(reinterpret_cast<char*>(&this->num_rows), sizeof(uint32_t));
-
-
-
-               // We read the buffer size:
-
-
-               this->in.read(reinterpret_cast<char*>(&this->buffer_tmp_size), sizeof(uint32_t));
-               Logger::log(LogLevel::DEBUG, "El tamano del buffer para esta lectura es de: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->buffer_tmp_size, true, false);
-               this->buffer_bytes_available = this->buffer_tmp_size;
-               // First we read the buffer size:
-               this->buffer = new char[this->buffer_tmp_size];
-               this->data_buffer_pointer = this->buffer;
-
-               Logger::log(LogLevel::DEBUG, "Número de filas de la tabla: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->num_rows, true, false);
-               this->state = 1;
-               break;
+            // We write the value in the table's memory:
+            if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
+               (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
+            }else{
+               this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
             };
 
-            case 1: {
-               Logger::log(LogLevel::DEBUG, "State 1");
-               this->eof_rows = is_eof_rows();
-               if(this->eof_rows){
-                  // End of reading, proceeding to empty char buffer
-                  this->state = 255;
-                  break;
-               } else {
-                  this->state = 2;
-                  break;
-               };
-            };
-
-            case 2: {
-               Logger::log(LogLevel::DEBUG, "State 2");
-               //this->in.read(this->buffer, this->bytes_read);
-               this->in.read(this->buffer, this->buffer_tmp_size);
-               Logger::log(LogLevel::DEBUG, "--- CONTENIDO CRUDO DEL BUFFER LEIDO ---");
-               std::string debug_str(this->buffer, this->buffer_tmp_size);
-               Logger::log(LogLevel::DEBUG, debug_str);
-               this->state = 3;
-               break;
-            };
-
-            case 3: {
-               Logger::log(LogLevel::DEBUG, "State 3");
-
-               this->state = 4;
-               //char* tmp_char_ptr = nullptr;
-               uint32_t var_size = 0;
-
-               //this->buffer_bytes_available = this->bytes_read - this->buffer_bytes_read;
-               Logger::log(LogLevel::DEBUG, "++++++++++++++++++++++++++++++++");
-               Logger::log(LogLevel::DEBUG, "Bytes leidos: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->bytes_read, true, false);
-               Logger::log(LogLevel::DEBUG, "'buffer_bytes_read': ", false, true);
-               Logger::log(LogLevel::DEBUG, this->buffer_bytes_read, true, false);
-               Logger::log(LogLevel::DEBUG, "Bytes disponibles en el buffer: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->buffer_bytes_available, true, false);
-
-               Logger::log(LogLevel::DEBUG, "++++++++++++++++++++++++++++++++");
-               Logger::log(LogLevel::DEBUG, "Numero de columna: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->col_counter, true, false);
-               Logger::log(LogLevel::DEBUG, "Numero de fila: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->row_counter, true, false);
-               // Value variant to fill:
-               //Values value;
-
-               switch(this->data_types[this->col_counter]){
-
-                  case dataType::INT: {
-                     Logger::log(LogLevel::DEBUG, "Caso INT");
-                     var_size = sizeof(int);
-                     int int_val = 4;
-                     if(var_size <= this->buffer_bytes_available){
-                        Logger::log(LogLevel::DEBUG, "Se sigue pudiendo leer del buffer un INT");
-
-                        std::memcpy(&int_val, this->data_buffer_pointer, var_size);
-                        Logger::log(LogLevel::DEBUG, "memcpy completado");
-                        this->value = int_val;
-                        Logger::log(LogLevel::DEBUG, "Info copiada del buffer al valor variante");
-
-                        // We write the value in the table's memory:
-                        if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
-                           (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
-                        }else{
-                           this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
-                        };
-                        Logger::log(LogLevel::DEBUG, "Valor añadido a la tabla");
-
-                        // We update counters:
-                        this->bytes_read += var_size;
-                        this->buffer_bytes_read += var_size;
-                        this->buffer_bytes_available -= var_size;
-                        this->data_buffer_pointer += var_size;
+            // We update counters:
+            this->bytes_read += var_size;
+            this->buffer_bytes_read += var_size;
+            this->buffer_bytes_available -= var_size;
+            this->data_buffer_pointer += var_size;
 
 
 
-                        // We add up one row:
-                        this->col_counter += 1;
-                        break;
+            // We add up one row:
+            this->col_counter += 1;
+            break;
 
-                     };
-                     Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
-                     this->offset = true;
-                     break;
-                  };
+         };
+         Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
+         this->offset = true;
+         break;
+      };
 
-                  case dataType::FLOAT: {
-                     Logger::log(LogLevel::DEBUG, "Caso FLOAT");
-                     var_size = sizeof(float);
-                     float float_val = 5;
-                     if(var_size <= this->buffer_bytes_available){
-                        std::memcpy(&float_val, this->data_buffer_pointer, var_size);
-                        this->value = float_val;
+      case dataType::STRING: {
+         Logger::log(LogLevel::DEBUG, "Caso STRING");
+         var_size = sizeof(uint32_t);
 
-                        // We write the value in the table's memory:
-                        if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
-                           (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
-                        }else{
-                           this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
-                        };
+         // Fase 1: Lectura de la longitud
+         if(!this->len_read){
+            if(var_size <= this->buffer_bytes_available){
+               this->var_len_bytes = 0;
+               std::memcpy(&this->var_len_bytes, this->data_buffer_pointer, var_size);
+               this->bytes_read += var_size;
+               this->buffer_bytes_read += var_size;
+               this->buffer_bytes_available -= var_size;
+               this->data_buffer_pointer += var_size;
+               this->len_read = true;
+               this->var_len_bytes_read = 0;
 
-                        // We update counters:
-                        this->bytes_read += var_size;
-                        this->buffer_bytes_read += var_size;
-                        this->buffer_bytes_available -= var_size;
-                        this->data_buffer_pointer += var_size;
-
-
-
-                        // We add up one row:
-                        this->col_counter += 1;
-                        break;
-
-                     };
-                     Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
-                     this->offset = true;
-                     break;
-                  };
-
-                  case dataType::BOOL: {
-                     Logger::log(LogLevel::DEBUG, "Caso BOOL");
-                     var_size = sizeof(uint8_t);
-                     uint8_t tmp_val_bool_int = 0;
-                     bool tmp_bool_var = false;
-                     if(var_size <= this->buffer_bytes_available){
-                        std::memcpy(&tmp_val_bool_int, this->data_buffer_pointer, var_size);
-                        if(tmp_val_bool_int == 1){
-                           tmp_bool_var= true;
-                        };
-                        this->value = tmp_bool_var;
-
-                        // We write the value in the table's memory:
-                        if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
-                           (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
-                        }else{
-                           this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
-                        };
-
-                        // We update counters:
-                        this->bytes_read += var_size;
-                        this->buffer_bytes_read += var_size;
-                        this->buffer_bytes_available -= var_size;
-                        this->data_buffer_pointer += var_size;
-
-
-
-                        // We add up one row:
-                        this->col_counter += 1;
-                        break;
-
-                     };
-                     Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
-                     this->offset = true;
-                     break;
-                  };
-
-                  case dataType::STRING: {
-                     Logger::log(LogLevel::DEBUG, "Caso STRING");
-                     var_size = sizeof(uint32_t);
-                     // First, we read the size:
-
-
-                     
-                     /*if(!this->len_read){
-                        if(var_size <= this->buffer_bytes_available){
-                           std::memcpy(&this->var_len_bytes, this->data_buffer_pointer, var_size);
-                           this->bytes_read += var_size;
-                           this->buffer_bytes_read += var_size;
-                           this->buffer_bytes_available -= var_size;
-                           this->data_buffer_pointer += var_size;
-                           this->len_read = true;
-                           // We start a string a reserve enough bytes:
-                           //std::string tmp_str;
-                           //this->value = &tmp_str;
-                           //tmp_str.reserve(this->var_len_bytes);
-                           Logger::log(LogLevel::DEBUG, "Cremos una string temporal para reservar espacio en ella");
-                           this->value = std::string();
-                           Logger::log(LogLevel::DEBUG, "String creada y asociada al valor variante");
-                           std::string& str_tmp = std::get<std::string>(this->value);
-                           Logger::log(LogLevel::DEBUG, "Acceso a la string del valor");
-                           str_tmp.reserve(this->var_len_bytes);
-                           Logger::log(LogLevel::DEBUG, "Bytes reservados en la string del valor con exito");
-                           Logger::log(LogLevel::DEBUG, "Se han resrvado estos bytes en la string temporal: ", false, true);
-                           Logger::log(LogLevel::DEBUG, this->var_len_bytes, true, false);
-                        }else{
-                           Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
-                           this->offset = true;
-                           break;
-                        };
-                     }else{
-                        // In case of having had read the string's lenght:
-                        //if(var_size <= this->buffer_bytes_available){
-                        if(this->var_len_bytes > 0){
-                           // buffer de char temporal
-                           // Calcular tamaño a leer del buffer
-                           uint32_t bytes_to_read_tmp = this->buffer_bytes_available;
-                           //if(this->var_len_bytes > 0)
-                           if(this->buffer_bytes_available > this->var_len_bytes){
-                              bytes_to_read_tmp = this->var_len_bytes;
-                           };
-                           if (bytes_to_read_tmp > 0) {
-                           Logger::log(LogLevel::DEBUG, "Recuperamos la string de la variante:");
-                           std::string& str_tmp = std::get<std::string>(this->value);
-                           std::memcpy(str_tmp.data() + this->var_len_bytes_read, this->data_buffer_pointer, bytes_to_read_tmp);
-
-                           this->bytes_read += bytes_to_read_tmp;
-                           this->buffer_bytes_read += bytes_to_read_tmp;
-                           this->buffer_bytes_available -= bytes_to_read_tmp;
-                           this->data_buffer_pointer += bytes_to_read_tmp;
-                           this->var_len_bytes_read += bytes_to_read_tmp;
-                           this->var_len_bytes -= bytes_to_read_tmp;
-
-                           this->offset = true;
-                        };
-
-                        if (this->var_len_bytes == 0) {
-                           // In case of having read the whole string already:
-                           if(this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()){
-                              (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
-                           }else{
-                              this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
-                           };
-                           this->col_counter += 1;
-                           this->var_len_bytes = 0;
-                           this->var_len_bytes_read = 0;
-                           this->len_read = false;
-                           break;
-                        
-                        };
-
-                     };*/
-
-                     // Fase 1: Lectura de la longitud
-                     if(!this->len_read){
-                        if(var_size <= this->buffer_bytes_available){
-                           this->var_len_bytes = 0;
-                           std::memcpy(&this->var_len_bytes, this->data_buffer_pointer, var_size);
-                           this->bytes_read += var_size;
-                           this->buffer_bytes_read += var_size;
-                           this->buffer_bytes_available -= var_size;
-                           this->data_buffer_pointer += var_size;
-                           this->len_read = true;
-                           this->var_len_bytes_read = 0;
-
-                           Logger::log(LogLevel::DEBUG, "Cremos una string temporal para reservar espacio en ella");
-                           this->value = std::string();
-                           Logger::log(LogLevel::DEBUG, "String creada y asociada al valor variante");
-                           std::string& str_tmp = std::get<std::string>(this->value);
-                           Logger::log(LogLevel::DEBUG, "Acceso a la string del valor");
-                           str_tmp.reserve(this->var_len_bytes);
-                           Logger::log(LogLevel::DEBUG, "Bytes reservados en la string del valor con exito");
-                           Logger::log(LogLevel::DEBUG, "Se han resrvado estos bytes en la string temporal: ", false, true);
-                           Logger::log(LogLevel::DEBUG, this->var_len_bytes, true, false);
-                        }else{
-                           Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
-                           this->offset = true;
-                           break;
-                        };
-                     };
-                     
-                     // Fase 2:
-                     if (this->len_read && this->var_len_bytes > 0) {
-                        uint32_t bytes_to_read_tmp = this->buffer_bytes_available;
-                        //if(this->var_len_bytes > 0)
-                        if(this->buffer_bytes_available > this->var_len_bytes){
-                           bytes_to_read_tmp = this->var_len_bytes;
-                        };
-                        if (bytes_to_read_tmp > 0) {
-                           Logger::log(LogLevel::DEBUG, "Recuperamos la string de la variante:");
-                           std::string& str_tmp = std::get<std::string>(this->value);
-                           //std::memcpy(str_tmp.data() + this->var_len_bytes_read, this->data_buffer_pointer, bytes_to_read_tmp);
-                           str_tmp.append(this->data_buffer_pointer, bytes_to_read_tmp);
-
-                           this->bytes_read += bytes_to_read_tmp;
-                           this->buffer_bytes_read += bytes_to_read_tmp;
-                           this->buffer_bytes_available -= bytes_to_read_tmp;
-                           this->data_buffer_pointer += bytes_to_read_tmp;
-                           this->var_len_bytes_read += bytes_to_read_tmp;
-                           this->var_len_bytes -= bytes_to_read_tmp;
-
-                        };
-                        // If we have depleted the buffer's capacity:
-                        if (this->var_len_bytes > 0 && this->buffer_bytes_available == 0) {
-                           Logger::log(LogLevel::DEBUG, "String fragmentada entre bloques del WAL. Forzando OFFSET.");
-                           this->offset = true;
-                           break; // Salimos del case para ir al ciclo de recarga de buffer
-                        };
-                     };
-
-                     // Fase 3:
-                     if (this->len_read && this->var_len_bytes == 0) {
-                        Logger::log(LogLevel::DEBUG, "String leída en su totalidad o vacía. Guardando en tabla.");
-                        if (this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()) {
-                           (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
-                        } else {
-                           this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
-                        }
-                        
-                        // Reseteo de flags de control para permitir avanzar a la siguiente columna
-                        this->col_counter += 1;
-                        this->var_len_bytes = 0;
-                        this->var_len_bytes_read = 0;
-                        this->len_read = false;
-                     }
-                     break;
-                  
-                  };
-
-               };
-               break;
-            };
-
-            case 4: {
-               Logger::log(LogLevel::DEBUG, "State 4");
-               Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-               Logger::log(LogLevel::DEBUG, this->col_counter, false, true);
-               Logger::log(LogLevel::DEBUG, " >= ", false, false);
-               Logger::log(LogLevel::DEBUG, this->num_cols, false, false);
-               Logger::log(LogLevel::DEBUG, " && ", false, false);
-               Logger::log(LogLevel::DEBUG, this->row_counter + 1, false, false);
-               Logger::log(LogLevel::DEBUG, " >=", false, false);
-               Logger::log(LogLevel::DEBUG, this->num_rows, true, false);
-               Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-               this->eof_rows = is_eof_rows();
-               if(this->eof_rows){
-                  // End of reading, proceeding to empty char buffer
-                  this->state = 255;
-                  break;
-               } else {
-                  this->state = 5;
-                  break;
-               };
-            };
-
-            case 5: {
-               Logger::log(LogLevel::DEBUG, "State 5");
-               if(this->col_counter >= this->num_cols){
-                  this->col_counter = 0;
-                  this->row_counter += 1;
-                  // Sumamos 1 al contador de filas de la RAM viva, para que sirva para las posteriores consultas:
-                  //this->metadata->n_filas_ram += 1;
-               };
-
-               if(this->offset){
-                  // Insufficient capacity in buffer
-                  this->bytes_read = this->buffer_tmp_size;
-                  this->buffer_bytes_read = 0;
-                  this->data_buffer_pointer = this->buffer;
-                  this->offset = false;
-                  this->state = 1;
-                  this->buffer_bytes_available = this->buffer_tmp_size;
-                  break;
-               };
-               this->state = 3;
-               break;
-            };
-
-            case 255: {
-               Logger::log(LogLevel::DEBUG, "State 255");
-
-               Logger::flush();
-               this->metadata->n_filas_ram += (this->row_counter + 1);
-               Logger::log(LogLevel::DEBUG, "Nº de filas registrado en la variable de metadatos 'n_filas_ram': ", false, true);
-               Logger::log(LogLevel::DEBUG, this->metadata->n_filas_ram, true, false);
+               Logger::log(LogLevel::DEBUG, "Cremos una string temporal para reservar espacio en ella");
+               this->value = std::string();
+               Logger::log(LogLevel::DEBUG, "String creada y asociada al valor variante");
+               std::string& str_tmp = std::get<std::string>(this->value);
+               Logger::log(LogLevel::DEBUG, "Acceso a la string del valor");
+               str_tmp.reserve(this->var_len_bytes);
+               Logger::log(LogLevel::DEBUG, "Bytes reservados en la string del valor con exito");
+               Logger::log(LogLevel::DEBUG, "Se han resrvado estos bytes en la string temporal: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->var_len_bytes, true, false);
+            }else{
+               Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
+               this->offset = true;
                break;
             };
          };
-      };
-
-
-      void execute_fsm() {
-         bool aux_bool = true;
-         int aux_int = 0;
-         while(aux_bool) {
-            if(aux_int == 100){
-               return;
+         
+         // Fase 2:
+         if (this->len_read && this->var_len_bytes > 0) {
+            uint32_t bytes_to_read_tmp = this->buffer_bytes_available;
+            //if(this->var_len_bytes > 0)
+            if(this->buffer_bytes_available > this->var_len_bytes){
+               bytes_to_read_tmp = this->var_len_bytes;
             };
-            if(this->state == 255){
-               aux_bool = false;
+            if (bytes_to_read_tmp > 0) {
+               Logger::log(LogLevel::DEBUG, "Recuperamos la string de la variante:");
+               std::string& str_tmp = std::get<std::string>(this->value);
+               str_tmp.append(this->data_buffer_pointer, bytes_to_read_tmp);
+
+               this->bytes_read += bytes_to_read_tmp;
+               this->buffer_bytes_read += bytes_to_read_tmp;
+               this->buffer_bytes_available -= bytes_to_read_tmp;
+               this->data_buffer_pointer += bytes_to_read_tmp;
+               this->var_len_bytes_read += bytes_to_read_tmp;
+               this->var_len_bytes -= bytes_to_read_tmp;
+
             };
-            this->control_unit();
-            aux_int += 1;
+            // If we have depleted the buffer's capacity:
+            if (this->var_len_bytes > 0 && this->buffer_bytes_available == 0) {
+               Logger::log(LogLevel::DEBUG, "String fragmentada entre bloques del WAL. Forzando OFFSET.");
+               this->offset = true;
+               break; // Salimos del case para ir al ciclo de recarga de buffer
+            };
+         };
+
+         // Fase 3:
+         if (this->len_read && this->var_len_bytes == 0) {
+            Logger::log(LogLevel::DEBUG, "String leída en su totalidad o vacía. Guardando en tabla.");
+            if (this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()) {
+               (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
+            } else {
+               this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
+            }
+            
+            // Reseteo de flags de control para permitir avanzar a la siguiente columna
+            this->col_counter += 1;
+            this->var_len_bytes = 0;
+            this->var_len_bytes_read = 0;
+            this->len_read = false;
          }
-      }
-   //}
+         break;
+      
+      };
 
+
+      case dataType::UNKNOWN: {
+         Logger::log(LogLevel::DEBUG, "Caso UNKNOWN");
+         var_size = sizeof(uint32_t);
+
+         // Fase 1: Lectura de la longitud
+         if(!this->len_read){
+            if(var_size <= this->buffer_bytes_available){
+               this->var_len_bytes = 0;
+               std::memcpy(&this->var_len_bytes, this->data_buffer_pointer, var_size);
+               this->bytes_read += var_size;
+               this->buffer_bytes_read += var_size;
+               this->buffer_bytes_available -= var_size;
+               this->data_buffer_pointer += var_size;
+               this->len_read = true;
+               this->var_len_bytes_read = 0;
+
+               Logger::log(LogLevel::DEBUG, "Cremos una string temporal para reservar espacio en ella");
+               this->value = std::vector<char>();
+               Logger::log(LogLevel::DEBUG, "String creada y asociada al valor variante");
+               std::vector<char>& vec_tmp = std::get<std::vector<char>>(this->value);
+               Logger::log(LogLevel::DEBUG, "Acceso a la string del valor");
+               vec_tmp.reserve(this->var_len_bytes);
+               Logger::log(LogLevel::DEBUG, "Bytes reservados en la string del valor con exito");
+               Logger::log(LogLevel::DEBUG, "Se han resrvado estos bytes en la string temporal: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->var_len_bytes, true, false);
+            }else{
+               Logger::log(LogLevel::DEBUG, "CONDICION OFFSET");
+               this->offset = true;
+               break;
+            };
+         };
+         
+         // Fase 2:
+         if (this->len_read && this->var_len_bytes > 0) {
+            uint32_t bytes_to_read_tmp = this->buffer_bytes_available;
+            //if(this->var_len_bytes > 0)
+            if(this->buffer_bytes_available > this->var_len_bytes){
+               bytes_to_read_tmp = this->var_len_bytes;
+            };
+            if (bytes_to_read_tmp > 0) {
+               Logger::log(LogLevel::DEBUG, "Recuperamos la string de la variante:");
+               std::vector<char>& vec_tmp = std::get<std::vector<char>>(this->value);
+               vec_tmp.insert(
+                     vec_tmp.end(), 
+                     this->data_buffer_pointer, 
+                     this->data_buffer_pointer + bytes_to_read_tmp
+                  );
+
+               this->bytes_read += bytes_to_read_tmp;
+               this->buffer_bytes_read += bytes_to_read_tmp;
+               this->buffer_bytes_available -= bytes_to_read_tmp;
+               this->data_buffer_pointer += bytes_to_read_tmp;
+               this->var_len_bytes_read += bytes_to_read_tmp;
+               this->var_len_bytes -= bytes_to_read_tmp;
+
+            };
+            // If we have depleted the buffer's capacity:
+            if (this->var_len_bytes > 0 && this->buffer_bytes_available == 0) {
+               Logger::log(LogLevel::DEBUG, "String fragmentada entre bloques del WAL. Forzando OFFSET.");
+               this->offset = true;
+               break; // Salimos del case para ir al ciclo de recarga de buffer
+            };
+         };
+
+         // Fase 3:
+         if (this->len_read && this->var_len_bytes == 0) {
+            Logger::log(LogLevel::DEBUG, "String leída en su totalidad o vacía. Guardando en tabla.");
+            if (this->columnas->find(this->col_names[this->col_counter]) == this->columnas->end()) {
+               (*this->columnas)[this->col_names[this->col_counter]].push_back(this->value);
+            } else {
+               this->columnas->at(this->col_names[this->col_counter]).push_back(this->value);
+            }
+            
+            // Reseteo de flags de control para permitir avanzar a la siguiente columna
+            this->col_counter += 1;
+            this->var_len_bytes = 0;
+            this->var_len_bytes_read = 0;
+            this->len_read = false;
+         }
+         break;
+      
+      };
+
+   };
 };
+
+
+
+
+void disk_wal_read::walDataReader::control_unit(){
+   switch(this->state){
+      case 0: {
+         Logger::log(LogLevel::DEBUG, "State 0");
+         //aux_read_single_table_wal_data
+         //recuperar_data_wal_tabla_buffer
+
+         // We recover the table's object:
+         auto it = global_table_dict.find(this->table_name);
+
+
+         if (it != global_table_dict.end()) {
+            this->table = it->second;
+         } else {
+            this->state = 255;
+            break;
+         };
+         this->table = it->second;
+         Logger::log(LogLevel::DEBUG, "Ya hemos encontrado la tabla");
+         this->metadata = this->table->metadata_ptr;
+         Logger::log(LogLevel::DEBUG, "Puntero de matadatos recuperado");
+         this->num_cols = this->metadata->n_cols;
+         Logger::log(LogLevel::DEBUG, "Número de columnas de la tabla: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
+         this->col_names = this->metadata->column_names;
+         this->data_types = this->metadata->column_types;
+
+         // In case the data pointer has not yet been created:
+         table_data*& tb_d_ptr = this->table->data_ptr;
+         if(this->table->data_ptr == nullptr){
+            this->table->data_ptr = new table_data;
+         };
+
+         this->columnas = &(tb_d_ptr->columns);
+
+         // We read the numbers of rows to process:
+         Logger::log(LogLevel::DEBUG, "Leemos el número de filas");
+         this->in.read(reinterpret_cast<char*>(&this->num_rows), sizeof(uint32_t));
+
+
+
+         // We read the buffer size:
+
+
+         this->in.read(reinterpret_cast<char*>(&this->buffer_tmp_size), sizeof(uint32_t));
+         Logger::log(LogLevel::DEBUG, "El tamano del buffer para esta lectura es de: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->buffer_tmp_size, true, false);
+         this->buffer_bytes_available = this->buffer_tmp_size;
+         // First we read the buffer size:
+         this->buffer = new char[this->buffer_tmp_size];
+         this->data_buffer_pointer = this->buffer;
+
+         Logger::log(LogLevel::DEBUG, "Número de filas de la tabla: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->num_rows, true, false);
+         this->state = 1;
+         break;
+      };
+
+      case 1: {
+         Logger::log(LogLevel::DEBUG, "State 1");
+         this->eof_rows = is_eof_rows();
+         if(this->eof_rows){
+            // End of reading, proceeding to empty char buffer
+            this->state = 255;
+            break;
+         } else {
+            this->state = 2;
+            break;
+         };
+      };
+
+      case 2: {
+         Logger::log(LogLevel::DEBUG, "State 2");
+         //this->in.read(this->buffer, this->bytes_read);
+         this->in.read(this->buffer, this->buffer_tmp_size);
+         Logger::log(LogLevel::DEBUG, "--- CONTENIDO CRUDO DEL BUFFER LEIDO ---");
+         std::string debug_str(this->buffer, this->buffer_tmp_size);
+         Logger::log(LogLevel::DEBUG, debug_str);
+         this->state = 3;
+         break;
+      };
+
+      case 3: {
+         Logger::log(LogLevel::DEBUG, "State 3");
+
+         this->state = 4;
+
+         //this->buffer_bytes_available = this->bytes_read - this->buffer_bytes_read;
+         Logger::log(LogLevel::DEBUG, "++++++++++++++++++++++++++++++++");
+         Logger::log(LogLevel::DEBUG, "Bytes leidos: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->bytes_read, true, false);
+         Logger::log(LogLevel::DEBUG, "'buffer_bytes_read': ", false, true);
+         Logger::log(LogLevel::DEBUG, this->buffer_bytes_read, true, false);
+         Logger::log(LogLevel::DEBUG, "Bytes disponibles en el buffer: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->buffer_bytes_available, true, false);
+
+         Logger::log(LogLevel::DEBUG, "++++++++++++++++++++++++++++++++");
+         Logger::log(LogLevel::DEBUG, "Numero de columna: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->col_counter, true, false);
+         Logger::log(LogLevel::DEBUG, "Numero de fila: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->row_counter, true, false);
+
+         // EXECUTE VARIANT VALUE BUFFER FILLING:
+         disk_wal_read::walDataReader::fill_buffer();
+
+         break;
+      };
+
+      case 4: {
+         Logger::log(LogLevel::DEBUG, "State 4");
+         Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+         Logger::log(LogLevel::DEBUG, this->col_counter, false, true);
+         Logger::log(LogLevel::DEBUG, " >= ", false, false);
+         Logger::log(LogLevel::DEBUG, this->num_cols, false, false);
+         Logger::log(LogLevel::DEBUG, " && ", false, false);
+         Logger::log(LogLevel::DEBUG, this->row_counter + 1, false, false);
+         Logger::log(LogLevel::DEBUG, " >=", false, false);
+         Logger::log(LogLevel::DEBUG, this->num_rows, true, false);
+         Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+         this->eof_rows = is_eof_rows();
+         if(this->eof_rows){
+            // End of reading, proceeding to empty char buffer
+            this->state = 255;
+            break;
+         } else {
+            this->state = 5;
+            break;
+         };
+      };
+
+      case 5: {
+         Logger::log(LogLevel::DEBUG, "State 5");
+         if(this->col_counter >= this->num_cols){
+            this->col_counter = 0;
+            this->row_counter += 1;
+            // Sumamos 1 al contador de filas de la RAM viva, para que sirva para las posteriores consultas:
+            //this->metadata->n_filas_ram += 1;
+         };
+
+         if(this->offset){
+            // Insufficient capacity in buffer
+            this->bytes_read = this->buffer_tmp_size;
+            this->buffer_bytes_read = 0;
+            this->data_buffer_pointer = this->buffer;
+            this->offset = false;
+            this->state = 1;
+            this->buffer_bytes_available = this->buffer_tmp_size;
+            break;
+         };
+         this->state = 3;
+         break;
+      };
+
+      case 255: {
+         Logger::log(LogLevel::DEBUG, "State 255");
+
+         Logger::flush();
+         this->metadata->n_filas_ram += (this->row_counter + 1);
+         Logger::log(LogLevel::DEBUG, "Nº de filas registrado en la variable de metadatos 'n_filas_ram': ", false, true);
+         Logger::log(LogLevel::DEBUG, this->metadata->n_filas_ram, true, false);
+         break;
+      };
+   };
+};
+
+
+void disk_wal_read::walDataReader::execute_fsm() {
+   bool aux_bool = true;
+   int aux_int = 0;
+   while(aux_bool) {
+      if(aux_int == 100){
+         return;
+      };
+      if(this->state == 255){
+         aux_bool = false;
+      };
+      this->control_unit();
+      aux_int += 1;
+   }
+}
 
 
 
@@ -978,143 +925,112 @@ class walDataReader {
 
 // NUEVO CÓDIGO:
 
-class walDataParser {
 
-   public:
-      // FSM state:
-      uint8_t state = 0;
-      bool eof_file = false;
-      uint32_t wal_data_type;
-      std::string table_name;
+void disk_wal_read::walDataParser::control_unit(){
+   switch(this->state){
 
-      // punteros de metadatos:
-      //char* meta_buffer = nullptr;
+      case 0: {
+         Logger::log(LogLevel::DEBUG, "State 0");
+         if(!fs::exists("backup_data/wal.bin")){
+            this->state = 255;
+            break;
+         };
+         //this->in("backup_data/wal.bin", std::ios::binary);
+         this->in.open("backup_data/wal.bin", std::ios::binary);
+      };
 
-      // Punteros de datos:
+      case 1: {
+         Logger::log(LogLevel::DEBUG, "State 1");
+         if(disk_wal_read::is_eof_read(this->in)){
+            Logger::log(LogLevel::DEBUG, "<<<<<<<<<<<< FIN DEL ARCHIVO WAL >>>>>>>>>>>>>>>>>>>>>>>");
+            this->state = 255;
+            break;
+         };
+         // We continuiue to type reading:
+         this->state = 2;
+         break;
+      };
 
-      // Row iterator:
-      //disk_buffer::tableRowIterator_only_ram_for_wal* row_iterator;
+      case 2: {
+         Logger::log(LogLevel::DEBUG, "State 2");
+         this->in.read(reinterpret_cast<char*>(&this->wal_data_type), sizeof(uint8_t));
+         //Logger::log(LogLevel::DEBUG, "El bloque de datos a leer es: ", false, true);
+         this->state = 3;
+         break;
+      };
 
-      // Reading pipeline:
-      std::ifstream in;
+      case 3: {
+         Logger::log(LogLevel::DEBUG, "State 3");
+         this->table_name = disk_wal_read::recuperar_meta_wal_tabla_nombre(this->in);
+         Logger::log(LogLevel::DEBUG, "El nombre de la tabla recuperada es: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->table_name, true, false);
 
-      walDataParser() 
-        : eof_file(false), wal_data_type(0), state(0) {
-         Logger::log(LogLevel::DEBUG, "Creacion de un objeto nuevo 'walDataParser'");
+         // We redirect depending on thew WAL data type:
+         // Si tipo_dato es 0 es metadato y si es 1 es dato
+         if(this->wal_data_type == 0){
+            // Metadato:
+            Logger::log(LogLevel::DEBUG, "Metadatos", true, true);
+            this->state = 4;
+            break;
+            //disk_wal_read::aux_read_single_table_wal_metadata(this->in, this->table_name);
+         } else {
+            // Dato:
+            Logger::log(LogLevel::DEBUG, "Datos", true, true);
+            this->state = 5;
+            break;
+            //disk_wal_read::aux_read_single_table_wal_data(this->in, this->table_name);
+         };
       }
 
-      ~walDataParser() {
-         //delete this->row_iterator;
-         if (this->in.is_open()) {
-            this->in.close();
-         }
-      }
-      void control_unit(){
-         switch(this->state){
+      case 4: {
+         Logger::log(LogLevel::DEBUG, "State 4");
+         // Metadata read:
+         disk_wal_read::aux_read_single_table_wal_metadata(this->in, this->table_name);
+         Logger::log(LogLevel::DEBUG, "El numero de columnas de la tabla es: ", false, true);
+         auto it = global_table_dict.find(this->table_name);
+         table* tabla = it->second;
+         uint32_t num_cols_tmp = tabla->metadata_ptr->n_cols;
+         Logger::log(LogLevel::DEBUG, num_cols_tmp, true, false);
+         this->state = 1;
+         break;
+      };
 
-            case 0: {
-               Logger::log(LogLevel::DEBUG, "State 0");
-               if(!fs::exists("backup_data/wal.bin")){
-                  this->state = 255;
-                  break;
-               };
-               //this->in("backup_data/wal.bin", std::ios::binary);
-               this->in.open("backup_data/wal.bin", std::ios::binary);
-            };
+      case 5: {
+         Logger::log(LogLevel::DEBUG, "State 5");
+         // Data read:
 
-            case 1: {
-               Logger::log(LogLevel::DEBUG, "State 1");
-               if(disk_wal_read::is_eof_read(this->in)){
-                  Logger::log(LogLevel::DEBUG, "<<<<<<<<<<<< FIN DEL ARCHIVO WAL >>>>>>>>>>>>>>>>>>>>>>>");
-                  this->state = 255;
-                  break;
-               };
-               // We continuiue to type reading:
-               this->state = 2;
-               break;
-            };
+         // We create the data reader object:
+         disk_wal_read::walDataReader data_reader_obj(this->in, this->table_name); 
+         // We execute the data reader FSM within:
+         data_reader_obj.execute_fsm();
 
-            case 2: {
-               Logger::log(LogLevel::DEBUG, "State 2");
-               this->in.read(reinterpret_cast<char*>(&this->wal_data_type), sizeof(uint8_t));
-               //Logger::log(LogLevel::DEBUG, "El bloque de datos a leer es: ", false, true);
-               this->state = 3;
-               break;
-            };
+         this->state = 1;
+         break;
+      };
 
-            case 3: {
-               Logger::log(LogLevel::DEBUG, "State 3");
-               this->table_name = disk_wal_read::recuperar_meta_wal_tabla_nombre(this->in);
-               Logger::log(LogLevel::DEBUG, "El nombre de la tabla recuperada es: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->table_name, true, false);
+      case 255: {
+         Logger::log(LogLevel::DEBUG, "State 255");
+         break;
+      };
+   }
+}
 
-               // We redirect depending on thew WAL data type:
-               // Si tipo_dato es 0 es metadato y si es 1 es dato
-               if(this->wal_data_type == 0){
-                  // Metadato:
-                  Logger::log(LogLevel::DEBUG, "Metadatos", true, true);
-                  this->state = 4;
-                  break;
-                  //disk_wal_read::aux_read_single_table_wal_metadata(this->in, this->table_name);
-               } else {
-                  // Dato:
-                  Logger::log(LogLevel::DEBUG, "Datos", true, true);
-                  this->state = 5;
-                  break;
-                  //disk_wal_read::aux_read_single_table_wal_data(this->in, this->table_name);
-               };
-            }
-
-            case 4: {
-               Logger::log(LogLevel::DEBUG, "State 4");
-               // Metadata read:
-               disk_wal_read::aux_read_single_table_wal_metadata(this->in, this->table_name);
-               Logger::log(LogLevel::DEBUG, "El numero de columnas de la tabla es: ", false, true);
-               auto it = global_table_dict.find(this->table_name);
-               table* tabla = it->second;
-               uint32_t num_cols_tmp = tabla->metadata_ptr->n_cols;
-               Logger::log(LogLevel::DEBUG, num_cols_tmp, true, false);
-               this->state = 1;
-               break;
-            };
-
-            case 5: {
-               Logger::log(LogLevel::DEBUG, "State 5");
-               // Data read:
-
-               // We create the data reader object:
-               walDataReader data_reader_obj(this->in, this->table_name); 
-               // We execute the data reader FSM within:
-               data_reader_obj.execute_fsm();
-
-               this->state = 1;
-               break;
-            };
-
-            case 255: {
-               Logger::log(LogLevel::DEBUG, "State 255");
-               break;
-            };
-         }
-      }
-
-      void execute_fsm() {
-         bool aux_bool = true;
-         while(aux_bool) {
-            if(this->state == 255){
-               aux_bool = false;
-            };
-            this->control_unit();
-         }
-      }
-};
+void disk_wal_read::walDataParser::execute_fsm() {
+   bool aux_bool = true;
+   while(aux_bool) {
+      if(this->state == 255){
+         aux_bool = false;
+      };
+      this->control_unit();
+   }
+}
 
 
 // Nueva función de lectura del WAl:
 void disk_wal_read::read_wal(){
    // Whole WAl reading process:
    // We create the WAL data parser object:
-   walDataParser data_parser_obj; 
+   disk_wal_read::walDataParser data_parser_obj; 
    // We execute the data reader FSM within:
    data_parser_obj.execute_fsm();
 };

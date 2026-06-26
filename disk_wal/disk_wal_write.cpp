@@ -7,8 +7,6 @@
 #include "logging.h"
 #include "filesystem"
 #include "disk_aux.h"
-#include "disk_buffer.h"
-#include <cstring> // Para usar std::memcpy
 #include "disk_aux.h"
 #include "disk_metadata.h"
 #include "disk_wal_write.h"
@@ -201,298 +199,217 @@ void disk_wal_write::write_table_wal_metadata(table* tabla){
 //==== FUNION ESCRITURA DATOS EN EL WAL: =================
 //========================================================
 
-class walDataWriter {
 
-   public:
-      // Counters:
-      uint32_t offset = 0;
-      uint32_t bytes_written = 0;
-      uint32_t bytes_remain = size_buffer_bytes;
-      uint8_t state = 0;
-      char* ptr_str_ini = nullptr; // 💡 Inicializado a limpio
+void disk_wal_write::walDataWriter::control_unit(){
+   switch(this->state){
+      case 0: {
+         Logger::log(LogLevel::DEBUG, "State 0");
+         if (!this->table_obj){
+            this->state = 255;
+            break;
+         };
+         table_metadata* metadata = this->table_obj->metadata_ptr;
+         std::string nombre_tabla = metadata->name;
+         
+         this->out.open("backup_data/wal.bin", std::ios::binary | std::ios::app);
+         Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
 
-      // Auxiliary metadata:
-      std::vector<dataType> tipos_datos;
-      std::vector<std::string> columnas_nombre;
+         this->tipos_datos = metadata->column_types;
+         this->columnas_nombre = metadata->column_names;
+         this->num_cols = metadata->n_cols;
 
-      // Buffer:
-      char* buffer = new char[size_buffer_bytes];
-      char* buffer_pointer = nullptr;
+         this->row_iterator = new disk_buffer::tableRowIterator_only_ram_for_wal(nombre_tabla, this->n_rows_a_escribir);
+         //Values valor_tmp;
 
-      // Columns:
-      uint32_t num_cols = 0;
-      uint32_t current_col = 0;
+         uint8_t tipo_dato = 1; 
+         this->out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
 
-      // Variables de control inyectadas:
-      uint32_t n_rows_a_escribir = 0;
+         uint32_t size_nombre_tabla = nombre_tabla.size();
+         this->out.write(reinterpret_cast<char*>(&size_nombre_tabla), sizeof(uint32_t));
+         this->out.write(nombre_tabla.data(), size_nombre_tabla);
 
-      // Write and table:
-      std::ofstream out;
-      table* table_obj = nullptr;
-      disk_buffer::tableRowIterator_only_ram_for_wal* row_iterator;
-      std::map<std::string, Values> fila_a_escribir;
+         Logger::log(LogLevel::DEBUG, "Filas insertadas que escribiremos en el WAL: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->n_rows_a_escribir, true, false);
+         this->out.write(reinterpret_cast<char*>(&this->n_rows_a_escribir), sizeof(uint32_t));
+         // We write the buffer size used to wirte this very same data batch:
+         this->out.write(reinterpret_cast<char*>(&size_buffer_bytes), sizeof(uint32_t));
+         this->out.flush();
 
-// El constructor ahora compilará perfectamente porque los punteros no tienen constructores obligatorios
-      walDataWriter(table* t_obj, uint32_t rows_to_write) 
-        : table_obj(t_obj), n_rows_a_escribir(rows_to_write), row_iterator(nullptr) {
-         Logger::log(LogLevel::DEBUG, "Creacion de un objeto nuevo 'walDataWriter'");
-         this->buffer_pointer = this->buffer;
-         // Buffer set to all zeros:
-         std::memset(this->buffer, 0, size_buffer_bytes);
-      }
-
-      ~walDataWriter() {
-         delete[] this->buffer;
-         delete this->row_iterator;
-         if (this->out.is_open()) {
-            this->out.close();
-         }
-      }
-
-      bool eof_row(){
-         return this->current_col + 1 > this->num_cols;
+         this->state = 3;
+         break;
       };
 
-      void control_unit(){
-         switch(this->state){
-            case 0: {
-               Logger::log(LogLevel::DEBUG, "State 0");
-               if (!this->table_obj){
-                  this->state = 255;
-                  break;
-               };
-               table_metadata* metadata = this->table_obj->metadata_ptr;
-               std::string nombre_tabla = metadata->name;
-               
-               this->out.open("backup_data/wal.bin", std::ios::binary | std::ios::app);
-               Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
-
-               this->tipos_datos = metadata->column_types;
-               this->columnas_nombre = metadata->column_names;
-               this->num_cols = metadata->n_cols;
-
-               this->row_iterator = new disk_buffer::tableRowIterator_only_ram_for_wal(nombre_tabla, this->n_rows_a_escribir);
-               //Values valor_tmp;
-
-               uint8_t tipo_dato = 1; 
-               this->out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
-
-               uint32_t size_nombre_tabla = nombre_tabla.size();
-               this->out.write(reinterpret_cast<char*>(&size_nombre_tabla), sizeof(uint32_t));
-               this->out.write(nombre_tabla.data(), size_nombre_tabla);
-
-               Logger::log(LogLevel::DEBUG, "Filas insertadas que escribiremos en el WAL: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->n_rows_a_escribir, true, false);
-               this->out.write(reinterpret_cast<char*>(&this->n_rows_a_escribir), sizeof(uint32_t));
-               // We write the buffer size used to wirte this very same data batch:
-               this->out.write(reinterpret_cast<char*>(&size_buffer_bytes), sizeof(uint32_t));
-               this->out.flush();
-
-               this->state = 3;
-               break;
-            };
-
-            case 1: {
-               Logger::log(LogLevel::DEBUG, "State 1");
-               if(this->row_iterator->is_eof()){
-                  Logger::log(LogLevel::DEBUG, "EOF General");
-                  this->state = 7;
-                  break;
-               }else{
-                  this->state = 2;
-                  break;
-               };
-            };
-
-            case 2: {
-               Logger::log(LogLevel::DEBUG, "State 2");
-               Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->current_col, true, false);
-               Logger::log(LogLevel::DEBUG, "Columnas totales: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
-               if(this->eof_row()){
-                  Logger::log(LogLevel::DEBUG, "EOF Row");
-                  this->state = 3;
-                  this->current_col = 0;
-                  break;
-               }else{
-                  this->state = 4;
-                  break;
-               };
-            };
-
-            case 3: {
-               Logger::log(LogLevel::DEBUG, "State 3");
-               this->fila_a_escribir = this->row_iterator->get_next_row_ram_viva();
-               this->state = 4;
-               break;
-            };
-
-            case 4: {
-               Logger::log(LogLevel::DEBUG, "State 4");
-               Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->current_col, true, false);
-               Logger::log(LogLevel::DEBUG, "Columna nombre: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->columnas_nombre[this->current_col], true, false);
-               Logger::log(LogLevel::DEBUG, "Columna tipo: ", true, true);
-               //Logger::log(LogLevel::DEBUG, this->tipos_datos[this->current_col], true, false);
-               disk_aux::write_aux_val_buffer_with_size_check(
-                  this->fila_a_escribir.at(this->columnas_nombre[this->current_col]),
-                  this->tipos_datos[this->current_col],
-                  this->buffer_pointer,
-                  this->offset,
-                  this->bytes_written,
-                  this->bytes_remain,
-                  this->ptr_str_ini,
-                  this->current_col
-               );
-               this->state = 5;
-               break;
-            };
-
-            case 5: {
-               Logger::log(LogLevel::DEBUG, "State 5");
-               Logger::log(LogLevel::DEBUG, "Bytes escritos: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->bytes_written, true, false);
-               Logger::log(LogLevel::DEBUG, "Offset: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->offset, true, false);
-               if(this->bytes_written + this->offset >= size_buffer_bytes){
-                  Logger::log(LogLevel::DEBUG, "EOF Buffer");
-                  this->state = 6;
-                  break;
-               }else{
-                  // Si no se ha legado al offset
-                  this->state = 1;
-                  break;
-               };
-            };
-
-            case 6: {
-               Logger::log(LogLevel::DEBUG, "State 6");
-               Logger::log(LogLevel::DEBUG, "Estado alcanzado si se llega al EOF del Buffer");
-               //Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
-               //Logger::log(LogLevel::DEBUG, this->bytes_written, false, false);
-               //Logger::log(LogLevel::DEBUG, " bytes", true, false);
-               //this->out.write(this->buffer, this->bytes_written);
-
-
-               // LOG PARA VER LO QUE SE HA ESCRITO EN EL BUFFER:
-               Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
-               // Preraramos los flujos de datos:
-               // 1) Uno en hexadecimal para ver los datos en "bruto" 
-               // 2) Otro para ver las strings o caracteres escritos
-               std::stringstream ss_hex;
-               std::stringstream ss_txt;
-               
-               // Ecabezado del texto:
-               ss_hex << "[DUMP HEX] ";
-               ss_txt << "[DUMP TXT] ";
-
-               // Configuramos a partir de aquí ss_hex:
-               ss_hex << std::setfill('0') << std::hex;
-
-               for (uint32_t i = 0; i < size_buffer_bytes; ++i){
-
-                  uint8_t byte = static_cast<uint8_t>(this->buffer[i]);
-                  
-                  ss_hex << std::setw(2) << (int)byte << " ";
-                  
-                  // Tenemos en ueenta sólo los caracteres alfanuméricos (excluyendo los de control)
-                  if (byte >= 32 && byte <= 126) {
-                     ss_txt << (char)byte << "  "; // Añadimos espacios para alinear visualmente con el hex
-                  } else {
-                     ss_txt << ".  "; // Un punto para metadatos o bytes nulos (\00)
-                  }
-               }
-               // Transformamos a string e imprimimos el contenido del array de caracteres:
-               Logger::log(LogLevel::DEBUG, "We print the buffer's content in hexadecimal:");
-               Logger::log(LogLevel::DEBUG, ss_hex.str());
-               Logger::log(LogLevel::DEBUG, "We print the buffer's content as a string (if it's content is alphanumeric):");
-               Logger::log(LogLevel::DEBUG, ss_txt.str());
-               Logger::flush();
-               Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
-
-               Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
-               Logger::log(LogLevel::DEBUG, size_buffer_bytes, false, false);
-               Logger::log(LogLevel::DEBUG, " bytes", true, false);
-               this->out.write(this->buffer, size_buffer_bytes);
-               // No escribimos bytes basura:
-               //this->out.write(this->buffer, this->bytes_written);
-               this->out.flush();
-               //if(!this->ptr_str_ini){
-                  //this->current_col += 1;
-               //};
-               this->offset = 0;
-               this->bytes_written = 0;
-               this->buffer_pointer = this->buffer;
-               this->bytes_remain = size_buffer_bytes;
-               this->state = 1;
-               // Buffer reset to all zeros:
-               std::memset(this->buffer, 0, size_buffer_bytes);
-               break;
-            };
-
-            case 7: {
-               Logger::log(LogLevel::DEBUG, "State 7");
-               Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->current_col, true, false);
-               Logger::log(LogLevel::DEBUG, "Columnas totales: ", false, true);
-               Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
-               if(this->eof_row()){
-                  Logger::log(LogLevel::DEBUG, "EOF Rows");
-                  this->state = 8;
-                  //this->current_col = 0;
-                  break;
-               }else{
-                  this->state = 4;
-                  break;
-               };
-            };
-
-            case 8: {
-               Logger::log(LogLevel::DEBUG, "State 8");
-               Logger::log(LogLevel::DEBUG, "Nº de bytes de 'bytes_written': ", false, true);
-               Logger::log(LogLevel::DEBUG, this->bytes_written, true, false);
-               Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
-               Logger::log(LogLevel::DEBUG, size_buffer_bytes, false, false);
-               Logger::log(LogLevel::DEBUG, " bytes", true, false);
-               //this->out.write(this->buffer_pointer, this->bytes_written);
-
-               // We only write if there is something left to write:
-               if(this->bytes_written > 0){
-                  Logger::log(LogLevel::DEBUG, "Como 'bytes_written' > 0, procedemos a escribir lo que queda con padding");
-                  this->out.write(this->buffer, size_buffer_bytes);
-                  // No escribimos basura:
-                  //this->out.write(this->buffer, this->bytes_written);
-                  this->out.flush();
-               };
-               this->state = 255;
-               break;
-            };
-
-            case 255: {
-               this->out.flush();
-               Logger::log(LogLevel::DEBUG, "State 255");
-               break;
-            };
+      case 1: {
+         Logger::log(LogLevel::DEBUG, "State 1");
+         if(this->row_iterator->is_eof()){
+            Logger::log(LogLevel::DEBUG, "EOF General");
+            this->state = 7;
+            break;
+         }else{
+            this->state = 2;
+            break;
          };
       };
 
-      void execute_fsm() {
-         bool aux_bool = true;
-         while(aux_bool) {
-            if(this->state == 255){
-               aux_bool = false;
-            };
-            this->control_unit();
-         }
-      }
+      case 2: {
+         Logger::log(LogLevel::DEBUG, "State 2");
+         Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->current_col, true, false);
+         Logger::log(LogLevel::DEBUG, "Columnas totales: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
+         if(this->eof_row()){
+            Logger::log(LogLevel::DEBUG, "EOF Row");
+            this->state = 3;
+            this->current_col = 0;
+            break;
+         }else{
+            this->state = 4;
+            break;
+         };
+      };
+
+      case 3: {
+         Logger::log(LogLevel::DEBUG, "State 3");
+         this->fila_a_escribir = this->row_iterator->get_next_row_ram_viva();
+         this->state = 4;
+         break;
+      };
+
+      case 4: {
+         Logger::log(LogLevel::DEBUG, "State 4");
+         Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->current_col, true, false);
+         Logger::log(LogLevel::DEBUG, "Columna nombre: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->columnas_nombre[this->current_col], true, false);
+         Logger::log(LogLevel::DEBUG, "Columna tipo: ", true, true);
+         //Logger::log(LogLevel::DEBUG, this->tipos_datos[this->current_col], true, false);
+         disk_aux::write_aux_val_buffer_with_size_check(
+            this->fila_a_escribir.at(this->columnas_nombre[this->current_col]),
+            this->tipos_datos[this->current_col],
+            this->buffer_pointer,
+            this->offset,
+            this->bytes_written,
+            this->bytes_remain,
+            this->ptr_str_ini,
+            this->current_col
+         );
+         this->state = 5;
+         break;
+      };
+
+      case 5: {
+         Logger::log(LogLevel::DEBUG, "State 5");
+         Logger::log(LogLevel::DEBUG, "Bytes escritos: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->bytes_written, true, false);
+         Logger::log(LogLevel::DEBUG, "Offset: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->offset, true, false);
+         if(this->bytes_written + this->offset >= size_buffer_bytes){
+            Logger::log(LogLevel::DEBUG, "EOF Buffer");
+            this->state = 6;
+            break;
+         }else{
+            // Si no se ha legado al offset
+            this->state = 1;
+            break;
+         };
+      };
+
+      case 6: {
+         Logger::log(LogLevel::DEBUG, "State 6");
+         Logger::log(LogLevel::DEBUG, "Estado alcanzado si se llega al EOF del Buffer");
+         //Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
+         //Logger::log(LogLevel::DEBUG, this->bytes_written, false, false);
+         //Logger::log(LogLevel::DEBUG, " bytes", true, false);
+         //this->out.write(this->buffer, this->bytes_written);
+
+
+         // LOG PARA VER LO QUE SE HA ESCRITO EN EL BUFFER:
+         Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
+         Logger::log_buffer(LogLevel::DEBUG, this->buffer, size_buffer_bytes, true, true);
+         Logger::flush();
+         Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
+
+         Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
+         Logger::log(LogLevel::DEBUG, size_buffer_bytes, false, false);
+         Logger::log(LogLevel::DEBUG, " bytes", true, false);
+         this->out.write(this->buffer, size_buffer_bytes);
+         // No escribimos bytes basura:
+         //this->out.write(this->buffer, this->bytes_written);
+         this->out.flush();
+         //if(!this->ptr_str_ini){
+            //this->current_col += 1;
+         //};
+         this->offset = 0;
+         this->bytes_written = 0;
+         this->buffer_pointer = this->buffer;
+         this->bytes_remain = size_buffer_bytes;
+         this->state = 1;
+         // Buffer reset to all zeros:
+         std::memset(this->buffer, 0, size_buffer_bytes);
+         break;
+      };
+
+      case 7: {
+         Logger::log(LogLevel::DEBUG, "State 7");
+         Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->current_col, true, false);
+         Logger::log(LogLevel::DEBUG, "Columnas totales: ", false, true);
+         Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
+         if(this->eof_row()){
+            Logger::log(LogLevel::DEBUG, "EOF Rows");
+            this->state = 8;
+            //this->current_col = 0;
+            break;
+         }else{
+            this->state = 4;
+            break;
+         };
+      };
+
+      case 8: {
+         Logger::log(LogLevel::DEBUG, "State 8");
+         Logger::log(LogLevel::DEBUG, "Nº de bytes de 'bytes_written': ", false, true);
+         Logger::log(LogLevel::DEBUG, this->bytes_written, true, false);
+         Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
+         Logger::log(LogLevel::DEBUG, size_buffer_bytes, false, false);
+         Logger::log(LogLevel::DEBUG, " bytes", true, false);
+         //this->out.write(this->buffer_pointer, this->bytes_written);
+
+         // We only write if there is something left to write:
+         if(this->bytes_written > 0){
+            Logger::log(LogLevel::DEBUG, "Como 'bytes_written' > 0, procedemos a escribir lo que queda con padding");
+            this->out.write(this->buffer, size_buffer_bytes);
+            // No escribimos basura:
+            //this->out.write(this->buffer, this->bytes_written);
+            this->out.flush();
+         };
+         this->state = 255;
+         break;
+      };
+
+      case 255: {
+         this->out.flush();
+         Logger::log(LogLevel::DEBUG, "State 255");
+         break;
+      };
+   };
 };
+
+void disk_wal_write::walDataWriter::execute_fsm(){
+   bool aux_bool = true;
+   while(aux_bool) {
+      if(this->state == 255){
+         aux_bool = false;
+      };
+      this->control_unit();
+   }
+}
+
 
 
 void disk_wal_write::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
    // We create the data writer object:
-   walDataWriter data_writer_obj(tabla, n_rows_a_escribir);
+   disk_wal_write::walDataWriter data_writer_obj(tabla, n_rows_a_escribir);
    // We execute the data writing FSM within:
    data_writer_obj.execute_fsm();
 };

@@ -456,7 +456,113 @@ void disk_aux::write_aux_val_buffer_with_size_check(const Values& value, dataTyp
          return;
       };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       case dataType::UNKNOWN: {
+         const std::vector<char>& char_vec_val = std::get<std::vector<char>>(value);
+         uint32_t unk_size;
+         unk_size = char_vec_val.size();
+         uint8_t uint32_size = sizeof(uint32_t);
+
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] >>> Nueva entrada a la función auxiliar <<<");
+         Logger::log(LogLevel::DEBUG, std::string("[WRITE_STRING] Contenido texto: ") + char_vec_val.data());
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] unk_size: ", false, true); Logger::log(LogLevel::DEBUG, unk_size, true, false);
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] bytes_remain en buffer: ", false, true); Logger::log(LogLevel::DEBUG, bytes_remain, true, false);
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] Direccion base char_vec_val.data(): ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(char_vec_val.data()), true, false);
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] Estado inicial ptr_str_ini: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+
+         // Fase 1: Lectura del tamaño de la string:
+         if(!ptr_str_ini){
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 1] ptr_str_ini es nullptr. Intentando escribir tamano...");
+            tmp_char_ptr = reinterpret_cast<char*>(&unk_size);
+            if(uint32_size <= bytes_remain){
+               tmp_char_ptr = reinterpret_cast<char*>(&unk_size);
+               std::memcpy(buffer_ptr, tmp_char_ptr, uint32_size);
+               buffer_ptr += uint32_size;
+               bytes_remain -= uint32_size;
+               bytes_written += uint32_size;
+               ptr_str_ini = const_cast<char*>(char_vec_val.data());
+               
+               Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 1] Tamano escrito con exito.");
+               Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 1] Nuevo ptr_str_ini asignado a: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+               
+               // No dejamos que caiga a la Fase 2 con bytes_remain = 0.
+               if (bytes_remain == 0) {
+                  Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 1] Buffer lleno (bytes_remain == 0) justo tras el tamano. Saliendo.");
+                  return;
+               };
+            }else{
+               Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 1] ERROR: No cabe el tamano en el buffer. Forzando offset.");
+               offset = uint32_size;
+               return;
+            }; 
+         };
+
+         // Fase 2:
+         if (ptr_str_ini && bytes_remain > 0) {
+            uint32_t bytes_pendientes = (char_vec_val.data() + unk_size) - ptr_str_ini;
+            
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 2] ptr_str_ini valido. Calculando bytes pendientes.");
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 2] char_vec_val.data() + unk_size = ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(char_vec_val.data() + unk_size), true, false);
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 2] ptr_str_ini actual = ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 2] bytes_pendientes de texto: ", false, true); Logger::log(LogLevel::DEBUG, bytes_pendientes, true, false);
+
+            uint32_t bytes_to_write = 0;
+            if(bytes_remain >= bytes_pendientes){ 
+               bytes_to_write = bytes_pendientes;
+            }else{
+               bytes_to_write = bytes_remain;
+            };
+            
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 2] Decidido escribir bytes_to_write: ", false, true); Logger::log(LogLevel::DEBUG, bytes_to_write, true, false);
+
+            // Solo en caso de tener algo que escribir en el buffer:
+            if (bytes_to_write > 0) {
+               std::memcpy(buffer_ptr,
+                           ptr_str_ini,
+                           bytes_to_write
+                           );
+               buffer_ptr += bytes_to_write;
+               ptr_str_ini += bytes_to_write;
+               bytes_remain -= bytes_to_write;
+               bytes_written += bytes_to_write;
+               
+               Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 2] Copiados bytes a buffer. Avance de ptr_str_ini a: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+            };
+         };
+
+
+         // Fase 3: Final
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 3] Evaluando fin de string...");
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 3] ptr_str_ini: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Fase 3] Limite final (data+size): ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(char_vec_val.data() + unk_size), true, false);
+         
+         if(ptr_str_ini >= char_vec_val.data() + unk_size){
+            // We have finished reading the whole string:
+            Logger::log(LogLevel::DEBUG, "^^^^^^^^ ptr_str_ini se fija a nullptr ^^^^^^^^");
+            current_col += 1;
+            ptr_str_ini = nullptr;
+         }else{
+            Logger::log(LogLevel::DEBUG, "^^^^^^^^ ptr_str_ini NO se fija a nullptr ^^^^^^^^");
+         };
          return;
       };
    };
