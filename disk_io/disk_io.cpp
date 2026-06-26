@@ -9,7 +9,7 @@
 #include "logging.h"
 #include "filesystem"
 #include "disk_io.h"
-#include "disk_wal.h"
+#include "disk_wal_utils.h"
 #include "disk_buffer.h"
 #include <cstring> // Para usar std::memcpy
 #include "part_sort.h"
@@ -62,7 +62,7 @@ void disk_io::write_dump(){
 
    // Justo Antes de concluir la escritura, eliminamos el archivo WAL:
    Logger::log(LogLevel::DEBUG, "ELIMINAMOS EL ARCHIVO WAL DE DATOS DE BACKUP");
-   disk_wal::delete_wal_bin_file();
+   disk_wal_utils::delete_wal_bin_file();
 };
 
 

@@ -32,7 +32,9 @@ clang++ -std=c++20 \
   disk_out/disk_out.cpp \
   disk_metadata/disk_metadata.cpp \
   disk_aux/disk_aux.cpp \
-  disk_wal/disk_wal.cpp \
+  disk_wal/disk_wal_write.cpp \
+  disk_wal/disk_wal_read.cpp \
+  disk_wal/disk_wal_utils.cpp \
   disk_buffer/disk_buffer.cpp \
   partition_sorting/part_sort.cpp \
   -o app/sql_app.exe

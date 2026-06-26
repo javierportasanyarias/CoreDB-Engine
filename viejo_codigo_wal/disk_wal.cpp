@@ -13,6 +13,7 @@
 #include "disk_buffer.h"
 #include <cstring> // Para usar std::memcpy
 #include "disk_aux.h"
+#include "disk_metadata.h"
 
 //========================================================
 //== FUNION ESCRITURA METADATOS EN EL WAL: ===============
@@ -36,7 +37,9 @@ void disk_wal::write_table_wal_metadata(table* tabla){
    persistecia de los datos
    */
    if (!tabla) return;
-   std::string nombre_tabla = tabla->metadata_ptr->name;
+   // We do not make metadata pointer an alias as we do not need to modify any value
+   table_metadata* metadatos_puntero = tabla->metadata_ptr;
+   std::string nombre_tabla = metadatos_puntero->name;
  
    // Volvemos a abrir el archivo ,esta vez en modo append:
    std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
@@ -47,118 +50,145 @@ void disk_wal::write_table_wal_metadata(table* tabla){
    Usamos un vector de punteros de caracteres para así no 
    realizar tantas llamadas a la escritura
    */
-   std::vector<char> buffer;
+
+   uint32_t meta_byte_size = disk_metadata::calculate_metadata_byte_size(metadatos_puntero);
+   //std::vector<char> buffer;
+   char* buffer = nullptr;
    char* tmp_char_ptr = nullptr;
+   try {
+      buffer = new char[meta_byte_size];
+      char* ptr_curr = buffer;
+      /*
+      Al ser una escritura en el WAL, antes debemos escribir por separado y antes:
+      -> Tipo de datos (1 byte):
+         * 0: metadatos
+         * 1: datos
+      -> Tamaño (4 bytes):
+         Almacena el tamaño en bytes de la información en sí
+      */
+      // Escribimos el tipo de dato
+      uint8_t tipo_dato = 0; // 0 porque es un metadato
+      out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
+      // == Escribimos los metadatos: ===============================
 
-   /*
-   Al ser una escritura en el WAL, antes debemos escribir por separado y antes:
-   -> Tipo de datos (1 byte):
-      * 0: metadatos
-      * 1: datos
-   -> Tamaño (4 bytes):
-      Almacena el tamaño en bytes de la información en sí
-   */
-   // Escribimos el tipo de dato
-   uint8_t tipo_dato = 0; // 0 porque es un metadato
-   out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
-   // == Escribimos los metadatos: ===============================
+      // -- Escribimos el nombre -----------------------------------------
+      Logger::log(LogLevel::DEBUG, "Pasamos a escribir el nombre de la tabla:");
 
-   // -- Escribimos el nombre -----------------------------------------
-   Logger::log(LogLevel::DEBUG, "Pasamos a escribir el nombre de la tabla:");
-
-   uint32_t size_nombre = nombre_tabla.size();
-   out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
-   out.write(nombre_tabla.data(), size_nombre);
+      uint32_t size_nombre = nombre_tabla.size();
+      out.write(reinterpret_cast<char*>(&size_nombre), sizeof(uint32_t));
+      out.write(nombre_tabla.data(), size_nombre);
 
 
 
-   Logger::log(LogLevel::DEBUG, "Nombre de la tabla registrado en el buffer con exito");
-   // -- Escribimos el número de columnas -----------------------------
-   uint32_t num_cols = tabla->metadata_ptr->n_cols;
-   tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
-   buffer.insert(buffer.end(),
-                 tmp_char_ptr,
-                 tmp_char_ptr + sizeof(uint32_t)
-                );
-   Logger::log(LogLevel::DEBUG, "Numero de columnas registrado en el buffer con exito");
-   /* En caso de escribir en el WAL los metadatos,
-   siempre va a estar vacios los datos, por lo que el conteo de
-   filas en RAM y recupoeradas del disco serán cero
-   Además los datos no existen todavía, por lo que no podremos
-   accedr a "data_ptr" de la tabla sin que de error
-   */
-   int varlo_tmp_int = 0;
-   tmp_char_ptr = reinterpret_cast<char*>(&varlo_tmp_int);
-   buffer.insert(buffer.end(),
-               tmp_char_ptr,
-               tmp_char_ptr + sizeof(uint32_t)
-               );
-    Logger::log(LogLevel::DEBUG, "Numero de filas registrado en el buffer con exito. Al ser escritura en el WAL SIEMPRE sera cero");
-   for(uint32_t i=0; i<num_cols; i++){
-      // -- Escribimos los datos de cada columna ---------------------
-      // -- Escribimos el nombre:
-      Logger::log(LogLevel::DEBUG, "Iteracion del bucle: ", false, true);
-      Logger::log(LogLevel::DEBUG, i, true, false);
-      std::string column_name = (tabla->metadata_ptr->column_names)[i];
-      uint32_t size_column_name = column_name.size();
-      Logger::log(LogLevel::DEBUG, "'column_name' recuperada y su tamaño");
-      Logger::flush();
+      Logger::log(LogLevel::DEBUG, "Nombre de la tabla registrado en el buffer con exito");
+      // -- Escribimos el número de columnas -----------------------------
+      uint32_t num_cols = metadatos_puntero->n_cols;
+      tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
+      //buffer.insert(buffer.end(),
+                  //tmp_char_ptr,
+                  //tmp_char_ptr + sizeof(uint32_t)
+                  //);
+      std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
+      ptr_curr += sizeof(uint32_t);
+      Logger::log(LogLevel::DEBUG, "Numero de columnas registrado en el buffer con exito");
+      /* En caso de escribir en el WAL los metadatos,
+      siempre va a estar vacios los datos, por lo que el conteo de
+      filas en RAM y recupoeradas del disco serán cero
+      Además los datos no existen todavía, por lo que no podremos
+      accedr a "data_ptr" de la tabla sin que de error
+      */
+      int varlo_tmp_int = 0;
+      tmp_char_ptr = reinterpret_cast<char*>(&varlo_tmp_int);
+      //buffer.insert(buffer.end(),
+                  //tmp_char_ptr,
+                  //tmp_char_ptr + sizeof(uint32_t)
+                  //);
+      std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
+      ptr_curr += sizeof(uint32_t);
+      Logger::log(LogLevel::DEBUG, "Numero de filas registrado en el buffer con exito. Al ser escritura en el WAL SIEMPRE sera cero");
+      for(uint32_t i=0; i<num_cols; i++){
+         // -- Escribimos los datos de cada columna ---------------------
+         // -- Escribimos el nombre:
+         Logger::log(LogLevel::DEBUG, "Iteracion del bucle: ", false, true);
+         Logger::log(LogLevel::DEBUG, i, true, false);
+         std::string column_name = (metadatos_puntero->column_names)[i];
+         uint32_t size_column_name = column_name.size();
+         Logger::log(LogLevel::DEBUG, "'column_name' recuperada y su tamaño");
+         Logger::flush();
 
-      Logger::log(LogLevel::DEBUG, "Insertamos el numero de filas");
-      tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
-      buffer.insert(buffer.end(),
-                  tmp_char_ptr,
-                  tmp_char_ptr + sizeof(uint32_t)
-                  );
-      Logger::log(LogLevel::DEBUG, "Número de filas escrito en el buffer con exito");
+         Logger::log(LogLevel::DEBUG, "Insertamos el numero de filas");
+         tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
+         //buffer.insert(buffer.end(),
+                     //tmp_char_ptr,
+                     //tmp_char_ptr + sizeof(uint32_t)
+                     //);
+         std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
+         ptr_curr += sizeof(uint32_t);
+         Logger::log(LogLevel::DEBUG, "Número de filas escrito en el buffer con exito");
 
-      Logger::log(LogLevel::DEBUG, "Insertamos el nombre de la columna");
-      tmp_char_ptr = column_name.data();
-      buffer.insert(buffer.end(),
-                  tmp_char_ptr,
-                  tmp_char_ptr + size_column_name
-                  );
-      Logger::log(LogLevel::DEBUG, "Nombre de la columna escrito en el buffer con exito");
-      // -- Escribimos el tipo de dato:
-      Logger::log(LogLevel::DEBUG, "Insertamos el tipo de dato");
-      dataType col_type = (tabla->metadata_ptr->column_types)[i];
-      uint32_t col_type_disk = static_cast<uint32_t>(col_type);
-               
-      tmp_char_ptr = reinterpret_cast<char*>(&col_type_disk);
-      buffer.insert(buffer.end(),
-                  tmp_char_ptr,
-                  tmp_char_ptr + sizeof(uint32_t)
-                  );
-      Logger::log(LogLevel::DEBUG, "Tipo de dato escrito en el buffer con exito");
-      // -- Escribimos si es clave primaria:
-      Logger::log(LogLevel::DEBUG, "Accedemos primero a si es clave primaria o no");
-      bool column_is_key = (tabla->metadata_ptr->primary_list)[i];
-      Logger::log(LogLevel::DEBUG, "'column_is_key' acceso correcto");
-      uint8_t key_val = column_is_key ? 1 : 0;
-      Logger::log(LogLevel::DEBUG, "Booleano convertino a número con éxito");
-      Logger::log(LogLevel::DEBUG, "Ahora ya si pasamos a escribir el booleano convertido en el buffer");
-      tmp_char_ptr = reinterpret_cast<char*>(&key_val);
-      buffer.insert(buffer.end(),
-                  tmp_char_ptr,
-                  tmp_char_ptr + sizeof(uint8_t)
-                  );
-      Logger::log(LogLevel::DEBUG, "Booleano de clave primaria escrito en el buffer con exito");
+         Logger::log(LogLevel::DEBUG, "Insertamos el nombre de la columna");
+         tmp_char_ptr = column_name.data();
+         //buffer.insert(buffer.end(),
+                     //tmp_char_ptr,
+                     //tmp_char_ptr + size_column_name
+                     //);
+         std::memcpy(ptr_curr, tmp_char_ptr, size_column_name);
+         ptr_curr += size_column_name;
+         Logger::log(LogLevel::DEBUG, "Nombre de la columna escrito en el buffer con exito");
+         // -- Escribimos el tipo de dato:
+         Logger::log(LogLevel::DEBUG, "Insertamos el tipo de dato");
+         dataType col_type = (metadatos_puntero->column_types)[i];
+         uint32_t col_type_disk = static_cast<uint32_t>(col_type);
+                  
+         tmp_char_ptr = reinterpret_cast<char*>(&col_type_disk);
+         //buffer.insert(buffer.end(),
+                     //tmp_char_ptr,
+                     //tmp_char_ptr + sizeof(uint32_t)
+                     //);
+         std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
+         ptr_curr += sizeof(uint32_t);
+         Logger::log(LogLevel::DEBUG, "Tipo de dato escrito en el buffer con exito");
+         // -- Escribimos si es clave primaria:
+         Logger::log(LogLevel::DEBUG, "Accedemos primero a si es clave primaria o no");
+         bool column_is_key = (metadatos_puntero->primary_list)[i];
+         Logger::log(LogLevel::DEBUG, "'column_is_key' acceso correcto");
+         uint8_t key_val = column_is_key ? 1 : 0;
+         Logger::log(LogLevel::DEBUG, "Booleano convertino a número con éxito");
+         Logger::log(LogLevel::DEBUG, "Ahora ya si pasamos a escribir el booleano convertido en el buffer");
+         tmp_char_ptr = reinterpret_cast<char*>(&key_val);
+         //buffer.insert(buffer.end(),
+                     //tmp_char_ptr,
+                     //tmp_char_ptr + sizeof(uint8_t)
+                     //);
+         std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint8_t));
+         ptr_curr += sizeof(uint8_t);
+         Logger::log(LogLevel::DEBUG, "Booleano de clave primaria escrito en el buffer con exito");
+      };
+      Logger::log(LogLevel::DEBUG, "Metadatos ya registrados en el buffer a escribir");
+      Logger::log(LogLevel::DEBUG, "Al ser escritura en el WAL escribimos: el tipo de dato y su tamaño");
+      /* Ya tenemos el buffer listo para escritura, pero al ser la escritura en WAL, antes debemos
+      escribir el tamaño de la información.
+      */
+      // Escribimos el tamaño de los metadatos:
+      Logger::log(LogLevel::DEBUG, "Registramos el tamaño del buffer de los metadatos");
+      //uint32_t buffer_size = buffer.size();
+      //out.write(reinterpret_cast<char*>(&buffer_size), sizeof(uint32_t));
+      out.write(reinterpret_cast<char*>(&meta_byte_size), sizeof(uint32_t));
+      Logger::log(LogLevel::DEBUG, "Tamaño del buffer de datos escito con exito");
+      Logger::log(LogLevel::DEBUG, "Pasamos a escribir el buffer de datos en disco:");
+      // Ahora ya sí podemos escribir el contenido del buffer en sí
+      disk_aux::aux_vector_buffer_write_disk(buffer, 
+                                             meta_byte_size,
+                                             out
+                                             );
+      Logger::log(LogLevel::DEBUG, "Buffer de datos escrito con EXITO");
+      out.flush();
+   }catch(...){
+      delete[] buffer;
+      out.close();
+      throw;
    };
-   Logger::log(LogLevel::DEBUG, "Metadatos ya registrados en el buffer a escribir");
-   Logger::log(LogLevel::DEBUG, "Al ser escritura en el WAL escribimos: el tipo de dato y su tamaño");
-   /* Ya tenemos el buffer listo para escritura, pero al ser la escritura en WAL, antes debemos
-     escribir el tamaño de la información.
-   */
-   // Escribimos el tamaño de los metadatos:
-   Logger::log(LogLevel::DEBUG, "Registramos el tamaño del buffer de los metadatos");
-   uint32_t buffer_size = buffer.size();
-   out.write(reinterpret_cast<char*>(&buffer_size), sizeof(uint32_t));
-   Logger::log(LogLevel::DEBUG, "Tamaño del buffer de datos escito con exito");
-   Logger::log(LogLevel::DEBUG, "Pasamos a escribir el buffer de datos en disco:");
-   // Ahora ya sí podemos escribir el contenido del buffer en sí
-   disk_aux::aux_vector_buffer_write_disk(buffer, out);
-   Logger::log(LogLevel::DEBUG, "Buffer de datos escrito con EXITO");
-   out.flush();
+   delete[] buffer;
    out.close();
    return;
 };
@@ -169,14 +199,15 @@ void disk_wal::write_table_wal_metadata(table* tabla){
 //========================================================
 
 
-std::vector<char> disk_wal::recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla){
+char* disk_wal::recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla){
    /*
    Función que devuelve un buffer con los metadatosdatos de ua tabla concreta, dado su nombre.
    */
 
    Logger::log(LogLevel::DEBUG, "Dentro de la función para leer el buffer de los metadatos");
 
-   std::vector<char> buffer;
+   //std::vector<char> buffer;
+   char* buffer = nullptr;
    // Ahora vemos si el archivo de metadatos ya existe o no:
    if (fs::exists("metadata/" + nombre_tabla + "_meta.bin")) return buffer;
    Logger::log(LogLevel::DEBUG, "El archivo de metadatos no existe, por lo que proseguimos");
@@ -187,12 +218,20 @@ std::vector<char> disk_wal::recuperar_meta_wal_tabla_buffer(std::ifstream& in, s
    Logger::log(LogLevel::DEBUG, "1º) Leemos el tamaño del buffer");
    uint32_t buffer_size = 0;
    in.read(reinterpret_cast<char*>(&buffer_size), sizeof(uint32_t));
-   Logger::log(LogLevel::DEBUG, "   Tamaño del buffer leido con exito");
-   Logger::log(LogLevel::DEBUG, "2º) Leemos el buffer");
-   // 2º) Leemos el buffer de datos:
-   buffer.resize(buffer_size); // <- Reajustamos el tamaño del buffer
-   in.read(buffer.data(), buffer_size);
-   Logger::log(LogLevel::DEBUG, "   Buffer leido con exito");
+   try{
+      buffer = new char[buffer_size];
+      Logger::log(LogLevel::DEBUG, "   Tamaño del buffer leido con exito");
+      Logger::log(LogLevel::DEBUG, "2º) Leemos el buffer");
+      // 2º) Leemos el buffer de datos:
+      //buffer.resize(buffer_size); // <- Reajustamos el tamaño del buffer
+      in.read(buffer, buffer_size);
+      Logger::log(LogLevel::DEBUG, "   Buffer leido con exito");
+   }catch(...){
+      delete[] buffer;
+      in.close();
+      throw;
+   };
+   in.close();
 
    return buffer;
 
@@ -229,10 +268,11 @@ void disk_wal::aux_read_single_table_wal_metadata(std::ifstream& in){
    Logger::log(LogLevel::DEBUG, "Nombre de la tabla recuperado con éxito");
    // Recuperamos el buffer de datos:
    Logger::log(LogLevel::DEBUG, "Procedemos a recuperar el buffer de metadatos");
-   std::vector<char> buffer;
+   //std::vector<char> buffer;
+   char* buffer = nullptr;
    buffer = disk_wal::recuperar_meta_wal_tabla_buffer(in, nombre_tabla);
    Logger::log(LogLevel::DEBUG, "Buffer de metadatos ya recuperado");
-   if(buffer.empty()) return;
+   //if(buffer.empty()) return;
 
    /////////////////////////////////////////////
    // Antes de leer vemos is los metadatos de la tabla están en memoria RAM:
@@ -274,14 +314,14 @@ void disk_wal::aux_read_single_table_wal_metadata(std::ifstream& in){
    // Leemos el número de columnas:
    Logger::log(LogLevel::DEBUG, "Copiamos el numero de columnas");
    uint32_t num_cols = 0;
-   std::memcpy(&num_cols, buffer.data() + offset_read, sizeof(uint32_t));
+   std::memcpy(&num_cols, buffer + offset_read, sizeof(uint32_t));
    offset_read += sizeof(uint32_t);
    Logger::log(LogLevel::DEBUG, "Numero de columnas copiado con exito");
 
    // Leemos el numero de filas (siempre será cero en el WAL):
    Logger::log(LogLevel::DEBUG, "Copiamos el numero de filas");
    uint32_t n_filas = 0;
-   std::memcpy(&n_filas, buffer.data() + offset_read, sizeof(uint32_t));
+   std::memcpy(&n_filas, buffer + offset_read, sizeof(uint32_t));
    offset_read += sizeof(uint32_t);
    Logger::log(LogLevel::DEBUG, "Numero de filas copiado con exito");
 
@@ -298,19 +338,19 @@ void disk_wal::aux_read_single_table_wal_metadata(std::ifstream& in){
 
       // Leemos el nombre de la columna:
       uint32_t size_column_name = 0;
-      std::memcpy(&size_column_name, buffer.data() + offset_read, sizeof(uint32_t));
+      std::memcpy(&size_column_name, buffer + offset_read, sizeof(uint32_t));
       offset_read += sizeof(uint32_t);
 
       std::string column_name;
       column_name.resize(size_column_name);
-      std::memcpy(column_name.data(), buffer.data() + offset_read, size_column_name);
+      std::memcpy(column_name.data(), buffer + offset_read, size_column_name);
       offset_read += size_column_name;
 
       tb_created->metadata_ptr->column_names.push_back(column_name);
 
       // Ahora leemos el tipo de dato:
       uint32_t col_type_disk_int;
-      std::memcpy(&col_type_disk_int, buffer.data() + offset_read, sizeof(uint32_t));
+      std::memcpy(&col_type_disk_int, buffer + offset_read, sizeof(uint32_t));
       dataType col_type_disk = static_cast<dataType>(col_type_disk_int);
       offset_read += sizeof(uint32_t);
 
@@ -319,13 +359,15 @@ void disk_wal::aux_read_single_table_wal_metadata(std::ifstream& in){
       // Ahora leemos si la variable es clave primaria o no:
       uint8_t key_val_int;
       bool key_val = true;
-      std::memcpy(&key_val_int, buffer.data() + offset_read, sizeof(uint8_t));
+      std::memcpy(&key_val_int, buffer + offset_read, sizeof(uint8_t));
       offset_read += sizeof(uint8_t);
       if(key_val_int == 0){
          key_val = false;
       };
       tb_created->metadata_ptr->primary_list.push_back(key_val);
    };
+
+   delete[] buffer;
 
 };
 
@@ -412,7 +454,7 @@ void disk_wal::aux_read_single_table_wal_data(std::ifstream& in){
 
 
    // Ahora leemos el contenido de los datos de la tabla y lo guardamos en un buffer:
-   std::vector<char> buffer;
+   //std::vector<char> buffer;
    disk_wal::recuperar_data_wal_tabla_buffer(in, nombre_tabla); // Esta función ya insert los datos en la RAM
 
 };
@@ -511,6 +553,7 @@ void disk_wal::read_wal(){
          Logger::log(LogLevel::DEBUG, "Datos", true, false);
          disk_wal::aux_read_single_table_wal_data(in);
       };
+      in.clear();
       Logger::flush();
       eof = disk_wal::is_eof_read(in);
    };
@@ -521,7 +564,235 @@ void disk_wal::read_wal(){
 //== FUNION ESCRITURA DATOS EN EL WAL: ===================
 //========================================================
 
+
+class walDataWriter {
+
+   public:
+      // Counters:
+      uint32_t offset = 0;
+      uint32_t bytes_written = 0;
+      uint32_t bytes_remain = size_buffer_bytes;
+      uint8_t state = 0;
+      char* ptr_str_ini = nullptr; // 💡 Inicializado a limpio
+
+      // Auxiliary metadata:
+      std::vector<dataType> tipos_datos;
+      std::vector<std::string> columnas_nombre;
+
+      // Buffer:
+      char* buffer = new char[size_buffer_bytes];
+      char* buffer_pointer = nullptr;
+
+      // Columns:
+      uint32_t num_cols = 0;
+      uint32_t current_col = 0;
+
+      // Variables de control inyectadas:
+      uint32_t n_rows_a_escribir = 0;
+
+      // Write and table:
+      std::ofstream out;
+      table* table_obj = nullptr;
+      disk_buffer::tableRowIterator_only_ram_for_wal* row_iterator;
+      std::map<std::string, Values> fila_a_escribir;
+
+// El constructor ahora compilará perfectamente porque los punteros no tienen constructores obligatorios
+      walDataWriter(table* t_obj, uint32_t rows_to_write) 
+        : table_obj(t_obj), n_rows_a_escribir(rows_to_write), row_iterator(nullptr) {
+         Logger::log(LogLevel::DEBUG, "Creacion de un objeto nuevo 'walDataWriter'");
+         this->buffer_pointer = this->buffer;
+      }
+
+      ~walDataWriter() {
+         delete[] this->buffer;
+         delete this->row_iterator;
+         if (this->out.is_open()) {
+            this->out.close();
+         }
+      }
+
+      bool eof_row(){
+         return this->current_col + 1 > this->num_cols;
+      };
+
+      void control_unit(){
+         switch(this->state){
+            case 0: {
+               Logger::log(LogLevel::DEBUG, "State 0");
+               if (!this->table_obj){
+                  this->state = 255;
+                  break;
+               };
+               table_metadata* metadata = this->table_obj->metadata_ptr;
+               std::string nombre_tabla = metadata->name;
+               
+               this->out.open("backup_data/wal.bin", std::ios::binary | std::ios::app);
+               Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
+
+               this->tipos_datos = metadata->column_types;
+               this->columnas_nombre = metadata->column_names;
+               this->num_cols = metadata->n_cols;
+
+               this->row_iterator = new disk_buffer::tableRowIterator_only_ram_for_wal(nombre_tabla, this->n_rows_a_escribir);
+               //Values valor_tmp;
+
+               uint8_t tipo_dato = 1; 
+               this->out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
+
+               uint32_t size_nombre_tabla = nombre_tabla.size();
+               this->out.write(reinterpret_cast<char*>(&size_nombre_tabla), sizeof(uint32_t));
+               this->out.write(nombre_tabla.data(), size_nombre_tabla);
+
+               Logger::log(LogLevel::DEBUG, "Filas insertadas que escribiremos en el WAL: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->n_rows_a_escribir, true, false);
+               this->out.write(reinterpret_cast<char*>(&this->n_rows_a_escribir), sizeof(uint32_t));
+
+               this->state = 3;
+               break;
+            };
+
+            case 1: {
+               Logger::log(LogLevel::DEBUG, "State 1");
+               if(this->row_iterator->is_eof()){
+                  Logger::log(LogLevel::DEBUG, "EOF General");
+                  this->state = 7;
+                  break;
+               }else{
+                  this->state = 2;
+                  break;
+               };
+            };
+
+            case 2: {
+               Logger::log(LogLevel::DEBUG, "State 2");
+               Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->current_col, true, false);
+               Logger::log(LogLevel::DEBUG, "Columnas totales: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
+               if(this->eof_row()){
+                  Logger::log(LogLevel::DEBUG, "EOF Row");
+                  this->state = 3;
+                  this->current_col = 0;
+                  break;
+               }else{
+                  this->state = 4;
+                  break;
+               };
+            };
+
+            case 3: {
+               Logger::log(LogLevel::DEBUG, "State 3");
+               this->fila_a_escribir = this->row_iterator->get_next_row_ram_viva();
+               this->state = 4;
+               break;
+            };
+
+            case 4: {
+               Logger::log(LogLevel::DEBUG, "State 4");
+               Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->current_col, true, false);
+               Logger::log(LogLevel::DEBUG, "Columna nombre: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->columnas_nombre[this->current_col], true, false);
+               Logger::log(LogLevel::DEBUG, "Columna tipo: ", true, true);
+               //Logger::log(LogLevel::DEBUG, this->tipos_datos[this->current_col], true, false);
+               disk_aux::write_aux_val_buffer_with_size_check(
+                  this->fila_a_escribir.at(this->columnas_nombre[this->current_col]),
+                  this->tipos_datos[this->current_col],
+                  this->buffer_pointer,
+                  this->offset,
+                  this->bytes_written,
+                  this->bytes_remain,
+                  this->ptr_str_ini,
+                  this->current_col
+               );
+               this->state = 5;
+               break;
+            };
+
+            case 5: {
+               Logger::log(LogLevel::DEBUG, "State 5");
+               Logger::log(LogLevel::DEBUG, "Bytes escritos: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->bytes_written, true, false);
+               Logger::log(LogLevel::DEBUG, "Offset: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->offset, true, false);
+               if(this->bytes_written + this->offset >= size_buffer_bytes){
+                  Logger::log(LogLevel::DEBUG, "EOF Buffer");
+                  this->state = 6;
+                  break;
+               }else{
+                  this->state = 1;
+                  break;
+               };
+            };
+
+            case 6: {
+               Logger::log(LogLevel::DEBUG, "State 6");
+               this->out.write(this->buffer_pointer, this->bytes_written);
+               this->out.flush();
+               //if(!this->ptr_str_ini){
+                  //this->current_col += 1;
+               //};
+               this->offset = 0;
+               this->bytes_written = 0;
+               this->buffer_pointer = this->buffer;
+               this->bytes_remain = size_buffer_bytes;
+               this->state = 1;
+               break;
+            };
+
+            case 7: {
+               Logger::log(LogLevel::DEBUG, "State 7");
+               Logger::log(LogLevel::DEBUG, "Columna actual: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->current_col, true, false);
+               Logger::log(LogLevel::DEBUG, "Columnas totales: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->num_cols, true, false);
+               if(this->eof_row()){
+                  Logger::log(LogLevel::DEBUG, "EOF Row");
+                  this->state = 8;
+                  //this->current_col = 0;
+                  break;
+               }else{
+                  this->state = 4;
+                  break;
+               };
+            };
+
+            case 8: {
+               Logger::log(LogLevel::DEBUG, "State 8");
+               this->out.write(this->buffer_pointer, this->bytes_written);
+               this->out.flush();
+               this->state = 255;
+               break;
+            };
+
+            case 255: {
+               this->out.flush();
+               Logger::log(LogLevel::DEBUG, "State 255");
+               break;
+            };
+         };
+      };
+
+      void execute_fsm() {
+         bool aux_bool = true;
+         while(aux_bool) {
+            if(this->state == 255){
+               aux_bool = false;
+            };
+            this->control_unit();
+         }
+      }
+};
+
+
 void disk_wal::write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir){
+   // We create the data writer object:
+   walDataWriter data_writer_obj(tabla, n_rows_a_escribir);
+   // We execute the data writing FSM within:
+   data_writer_obj.execute_fsm();
+};
+
+void disk_wal::write_table_data_wal_viejo(table* tabla, uint32_t n_rows_a_escribir){
 
    /*
    Función toma como argumentos:

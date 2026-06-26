@@ -20,7 +20,7 @@
 
 #include "disk_io.h"
 #include "disk_metadata.h"
-#include "disk_wal.h"
+#include "disk_wal_read.h"
 #include "bateria_tests.h"
 
 int main(){
@@ -40,7 +40,7 @@ int main(){
    disk_metadata::lectura_metadatos_todas_tablas();
 
    // Leemos también los datos recuperados del WAL:
-   disk_wal::read_wal();
+   disk_wal_read::read_wal();
    //return 0;
 
 

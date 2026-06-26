@@ -16,6 +16,7 @@ namespace disk_wal {
 
     void write_table_wal_metadata(table* tabla);
 
+    void write_table_data_wal_viejo(table* tabla, uint32_t n_rows_a_escribir);
     void write_table_data_wal(table* tabla, uint32_t n_rows_a_escribir);
 
     // Funciones de eliminacion:
@@ -23,7 +24,7 @@ namespace disk_wal {
     void delete_wal_bin_file();
 
     // Funcions relativas a la lectura del WAl de metadatos:
-    std::vector<char> recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
+    char* recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
 
     std::string recuperar_meta_wal_tabla_nombre(std::ifstream& in);
 

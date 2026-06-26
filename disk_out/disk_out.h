@@ -20,9 +20,9 @@ namespace disk_out {
     void write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<float>& vec_vals);
     void write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<uint8_t>& vec_vals);
     */
-    void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<int>& vec_vals);
-    void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<float>& vec_vals);
-    void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<uint8_t>& vec_vals);
+    void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, int* arr_vals);
+    void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, float* arr_vals);
+    void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, uint8_t* arr_vals);
     uint32_t fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<char>& vec_vals, std::vector<uint32_t>& vec_sizes);
     
     void calcular_filas_a_escribir_int(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);

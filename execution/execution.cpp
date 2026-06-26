@@ -10,7 +10,7 @@
 #include "logging.h"
 
 #include <cctype> // Para isprint
-#include "disk_wal.h"
+#include "disk_wal_write.h"
 #include "disk_buffer.h"
 #include "disk_aux.h"
 
@@ -143,7 +143,8 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
    no es necesarias contarlas a posteriori
    */
    // Ejecutamos la escritura en el WAL de los archivos
-   disk_wal::write_table_data_wal(tb_recup, num_fila);
+   //disk_wal_write::write_table_data_wal_viejo(tb_recup, num_fila);
+   disk_wal_write::write_table_data_wal(tb_recup, num_fila);
    Logger::flush();
    Logger::flush();
    Logger::log(LogLevel::DEBUG, "Data insertion in RAM is finished");
@@ -216,7 +217,7 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
    Logger::log(LogLevel::DEBUG, metadata_pointer->name, false, false);
    Logger::log(LogLevel::DEBUG, " >>>>>>>>", true, false);
    Logger::flush();
-   disk_wal::write_table_wal_metadata(tb_created);
+   disk_wal_write::write_table_wal_metadata(tb_created);
    return;
 };
 
