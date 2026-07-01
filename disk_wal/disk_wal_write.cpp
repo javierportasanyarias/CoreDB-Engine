@@ -47,7 +47,7 @@ void disk_wal_write::write_table_wal_metadata(table* tabla){
    realizar tantas llamadas a la escritura
    */
 
-   uint32_t meta_byte_size = disk_metadata::calculate_metadata_byte_size(metadatos_puntero);
+   uint32_t meta_byte_size = disk_metadata::calculate_metadata_byte_size_wal(metadatos_puntero);
    //std::vector<char> buffer;
    char* buffer = nullptr;
    char* tmp_char_ptr = nullptr;
@@ -79,35 +79,18 @@ void disk_wal_write::write_table_wal_metadata(table* tabla){
       Logger::log(LogLevel::DEBUG, "Nombre de la tabla registrado en el buffer con exito");
       // -- Escribimos el número de columnas -----------------------------
       uint32_t num_cols = metadatos_puntero->n_cols;
-      Logger::flush();
+      Logger::flush(LogLevel::DEBUG);
       Logger::log(LogLevel::DEBUG, "=========================================");
       Logger::log(LogLevel::DEBUG, "Nº de columnas escritas en los metadatos del WAL: ", false, true);
       Logger::log(LogLevel::DEBUG, num_cols, true, false);
       Logger::log(LogLevel::DEBUG, "=========================================");
-      Logger::flush();
+      Logger::flush(LogLevel::DEBUG);
       tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
-      //buffer.insert(buffer.end(),
-                  //tmp_char_ptr,
-                  //tmp_char_ptr + sizeof(uint32_t)
-                  //);
       std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
       ptr_curr += sizeof(uint32_t);
+
       Logger::log(LogLevel::DEBUG, "Numero de columnas registrado en el buffer con exito");
-      /* En caso de escribir en el WAL los metadatos,
-      siempre va a estar vacios los datos, por lo que el conteo de
-      filas en RAM y recupoeradas del disco serán cero
-      Además los datos no existen todavía, por lo que no podremos
-      accedr a "data_ptr" de la tabla sin que de error
-      */
-      //int varlo_tmp_int = 0;
-      //tmp_char_ptr = reinterpret_cast<char*>(&varlo_tmp_int);
-      //buffer.insert(buffer.end(),
-                  //tmp_char_ptr,
-                  //tmp_char_ptr + sizeof(uint32_t)
-                  //);
-      //std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
-      //ptr_curr += sizeof(uint32_t);
-      //Logger::log(LogLevel::DEBUG, "Numero de filas registrado en el buffer con exito. Al ser escritura en el WAL SIEMPRE sera cero");
+
       for(uint32_t i=0; i<num_cols; i++){
          // -- Escribimos los datos de cada columna ---------------------
          // -- Escribimos el nombre:
@@ -116,7 +99,7 @@ void disk_wal_write::write_table_wal_metadata(table* tabla){
          std::string column_name = (metadatos_puntero->column_names)[i];
          uint32_t size_column_name = column_name.size();
          Logger::log(LogLevel::DEBUG, "'column_name' recuperada y su tamaño");
-         Logger::flush();
+         Logger::flush(LogLevel::DEBUG);
 
          Logger::log(LogLevel::DEBUG, "Insertamos el numero de filas");
          tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
@@ -284,7 +267,8 @@ void disk_wal_write::walDataWriter::control_unit(){
          Logger::log(LogLevel::DEBUG, "Columna tipo: ", true, true);
          //Logger::log(LogLevel::DEBUG, this->tipos_datos[this->current_col], true, false);
          disk_aux::write_aux_val_buffer_with_size_check(
-            this->fila_a_escribir.at(this->columnas_nombre[this->current_col]),
+            //this->fila_a_escribir.at(this->columnas_nombre[this->current_col]),
+            this->fila_a_escribir[this->columnas_nombre[this->current_col]],
             this->tipos_datos[this->current_col],
             this->buffer_pointer,
             this->offset,
@@ -326,7 +310,7 @@ void disk_wal_write::walDataWriter::control_unit(){
          // LOG PARA VER LO QUE SE HA ESCRITO EN EL BUFFER:
          Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
          Logger::log_buffer(LogLevel::DEBUG, this->buffer, size_buffer_bytes, true, true);
-         Logger::flush();
+         Logger::flush(LogLevel::DEBUG);
          Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
 
          Logger::log(LogLevel::DEBUG, "Escribimos: ", false, true);
@@ -419,86 +403,3 @@ void disk_wal_write::write_table_data_wal(table* tabla, uint32_t n_rows_a_escrib
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
-// CODIGO LEGACY.
-
-
-
-void disk_wal_write::write_table_data_wal_viejo(table* tabla, uint32_t n_rows_a_escribir){
-
-   /*
-   Función toma como argumentos:
-      1) Puntero al objeto de la tabla sobre la que se han insertado datos.
-      2) Número de filas a escribir en la operación de inserción a hacer backup.
-
-   Esta función toma estos dos argumentos y escribe un bloque de datos
-   en el archivo de recuperación o 'WAL'.
-   */
-
-   if (!tabla) return;
-   std::string nombre_tabla = tabla->metadata_ptr->name;
-
-
-   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
-   Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
-
-   table_metadata* metadata = tabla->metadata_ptr;
-   std::vector<dataType> tipos_datos = tabla->metadata_ptr->column_types;
-   std::vector<std::string> columnas_nombre = tabla->metadata_ptr->column_names;
-   uint32_t n_cols = tabla->metadata_ptr->n_cols;
-   uint32_t n_filas = metadata->n_filas_ram;
-
-   // Creamos el iterador por filas:
-   //auto it = disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order(nombre_tabla, n_rows_a_escribir);
-
-   auto it = disk_buffer::tableRowIterator_only_ram_for_wal(nombre_tabla, n_rows_a_escribir);
-   std::map<std::string, Values> fila_a_escribir;
-   Values valor_tmp;
-
-   // Antes de nada, escribimos el tipo de dato que es:
-   uint8_t tipo_dato = 1; // 1 porque es dato
-   out.write(reinterpret_cast<char*>(&tipo_dato), sizeof(uint8_t));
-
-   // Escribimos el nombre de la tabla:
-   uint32_t size_nombre_tabla = nombre_tabla.size();
-   out.write(reinterpret_cast<char*>(&size_nombre_tabla), sizeof(uint32_t));
-   out.write(nombre_tabla.data(), size_nombre_tabla);
-
-
-   Logger::log(LogLevel::DEBUG, "Filas insertadas que escribiremos en el WAL: ", false, true);
-   Logger::log(LogLevel::DEBUG, n_rows_a_escribir, true, false);
-   out.write(reinterpret_cast<char*>(&n_rows_a_escribir), sizeof(uint32_t));
-
-   // Inicializamos el buffer de datos a escribir:
-   std::vector<char> buffer;
-
-   // Ahora nos movemos al final para poder escribir sólo al final
-
-   // Ahora iteraremos hasta que esteé vacía la fila a escribir
-   Logger::log(LogLevel::DEBUG, "Pasamos a la iteración de escribir las filas");
-   Logger::log(LogLevel::DEBUG, " ");
-   Logger::log(LogLevel::DEBUG, "//////////////////////////////////////////////////////////////");
-   while(!it.is_eof()){
-      fila_a_escribir = it.get_next_row_ram_viva();
-      Logger::log(LogLevel::DEBUG, "Insertamos la fila: ", false, true);
-      Logger::log(LogLevel::DEBUG, it.contador - 1, true, false);
-      // Ahora iteramos por cada columna:
-      for(int i = 0; i<n_cols; i++){
-         // valor_tmp = fila_a_escribir[i]; // Obtenemos el valor de una fila y columna concretos
-         Logger::log(LogLevel::DEBUG, "Pasamos a recuperar la variable 'valor_tmp'");
-         valor_tmp = fila_a_escribir.at(columnas_nombre[i]); // Obtenemos el valor de una fila y columna concretos
-         Logger::log(LogLevel::DEBUG, "Variable 'valor_tmp' recuperada con exito");
-         //disk_io::write_aux_val(valor_tmp, tipos_datos[i], out);
-         disk_aux::write_aux_val_buffer(valor_tmp, tipos_datos[i], buffer);
-         Logger::log(LogLevel::DEBUG, "Escritura de la fila: ", false, true);
-         Logger::log(LogLevel::DEBUG, it.contador, false, false);
-         Logger::log(LogLevel::DEBUG, " terminada con exito", true, false);
-         Logger::flush();
-      };
-      Logger::flush();
-   };
-   Logger::flush();
-   // Antes de cerrar la escritura, escribimos el buffer de escritura:
-   disk_aux::aux_vector_buffer_write_disk(buffer, out);
-   out.flush();
-   out.close();
-};

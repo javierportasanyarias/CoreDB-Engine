@@ -37,12 +37,13 @@ namespace disk_buffer {
       public:
          uint32_t contador;
          table* tabla_ptr;
+         uint32_t n_f_total;
          bool eof;
 
-      tableRowIterator_only_ram(std::string tabla_nombre);
+      tableRowIterator_only_ram(const std::string& tabla_nombre);
 
       // Para consultar eof:
-      bool is_eof();
+      bool is_eof() const;
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
       std::map<std::string, Values> get_next_row_ram_viva();
@@ -60,10 +61,10 @@ namespace disk_buffer {
          bool eof;
 
          // Metodo constructor:
-         tableRowIterator_only_disk_part(std::string tabla_nombre);
+         tableRowIterator_only_disk_part(const std::string& tabla_nombre);
 
          // Para consultar eof:
-         bool is_eof();
+         bool is_eof() const;
 
          // == PARA OBTENER LA PROXIMA FILA del disco:
          std::map<std::string, Values> get_next_row_only_disk_part(disk_in::read_table_iterator* table_reader_obj);
@@ -125,10 +126,10 @@ namespace disk_buffer {
          tableRowIterator_only_disk_part* iterator_disco;
 
          // Metodo constructor
-         tableRowIterator(std::string tabla_nombre);
+         tableRowIterator(const std::string& tabla_nombre);
 
          // Para consultar eof:
-         bool is_eof();
+         bool is_eof() const;
 
          // Unidad de control:
          std::map<std::string, Values> control_unit();
@@ -160,15 +161,17 @@ namespace disk_buffer {
          -> Se calcula el valor inicial de la variable eof.
       */
       public:
-         uint32_t contador;
+         int32_t contador; // Caso especial, este puede tomar el valor de negativos
          uint32_t n_filas_insertadas;
+         uint32_t n_f_total;
+         uint32_t lower_limit;
          table* tabla_ptr;
          bool eof;
 
-      tableRowIterator_only_ram_for_wal_inverse_order(std::string tabla_nombre, int num_filas_a_insertar);
+      tableRowIterator_only_ram_for_wal_inverse_order(const std::string& tabla_nombre, const int num_filas_a_insertar);
 
       // Para consultar eof:
-      bool is_eof();
+      bool is_eof() const;
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
       std::map<std::string, Values> get_next_row_ram_viva();
@@ -199,13 +202,14 @@ namespace disk_buffer {
       public:
          uint32_t contador;
          uint32_t n_filas_insertadas;
+         uint32_t n_f_total;
          table* tabla_ptr;
          bool eof;
 
-      tableRowIterator_only_ram_for_wal(std::string tabla_nombre, int num_filas_a_insertar);
+      tableRowIterator_only_ram_for_wal(const std::string& tabla_nombre, const int num_filas_a_insertar);
 
       // Para consultar eof:
-      bool is_eof();
+      bool is_eof() const;
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
       std::map<std::string, Values> get_next_row_ram_viva();

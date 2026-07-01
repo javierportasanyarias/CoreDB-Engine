@@ -25,10 +25,10 @@ namespace disk_out {
     void fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, uint8_t* arr_vals);
     uint32_t fix_vect_vals(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::vector<char>& vec_vals, std::vector<uint32_t>& vec_sizes);
     
-    void calcular_filas_a_escribir_int(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);
-    void calcular_filas_a_escribir_float(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);
-    void calcular_filas_a_escribir_bool(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);
-    void calcular_filas_a_escribir_string(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities,  int filas_totales_a_escribir);
+    //void calcular_filas_a_escribir_int(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);
+    //void calcular_filas_a_escribir_float(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);
+    //void calcular_filas_a_escribir_bool(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir);
+    //void calcular_filas_a_escribir_string(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities,  int filas_totales_a_escribir);
 
     
     void obtener_indices_vector_valores(auto& inicio, auto& fin, std::vector<Values>*& vec_var_ptr, int filas_escritas, int& filas_a_escribir);

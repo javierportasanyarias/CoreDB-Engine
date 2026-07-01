@@ -44,7 +44,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
     los nodos de tipo 'NodeType2'.
     */
 
-    Logger::flush();
+    Logger::flush(LogLevel::DEBUG);
     Logger::log(LogLevel::DEBUG, "+++++++++++++++++++++++++++++++");
 
     NodeType2* nodo = new NodeType2;
@@ -107,7 +107,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeLista1*& c_l_n){
         //if(!c_l_n) return nodo;
     };
     Logger::log(LogLevel::DEBUG, "+++++++++++++++++++++++++++++++");
-    Logger::flush();
+    Logger::flush(LogLevel::DEBUG);
     //c_l_n = c_l_n->nxt_node;
 
     //if(c_l_n->val == ","){

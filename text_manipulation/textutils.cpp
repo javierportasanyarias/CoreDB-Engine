@@ -92,7 +92,7 @@ void textUtils::simpleLinkedList::print_list() {
       Logger::log(LogLevel::DEBUG, "->", false, false);
       Logger::log(LogLevel::DEBUG, current_node->val, false, false);
    };
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 };
 
 
@@ -255,8 +255,8 @@ textUtils::simpleLinkedList* textUtils::procesar_texto_pipeline(std::string& inp
    lista_a_retornar = crear_lista_tokens(input);
    Logger::log(LogLevel::DEBUG, "head de la lista:", true, false);
    Logger::log(LogLevel::DEBUG, lista_a_retornar->head->val, true, false);
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
    lista_a_retornar->print_list();
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
    return lista_a_retornar;
 };

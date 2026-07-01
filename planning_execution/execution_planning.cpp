@@ -76,7 +76,7 @@ void execPlan::Queue::printNodeTypes() const{
         } else {
             Logger::log(LogLevel::DEBUG,  "Tipo desconocido", true, false);
         };
-        Logger::flush();
+        Logger::flush(LogLevel::DEBUG);
         current = current->nxt_node_queue;
         index++;
     };
@@ -261,7 +261,7 @@ void execPlan::Queue::execute_queue_tasks(){
 
         Logger::log(LogLevel::DEBUG,  "Operacion terminada", false, true);
         index++;
-        Logger::flush();
+        Logger::flush(LogLevel::DEBUG);
         execPlan::queueNode1* proximo_nodo = c_q_n->nxt_node_queue;
         // Ahora eliminamos el nodo que acabamos de ejecutar:
         execPlan::Queue::delete_current_queue_node(c_q_n);

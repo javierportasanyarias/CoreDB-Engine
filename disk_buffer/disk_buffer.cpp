@@ -4,73 +4,23 @@
 #include "disk_buffer.h"
 
 
-// ==========================================
-// == FUNCIONES AUXILIARES: CONTEO FILAS ====
-// ==========================================
-
-
-// == Para contar filas de una tabla =================
-/*void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
-   
-   Método auxiliar para actualizar el contador de filas en RAM viva
-   o de datos añadidos en la misma sesión. 
-   No retorna nada, actualiza el contador de filas en RAM en los metadatos de una tabla
-   dado como input su nombre
-   
-   table* table_ptr = global_table_dict.at(nombre_tabla);
-   
-   // 1. Verificamos que data_ptr exista y que el mapa de columnas no esté vacío
-   if (table_ptr->data_ptr && !table_ptr->data_ptr->columns.empty()) {
-      
-         // 2. Tomamos la PRIMERA columna que encontremos
-         auto it = table_ptr->data_ptr->columns.begin();
-      
-         // 3. El número de FILAS es el tamaño del vector de esa columna
-         uint32_t n_rows = static_cast<uint32_t>(it->second.size());
-      
-      table_ptr->metadata_ptr->n_filas_ram = n_rows;
-      
-   } else {
-         table_ptr->metadata_ptr->n_filas_ram = 0;
-   };
-
-};*/
-
-
-// == Para contar todas filas ========================
-/*void disk_buffer::contar_datos_en_ram_todas_tablas(){
-   
-   Función que actualiza el contador de filas en RAM viva de
-   todas las tablas cargadas en memoria.
-   
-   // iteramos por todas las tablas:
-   for (const auto& [table_name, table_ptr] : global_table_dict){
-      // Contamos el numero de filas en RAM viva:
-      uint32_t n_rows = static_cast<uint32_t>(table_ptr->data_ptr->columns.size());
-   table_ptr->metadata_ptr->n_filas_ram = n_rows;
-   };
-
-};*/
-
 //====================================================
 //========= tableRowIterator solo disco ==============
 //====================================================
 
 
 // == Método constructor =============================
-disk_buffer::tableRowIterator_only_disk_part::tableRowIterator_only_disk_part(std::string tabla_nombre){
+disk_buffer::tableRowIterator_only_disk_part::tableRowIterator_only_disk_part(const std::string& tabla_nombre){
 
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    eof = false;
-
-
    
 };
 
 
 // == Para consultar eof =============================
-bool disk_buffer::tableRowIterator_only_disk_part::is_eof() {
+bool disk_buffer::tableRowIterator_only_disk_part::is_eof() const {
 
    return eof;
 };
@@ -91,29 +41,49 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_disk_part::get_
    Logger::log(LogLevel::DEBUG, "El valor del contador es de: ", false, true);
    Logger::log(LogLevel::DEBUG, contador, true, false);
 
+   std::vector<std::string>& nombres_columnas = tabla_ptr->metadata_ptr->column_names;
+   // Condiciones de guarda, para ahorrar comprobaciones:
+   if(contador >= n_f_disk){
+      this->eof = true;
+      Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA ('get_next_row_only_disk_part')");
+      return map_fila_retornar;
+   };
+   table_data_buffer*& ptr_data = this->tabla_ptr->data_buffer_ptr;
+   if(!ptr_data){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "NO existe el puntero 'data_buffer_ptr' en la tabla");
+      return map_fila_retornar;
+   }
+   std::map<std::string, std::vector<Values>>& mapa_columnas = ptr_data->columns;
+   if(mapa_columnas.empty()){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
+      return map_fila_retornar;
+   };
+
    // Iteramos por cada columna:
 
-   for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
-      if(contador < n_f_disk){
+   for (const std::string& nombre_col : nombres_columnas) {
+      //if(contador < n_f_disk){
          Logger::log(LogLevel::DEBUG, "Leemos desde disco");
          Logger::log(LogLevel::DEBUG, "Leemos el contador: ", false, true);
          Logger::log(LogLevel::DEBUG, contador, true, false);
          Logger::log(LogLevel::DEBUG, "Leemos el nombre de la columna: ", false, true);
          Logger::log(LogLevel::DEBUG, nombre_col, true, false);
-         if(this->tabla_ptr->data_buffer_ptr){
-            Logger::log(LogLevel::DEBUG, "SI existe el puntero 'data_buffer_ptr' en la tabla");
-            if(this->tabla_ptr->data_buffer_ptr->columns.empty()){
-               Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
-            }else{
+         //if(this->tabla_ptr->data_buffer_ptr){
+            //Logger::log(LogLevel::DEBUG, "SI existe el puntero 'data_buffer_ptr' en la tabla");
+            //if(this->mapa_columnas.empty()){
+               //Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
+            //}else{
                Logger::log(LogLevel::DEBUG, "Escribimos el valor en la <<<fila a devolver>>>");
-               map_fila_retornar[nombre_col] = this->tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
-            };
-         } else{
-            Logger::log(LogLevel::ERROR, "NO existe el puntero 'data_buffer_ptr' en la tabla");
-         };
+               map_fila_retornar[nombre_col] = mapa_columnas.at(nombre_col)[contador];
+            //};
+         //} else{
+            //Logger::log(LogLevel::ERROR, "NO existe el puntero 'data_buffer_ptr' en la tabla");
+         //};
          
          Logger::log(LogLevel::DEBUG, "Fila leida desde disco con exito");
-      };
+      //};
    }; // Termina la iteracion de columna
    contador += 1;
    if(contador >= (n_f_disk)){
@@ -129,22 +99,22 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_disk_part::get_
 //====================================================
 
 // == Método constructor =============================
-disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string tabla_nombre){
+disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(const std::string& tabla_nombre){
    /*
    Constructor de la clase 'tableRowIterator_only_ram'
    */
    contador = 0;
    tabla_ptr = global_table_dict.at(tabla_nombre);
    // Solo en caso de tenerlo, contamos las filas en RAM viva:
-   //if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
-      //contar_datos_ram_una_tabla(tabla_nombre);
-   //};
 
-   this->eof = (tabla_ptr->metadata_ptr->n_filas_ram == 0);
+
+
+   this->n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
+   this->eof = (n_f_total == 0);
 };
 
 // == Para consultar eof =============================
-bool disk_buffer::tableRowIterator_only_ram::is_eof() {
+bool disk_buffer::tableRowIterator_only_ram::is_eof() const {
    /*
    Simple función para retornar el atributo booleano 'eof'
    */
@@ -165,17 +135,38 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram::get_next_r
       4º Se incrementa en uno el contador de fila.
    */
    std::map<std::string, Values> map_fila_retornar;
-   uint32_t n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
-   // Iteramos por cada columna:
-   for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
 
-      if(contador < n_f_total){
+   std::vector<std::string>& nombres_columnas = tabla_ptr->metadata_ptr->column_names;
+   // Condiciones de guarda, para ahorrar comprobaciones:
+   if(contador >= this->n_f_total){
+      this->eof = true;
+      Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA ('get_next_row_ram_viva')");
+      return map_fila_retornar;
+   };
+   table_data*& ptr_data = this->tabla_ptr->data_ptr;
+   if(!ptr_data){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "NO existe el puntero 'data_ptr' en la tabla");
+      return map_fila_retornar;
+   };
+   std::map<std::string, std::vector<Values>>& mapa_columnas = ptr_data->columns;
+   if(mapa_columnas.empty()){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
+      return map_fila_retornar;
+   };
+
+
+   // Iteramos por cada columna:
+   for (const std::string& nombre_col : nombres_columnas) {
+
+      //if(contador < n_f_total){
          // Leemos desde la RAM viva:
-         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[contador];
-      }; 
+         map_fila_retornar[nombre_col] = mapa_columnas.at(nombre_col)[contador];
+      //}; 
    };
    contador += 1;
-   if(contador >= (tabla_ptr->metadata_ptr->n_filas_ram)){
+   if(contador >= this->n_f_total){
       this-> eof = true;
    };
    return map_fila_retornar;
@@ -187,7 +178,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram::get_next_r
 ///////////////////////////////////////////////////////////////////////////
 
 // == Método constructor =============================
-disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
+disk_buffer::tableRowIterator::tableRowIterator(const std::string& tabla_nombre){
    /*
    Constructir de la clase 'tableRowIterator'
    */
@@ -215,7 +206,7 @@ disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
 
 };
 
-bool disk_buffer::tableRowIterator::is_eof() {
+bool disk_buffer::tableRowIterator::is_eof() const {
 
    return eof;
 };
@@ -383,7 +374,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
 
 
 
-disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::tableRowIterator_only_ram_for_wal_inverse_order(std::string tabla_nombre, int num_filas_a_insertar){
+disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::tableRowIterator_only_ram_for_wal_inverse_order(const std::string& tabla_nombre, const int num_filas_a_insertar){
 
    /*
    Constructor de la clase 'tableRowIterator_only_ram_for_wal_inverse_order'
@@ -399,13 +390,16 @@ disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::tableRowIterator_o
    //if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
       //contar_datos_ram_una_tabla(tabla_nombre);
    //};
-   this->contador = tabla_ptr->metadata_ptr->n_filas_ram - 1;
+   //uint32_t filas_ram = tabla_ptr->metadata_ptr->n_filas_ram;
+   this->n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
+   this->contador = this->n_f_total - 1;
+   this->lower_limit = this->n_f_total - this->n_filas_insertadas + 1;
 
    this->eof = (this->contador < 0);
 }; // Termina el metodo 'tableRowIterator_only_ram_for_wal_inverse_order'
 
 // == Para consultar eof =============================
-bool disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::is_eof() {
+bool disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::is_eof() const {
    /*
    Simple función para retornar el atributo booleano 'eof'
    */
@@ -426,37 +420,54 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram_for_wal_inv
       4º Se incrementa en uno el contador de fila.
    */
    std::map<std::string, Values> map_fila_retornar;
-   uint32_t n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
+
+   std::vector<std::string>& nombres_columnas = tabla_ptr->metadata_ptr->column_names;
+   // Condiciones de guarda, para ahorrar comprobaciones:
+   if(this->contador < this->n_f_total){
+      this->eof = true;
+      Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA ('tableRowIterator_only_ram_for_wal_inverse_order::get_next_row_ram_viva')");
+      return map_fila_retornar;
+   };
+   table_data*& ptr_data = this->tabla_ptr->data_ptr;
+   if(!ptr_data){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "NO existe el puntero 'data_ptr' en la tabla");
+      return map_fila_retornar;
+   }
+   std::map<std::string, std::vector<Values>>& mapa_columnas = ptr_data->columns;
+   if(mapa_columnas.empty()){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
+      return map_fila_retornar;
+   };
+
    // Iteramos por cada columna:
-   for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
+   for (const std::string& nombre_col : nombres_columnas) {
 
       Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
       Logger::log(LogLevel::DEBUG, "Contador: ", false, true);
       Logger::log(LogLevel::DEBUG, this->contador, true, false);
       Logger::log(LogLevel::DEBUG, "n_f_total: ", false, true);
-      Logger::log(LogLevel::DEBUG, n_f_total, true, false);
+      Logger::log(LogLevel::DEBUG, this->n_f_total, true, false);
       Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-      if(this->contador < n_f_total){
+      //if(this->contador < n_f_total){
          // Leemos desde la RAM viva:
          Logger::log(LogLevel::DEBUG, "Pasamois a rellenar el std::map de la fila a escribir en el WAL");
-         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[this->contador];
-      } else  {
-         Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA");
-      };
+         map_fila_retornar[nombre_col] = mapa_columnas.at(nombre_col)[this->contador];
+      //} else  {
+         //Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA");
+      //};
    };
    // Condiciones de contorno generales:
-   if(this->contador < 0 || this->contador > tabla_ptr->metadata_ptr->n_filas_ram){
+   if(this->contador < 0 || this->contador > this->n_f_total || this->contador < this->lower_limit){
       this-> eof = true;
    };
 
-   //if((tabla_ptr->metadata_ptr->n_filas_ram) - this->contador + 1 >= this->n_filas_insertadas){
    // Condición específica de EOF:
-   if(this->contador < tabla_ptr->metadata_ptr->n_filas_ram - this->n_filas_insertadas + 1){
-      this-> eof = true;
-   };
-   //} else if(contador <= 0) {
+   //if(this->contador < this->lower_limit){
       //this-> eof = true;
    //};
+
    this->contador -= 1;
    return map_fila_retornar;
 }; // Termina el metodo 'get_next_row_ram_viva'
@@ -467,7 +478,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram_for_wal_inv
 
 
 
-disk_buffer::tableRowIterator_only_ram_for_wal::tableRowIterator_only_ram_for_wal(std::string tabla_nombre, int num_filas_a_insertar){
+disk_buffer::tableRowIterator_only_ram_for_wal::tableRowIterator_only_ram_for_wal(const std::string& tabla_nombre, const int num_filas_a_insertar){
 
    /*
    Constructor de la clase 'tableRowIterator_only_ram_for_wal'
@@ -480,16 +491,16 @@ disk_buffer::tableRowIterator_only_ram_for_wal::tableRowIterator_only_ram_for_wa
    los ultimos datos y si no fallo la inserción está asegurado
    que esas filas están en la RAM viva
    */
-   //if(tabla_ptr->data_ptr &&  tabla_ptr->metadata_ptr->n_filas_ram == 0){
-      //contar_datos_ram_una_tabla(tabla_nombre);
-   //};
-   this->contador = tabla_ptr->metadata_ptr->n_filas_ram - num_filas_a_insertar;
 
-   this->eof = (this->contador >= tabla_ptr->metadata_ptr->n_filas_ram);
+
+   this->n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
+   this->contador = this->n_f_total - num_filas_a_insertar;
+
+   this->eof = (this->contador >= this->n_f_total);
 }; // Termina el metodo 'tableRowIterator_only_ram_for_wal'
 
 // == Para consultar eof =============================
-bool disk_buffer::tableRowIterator_only_ram_for_wal::is_eof() {
+bool disk_buffer::tableRowIterator_only_ram_for_wal::is_eof() const {
    /*
    Simple función para retornar el atributo booleano 'eof'
    */
@@ -510,27 +521,47 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram_for_wal::ge
       4º Se incrementa en uno el contador de fila.
    */
    std::map<std::string, Values> map_fila_retornar;
-   uint32_t n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
+
+   std::vector<std::string>& nombres_columnas = tabla_ptr->metadata_ptr->column_names;
+   // Condición de guarda, para ahorrar comprobaciones:
+   if(this->contador >= this->n_f_total){
+      this->eof = true;
+      Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA ('tableRowIterator_only_ram_for_wal::get_next_row_ram_viva')");
+      return map_fila_retornar;
+   };
+   table_data*& ptr_data = this->tabla_ptr->data_ptr;
+   if(!ptr_data){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "NO existe el puntero 'data_ptr' en la tabla");
+      return map_fila_retornar;
+   }
+   std::map<std::string, std::vector<Values>>& mapa_columnas = ptr_data->columns;
+   if(mapa_columnas.empty()){
+      this->eof = true;
+      Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
+      return map_fila_retornar;
+   };
+
    // Iteramos por cada columna:
-   for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
+   for (const std::string& nombre_col : nombres_columnas) {
 
       Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
       Logger::log(LogLevel::DEBUG, "Contador: ", false, true);
       Logger::log(LogLevel::DEBUG, this->contador, true, false);
       Logger::log(LogLevel::DEBUG, "n_f_total: ", false, true);
-      Logger::log(LogLevel::DEBUG, n_f_total, true, false);
+      Logger::log(LogLevel::DEBUG, this->n_f_total, true, false);
       Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-      if(this->contador < n_f_total){
+      //if(this->contador < n_f_total){
          // Leemos desde la RAM viva:
          Logger::log(LogLevel::DEBUG, "Pasamois a rellenar el std::map de la fila a escribir en el WAL");
-         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[this->contador];
-      } else  {
-         Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA");
-      };
+         map_fila_retornar[nombre_col] = mapa_columnas.at(nombre_col)[this->contador];
+      //} else  {
+         //Logger::log(LogLevel::DEBUG, "La fila RETORNARÁ VACÍA");
+      //};
    };
    this->contador += 1;
    // Condiciones de contorno generales:
-   if(this->contador < 0 || this->contador >= tabla_ptr->metadata_ptr->n_filas_ram){
+   if(this->contador < 0 || this->contador >= this->n_f_total){
       this->eof = true;
    };
    return map_fila_retornar;

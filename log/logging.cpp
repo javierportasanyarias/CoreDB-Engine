@@ -207,7 +207,11 @@ void Logger::log_buffer(LogLevel msgLevel,
 
 
 
-void Logger::flush(bool endl) {
+void Logger::flush(LogLevel msgLevel,
+                   bool endl) {
+
+    if (msgLevel < level) return;
+
     if(endl){
        std::cout << std::endl;
     };

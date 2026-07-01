@@ -23,7 +23,7 @@ void disk_aux::aux_vector_buffer_write_disk(char* ptr_ini, uint32_t size_buffer,
    };
 };
 
-void disk_aux::aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstream& out){
+void disk_aux::aux_vector_buffer_write_disk(const std::vector<char>& buffer, std::ofstream& out){
 
    if (out.is_open()) {
          // Escribimos todo el contenido una sola vez
@@ -39,7 +39,7 @@ void disk_aux::aux_vector_buffer_write_disk(char* ptr_ini, uint32_t size_buffer,
    };
 };
 
-void disk_aux::aux_vector_buffer_write_disk(std::vector<char>& buffer, std::fstream& out){
+void disk_aux::aux_vector_buffer_write_disk(const std::vector<char>& buffer, std::fstream& out){
 
    if (out.is_open()) {
          // Escribimos todo el contenido una sola vez
@@ -142,7 +142,7 @@ Values disk_aux::read_aux_val(dataType tipo_dato, std::ifstream& in){
 }*/
 
 
-std::vector<std::string> disk_aux::obtener_archivos_en_ruta(std::string ruta, dataType tipo_dato) {
+std::vector<std::string> disk_aux::obtener_archivos_en_ruta(const std::string& ruta, dataType tipo_dato) {
    std::vector<std::string> archivos;
 
    // 1. Verificamos si la ruta existe y si es realmente un directorio
@@ -171,7 +171,7 @@ std::vector<std::string> disk_aux::obtener_archivos_en_ruta(std::string ruta, da
 };
 
 
-uint32_t disk_aux::obtener_tamano_archivo(std::string ruta) {
+uint32_t disk_aux::obtener_tamano_archivo(const std::string& ruta) {
     // Abrimos el archivo:
     // binary: Para que no haya conversiones de caracteres extrañas
     // ate: "At the end", para situar el puntero directamente al final
@@ -711,12 +711,12 @@ void disk_aux::fill_vector_string(uint32_t num_elementos, std::vector<char>& vec
       uint32_t tam_actual = ptr_tamanos[i]; 
       
       // LOG DE DEPURACIÓN CRÍTICO
-      Logger::log(LogLevel::DEBUG, "Fila ", false, true);
-      Logger::log(LogLevel::DEBUG, i, false, false);
-      Logger::log(LogLevel::DEBUG, " - Offset en buffer: ", false, false);
-      Logger::log(LogLevel::DEBUG, (uint32_t)(cursor - vec_str.data()), false, false);
-      Logger::log(LogLevel::DEBUG, " - Tamano: ", false, false);
-      Logger::log(LogLevel::DEBUG, tam_actual, true, false);
+      //Logger::log(LogLevel::DEBUG, "Fila ", false, true);
+      //Logger::log(LogLevel::DEBUG, i, false, false);
+      //Logger::log(LogLevel::DEBUG, " - Offset en buffer: ", false, false);
+      //Logger::log(LogLevel::DEBUG, (uint32_t)(cursor - vec_str.data()), false, false);
+     // Logger::log(LogLevel::DEBUG, " - Tamano: ", false, false);
+      //Logger::log(LogLevel::DEBUG, tam_actual, true, false);
 
       // 3. Verificación de seguridad para no leer fuera del buffer
       if (cursor + tam_actual > vec_str.data() + vec_str.size()) {

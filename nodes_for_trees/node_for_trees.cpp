@@ -75,7 +75,7 @@ void imprimir_columnas(const NodeType3*& nodo){
          Logger::log(LogLevel::DEBUG, (nodo->columnas)[i], false, false);
          Logger::log(LogLevel::DEBUG, " ", false, false);
 	   };
-      Logger::flush();
+      Logger::flush(LogLevel::DEBUG);
 	}else{
       Logger::log(LogLevel::DEBUG, "No se han especificado las columnas", true, false);
 	};
@@ -92,7 +92,7 @@ void imptimir_valores(const NodeType3*& nodo){
             Logger::log(LogLevel::DEBUG, fila_current[j], false, false);
             Logger::log(LogLevel::DEBUG, " ", false, false);
          };
-      Logger::flush();
+      Logger::flush(LogLevel::DEBUG);
 	};
 };
 

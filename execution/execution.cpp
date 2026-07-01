@@ -83,9 +83,9 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
 	      std::string valor_str = filas[j][i];
          //std::string valor_str = filas[i][j];
          if(Logger::level == LogLevel::DEBUG){
-            Logger::flush();
+            Logger::flush(LogLevel::DEBUG);
          }else{
-            Logger::flush(false);
+            Logger::flush(LogLevel::DEBUG, false);
          };
 	      Values valor_variante; // Valor variante
          // Hacemos la conversion de valor de acuerdo a los metadatos:
@@ -145,13 +145,13 @@ void fill_table_with_values_v4(NodeType3* nodo_ptr) {
    // Ejecutamos la escritura en el WAL de los archivos
    //disk_wal_write::write_table_data_wal_viejo(tb_recup, num_fila);
    disk_wal_write::write_table_data_wal(tb_recup, num_fila);
-   Logger::flush();
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
+   Logger::flush(LogLevel::DEBUG);
    Logger::log(LogLevel::DEBUG, "Data insertion in RAM is finished");
    Logger::log(LogLevel::DEBUG, "Total number of rows inserted are: ", false, true);
    Logger::log(LogLevel::DEBUG, metadatos->n_filas_ram, true, false);
-   Logger::flush();
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
+   Logger::flush(LogLevel::DEBUG);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -216,7 +216,7 @@ void recursive_metadata_fill_lv1(NodeType1* nodo_ptr){
    Logger::log(LogLevel::DEBUG, "<<<<<< ESCRIBIMOS EN EL WAL LA TABLA: ", false, true);
    Logger::log(LogLevel::DEBUG, metadata_pointer->name, false, false);
    Logger::log(LogLevel::DEBUG, " >>>>>>>>", true, false);
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
    disk_wal_write::write_table_wal_metadata(tb_created);
    return;
 };
@@ -230,7 +230,7 @@ void aux_table_values_print(const std::vector<std::string>& col_list, std::strin
    // Creamos el iterador de filas de la tabla:
    disk_buffer::tableRowIterator it(nombre_tabla);
    std::map<std::string, Values> fila;
-    
+
 	while(!it.is_eof()){
       // consultamos la proxima fila:
 	   fila = it.get_next_row();
@@ -245,9 +245,9 @@ void aux_table_values_print(const std::vector<std::string>& col_list, std::strin
 		   Logger::log(LogLevel::OUTPUT, fila.at(nombre_col), false, false);
 		   Logger::log(LogLevel::OUTPUT, " | ", false, false);
 	   };
-	   Logger::flush(); 
+	   Logger::flush(LogLevel::OUTPUT); 
 	};
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 };
 
 // Función auxiliar que imprime los valores de la tabla (SE HAN SELECCIONADO COLUMNAS):
@@ -274,14 +274,16 @@ void aux_table_values_print(const std::vector<ItemNode>& col_list, std::string n
          Logger::log(LogLevel::OUTPUT, elemento_valor->second, false, false);
          Logger::log(LogLevel::OUTPUT, " | ", false, false);                                                                                                                                        
       };                                                                                              
-      Logger::flush();
+      Logger::flush(LogLevel::OUTPUT);
    };
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 };
 
 // Función auxiliar para imprimir la tabla: PARA TODAS LAS COLUMNAS:
 void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre_tabla, uint32_t n_cols){
    // Imprimios los nombres de las columnas:
+   Logger::flush(LogLevel::OUTPUT);
+
    for(int  i = 0; i<n_cols; i++){
       Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
       Logger::log(LogLevel::OUTPUT, col_list[i], false);
@@ -294,11 +296,13 @@ void imprimir_tabla(const std::vector<std::string>& col_list, std::string nombre
 // impresión de toda la tabla, pero habiendo seleccionado clumnas
 void imprimir_tabla(const std::vector<ItemNode>& col_list, std::string nombre_tabla, uint32_t n_cols){
    // Imprimios los nombres de las columnas:
-       for(int i = 0; i<n_cols; i++){
-         Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
-         Logger::log(LogLevel::OUTPUT, col_list[i].nombre, false);
-       };
-       Logger::log(LogLevel::OUTPUT, " | ", true);
+   Logger::flush(LogLevel::OUTPUT);
+
+   for(int i = 0; i<n_cols; i++){
+   Logger::log(LogLevel::OUTPUT, " | ", false); // sin flush automático
+   Logger::log(LogLevel::OUTPUT, col_list[i].nombre, false);
+   };
+   Logger::log(LogLevel::OUTPUT, " | ", true);
    // Imprimimos los valores:
    aux_table_values_print(col_list, nombre_tabla);
 };

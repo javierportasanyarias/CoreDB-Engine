@@ -22,9 +22,9 @@ namespace disk_aux{
     ////////////////////////////////////////////////////////////////////
 
     void aux_vector_buffer_write_disk(char* ptr_ini, uint32_t size_buffer, std::ofstream& out);
-    void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::ofstream& out);
+    void aux_vector_buffer_write_disk(const std::vector<char>& buffer, std::ofstream& out);
     void aux_vector_buffer_write_disk(char* ptr_ini, uint32_t size_buffer, std::fstream& out);
-    void aux_vector_buffer_write_disk(std::vector<char>& buffer, std::fstream& out);
+    void aux_vector_buffer_write_disk(const std::vector<char>& buffer, std::fstream& out);
 
     ////////////////////////////////////////////////////////////////////
     // FUNCIONES A DESCARTAR ///////////////////////////////////////////
@@ -36,10 +36,10 @@ namespace disk_aux{
     // FUNCIONES AUXILIARES ////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////
 
-    std::vector<std::string> obtener_archivos_en_ruta(std::string ruta, dataType tipo_dato);
+    std::vector<std::string> obtener_archivos_en_ruta(const std::string& ruta, dataType tipo_dato);
 
 
-    uint32_t obtener_tamano_archivo(std::string ruta);
+    uint32_t obtener_tamano_archivo(const std::string& ruta);
 
 
 

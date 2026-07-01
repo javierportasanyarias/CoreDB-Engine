@@ -178,7 +178,7 @@ uint32_t disk_out::fix_vect_vals(std::vector<Values>::iterator inicio, std::vect
 
 // FUNCIONES AUXILIARES DE LAS FUNCIONES DE ESCRITURA:
 
-void disk_out::calcular_filas_a_escribir_int(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir){
+/*void disk_out::calcular_filas_a_escribir_int(int& filas_a_escribir, int size_disponible_para_escribir, int partition_entities, int filas_totales_a_escribir){
 
    int filas_por_escribir_en_particion = size_disponible_para_escribir / 4;
 
@@ -263,7 +263,7 @@ void disk_out::calcular_filas_a_escribir_string(int& filas_a_escribir, int size_
          filas_a_escribir = filas_por_escribir_en_particion;
       };
    };
-};
+};*/
 
 
 void disk_out::obtener_indices_vector_valores(auto& inicio, auto& fin, std::vector<Values>*& vec_var_ptr, int filas_escritas, int& filas_a_escribir){
@@ -282,9 +282,9 @@ int disk_out::obtener_size_disponible(std::string ruta_variable, std::string ult
    int size_disponible_para_escribir = 0;
    std::string ruta_escritura = ruta_variable + ultima_particion_str;
    uint32_t size_arhivo = disk_aux::obtener_tamano_archivo(ruta_escritura);
-   Logger::log(LogLevel::OUTPUT, "El tamaño del archivo a escribir es: ", false, true);
-   Logger::log(LogLevel::OUTPUT, size_arhivo, true, false);
-   Logger::flush();
+   Logger::log(LogLevel::DEBUG, "El tamaño del archivo a escribir es: ", false, true);
+   Logger::log(LogLevel::DEBUG, size_arhivo, true, false);
+   Logger::flush(LogLevel::DEBUG);
    if(size_arhivo > 0){
       size_disponible_para_escribir = size_particion - size_arhivo;
    }else{
@@ -307,11 +307,11 @@ void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::string ruta_
       arr_vals = new int[num_rows_buffer];
       //vec_vals.reserve(size_particion);
       out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
-      Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+      Logger::log(LogLevel::DEBUG, "La particion esta abierta");
       std::vector<Values>::iterator tmp_ini_index;
       tmp_ini_index = inicio;
       std::vector<Values>::iterator tmp_end_index;
-      //Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+      //Logger::log(LogLevel::DEBUG, "Empezamos la escritura");
       while(tmp_ini_index < fin){
          // Calculamos el tamaño del subvector a crear:
          tmp_end_index = tmp_ini_index + num_rows_buffer;
@@ -323,11 +323,11 @@ void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::string ruta_
          ////// PROCESO DE ESCRIURA ///////////////////
          //vec_vals.clear();
          disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, arr_vals);
-         Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+         Logger::log(LogLevel::DEBUG, "Hemos aplicado 'fix_vect_vals' con exito");
          char* valores_chars = reinterpret_cast<char*>(arr_vals);
-         Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
+         Logger::log(LogLevel::DEBUG, "Proceedemos a escribir en disco:");
          out.write(valores_chars, num_filas_escritas * sizeof(int));
-         Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
+         Logger::log(LogLevel::DEBUG, "Escritura en disco realizada con exito");
          out.flush();
          //////////////////////////////////////////////
          tmp_ini_index += num_filas_escritas;
@@ -353,11 +353,11 @@ void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::string rut
       arr_vals = new float[num_rows_buffer];
       //vec_vals.reserve(size_particion);
       out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
-      Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+      Logger::log(LogLevel::DEBUG, "La particion esta abierta");
       std::vector<Values>::iterator tmp_ini_index;
       tmp_ini_index = inicio;
       std::vector<Values>::iterator tmp_end_index;
-      //Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+      //Logger::log(LogLevel::DEBUG, "Empezamos la escritura");
       while(tmp_ini_index < fin){
          // Calculamos el tamaño del subvector a crear:
          tmp_end_index = tmp_ini_index + num_rows_buffer;
@@ -369,11 +369,11 @@ void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::string rut
          ////// PROCESO DE ESCRIURA ///////////////////
          //vec_vals.clear();
          disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, arr_vals);
-         Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+         Logger::log(LogLevel::DEBUG, "Hemos aplicado 'fix_vect_vals' con exito");
          char* valores_chars = reinterpret_cast<char*>(arr_vals);
-         Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
+         Logger::log(LogLevel::DEBUG, "Proceedemos a escribir en disco:");
          out.write(valores_chars, num_filas_escritas * sizeof(float));
-         Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
+         Logger::log(LogLevel::DEBUG, "Escritura en disco realizada con exito");
          out.flush();
          //////////////////////////////////////////////
          tmp_ini_index += num_filas_escritas;
@@ -402,11 +402,11 @@ void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta
       //vec_vals.reserve(size_particion);
       arr_vals = new uint8_t[num_rows_buffer];
       out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
-      Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+      Logger::log(LogLevel::DEBUG, "La particion esta abierta");
       std::vector<Values>::iterator tmp_ini_index;
       tmp_ini_index = inicio;
       std::vector<Values>::iterator tmp_end_index;
-      //Logger::log(LogLevel::OUTPUT, "Empezamos la escritura");
+      //Logger::log(LogLevel::DEBUG, "Empezamos la escritura");
       while(tmp_ini_index < fin){
          // Calculamos el tamaño del subvector a crear:
          tmp_end_index = tmp_ini_index + num_rows_buffer;
@@ -418,11 +418,11 @@ void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta
          ////// PROCESO DE ESCRIURA ///////////////////
          //vec_vals.clear();
          disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, arr_vals);
-         Logger::log(LogLevel::OUTPUT, "Hemos aplicado 'fix_vect_vals' con exito");
+         Logger::log(LogLevel::DEBUG, "Hemos aplicado 'fix_vect_vals' con exito");
          char* valores_chars = reinterpret_cast<char*>(arr_vals);
-         Logger::log(LogLevel::OUTPUT, "Proceedemos a escribir en disco:");
+         Logger::log(LogLevel::DEBUG, "Proceedemos a escribir en disco:");
          out.write(valores_chars, num_filas_escritas);
-         Logger::log(LogLevel::OUTPUT, "Escritura en disco realizada con exito");
+         Logger::log(LogLevel::DEBUG, "Escritura en disco realizada con exito");
          out.flush();
          //////////////////////////////////////////////
          tmp_ini_index += num_filas_escritas;
@@ -469,61 +469,101 @@ struct byteStreamer {
       uint32_t str_size = 0;
       const char* str_begin = nullptr;
       // Se para la copia cuando se haya alcanzado el fin de las filas  o no quede más especio en la partición:
-      while(inicio < fin && bytes_copiados < limite){
-         std::visit([&str_size, &str_begin](auto&& arg) {
-            using type = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<type, std::string> || std::is_same_v<type, std::vector<char>>) {
-               str_size = arg.size();
-               str_begin = reinterpret_cast<const char*>(arg.data());
-            }
-         }, *inicio);
+      //while(inicio < fin && bytes_copiados < limite){
+         //Logger::log(LogLevel::OUTPUT  , "ITERACION BUCLE WHILE 'extraer_bytes'");
 
-         uint32_t bytes_disponibles_en_str = str_size - char_idx;
+      
 
-         uint32_t espacio_libre_en_buffer = limite - bytes_copiados;
 
-         // Sólo insertamos en el buffer si cabe en el buffer:
-         if(bytes_disponibles_en_str <= espacio_libre_en_buffer){
-            // CASo A: La string o lo que queda de esta cabe entera:
-            //buffer.insert(buffer.end(), str_begin + char_idx, str_begin + str_size);
-            std::memcpy(buffer + bytes_copiados, str_begin + char_idx, bytes_disponibles_en_str);
+      if(this->is_unknown_type){
+         while(inicio < fin && bytes_copiados < limite){
+            // Case UNKNOWN
+            auto& arg = std::get<std::vector<char>>(*inicio);
+            str_size = arg.size();
+            str_begin = reinterpret_cast<const char*>(arg.data());
 
-            bytes_copiados += bytes_disponibles_en_str;
+            uint32_t bytes_disponibles_en_str = str_size - char_idx;
+            uint32_t espacio_libre_en_buffer = limite - bytes_copiados;
 
-            tamano_total_string = string_acumulada_bytes + bytes_disponibles_en_str;
-            //buffer_sizes.push_back(tamano_total_string);
-            buffer_sizes[idx_sizes] = tamano_total_string;
+            // Sólo insertamos en el buffer si cabe en el buffer:
+            if(bytes_disponibles_en_str <= espacio_libre_en_buffer){
+               // CASo A: La string o lo que queda de esta cabe entera:
+               //buffer.insert(buffer.end(), str_begin + char_idx, str_begin + str_size);
+               std::memcpy(buffer + bytes_copiados, str_begin + char_idx, bytes_disponibles_en_str);
 
-            ++idx_sizes;
-            ++filas_escritas;
-            char_idx = 0;
-            ++inicio;
-            string_acumulada_bytes = 0;
+               bytes_copiados += bytes_disponibles_en_str;
 
-         }else{
-            // CASO B: La string no cabe entera:
-            // Copiamos solo el trozo exacto de caracteres que llene el espacio libre del buffer
-            //buffer.insert(buffer.end(), 
-                          //str_begin + char_idx, 
-                          //str_begin + char_idx + espacio_libre_en_buffer);
-            std::memcpy(buffer + bytes_copiados, str_begin + char_idx, espacio_libre_en_buffer);
-            
-            // Sumamos los últimos bytes para llegar exactamente al 'limite' (64 KB)
-            bytes_copiados += espacio_libre_en_buffer;
-            
-            // ¡ESTADO FRAGMENTADO!: Recordamos la posición exacta de la letra donde nos quedamos
-            char_idx += espacio_libre_en_buffer; 
-            
-            // Rompemos el bucle 'while'. El buffer está lleno al 100%.
-            // OJO: NO avanzamos '++actual'. Nos quedamos apuntando a la misma string.
-            //Logger::log(LogLevel::DEBUG, "El tamaño disponible en la particion es: ", false, true);
-            /*if(filas_escritas == 0){
-               buffer_sizes.push_back(espacio_libre_en_buffer);
+               tamano_total_string = string_acumulada_bytes + bytes_disponibles_en_str;
+               //buffer_sizes.push_back(tamano_total_string);
+               buffer_sizes[idx_sizes] = tamano_total_string;
+
+               ++idx_sizes;
+               ++filas_escritas;
+               char_idx = 0;
+               ++inicio;
+               string_acumulada_bytes = 0;
+
             }else{
-               buffer_sizes.back() += espacio_libre_en_buffer;
-            };*/
-            string_acumulada_bytes += espacio_libre_en_buffer;
-            break;
+               // CASO B: La string no cabe entera:
+               // Copiamos solo el trozo exacto de caracteres que llene el espacio libre del buffer
+
+               std::memcpy(buffer + bytes_copiados, str_begin + char_idx, espacio_libre_en_buffer);
+               
+               // Sumamos los últimos bytes para llegar exactamente al 'limite' (64 KB)
+               bytes_copiados += espacio_libre_en_buffer;
+               
+               // ¡ESTADO FRAGMENTADO!: Recordamos la posición exacta de la letra donde nos quedamos
+               char_idx += espacio_libre_en_buffer; 
+               
+               // Rompemos el bucle 'while'. El buffer está lleno al 100%.
+               string_acumulada_bytes += espacio_libre_en_buffer;
+               break;
+            };
+         };
+      }else{
+         while(inicio < fin && bytes_copiados < limite){
+            // Case STRING
+            auto& arg = std::get<std::string>(*inicio);
+            str_size = arg.size();
+            str_begin = reinterpret_cast<const char*>(arg.data());
+
+            uint32_t bytes_disponibles_en_str = str_size - char_idx;
+            uint32_t espacio_libre_en_buffer = limite - bytes_copiados;
+
+            // Sólo insertamos en el buffer si cabe en el buffer:
+            if(bytes_disponibles_en_str <= espacio_libre_en_buffer){
+               // CASo A: La string o lo que queda de esta cabe entera:
+               //buffer.insert(buffer.end(), str_begin + char_idx, str_begin + str_size);
+               std::memcpy(buffer + bytes_copiados, str_begin + char_idx, bytes_disponibles_en_str);
+
+               bytes_copiados += bytes_disponibles_en_str;
+
+               tamano_total_string = string_acumulada_bytes + bytes_disponibles_en_str;
+               //buffer_sizes.push_back(tamano_total_string);
+               buffer_sizes[idx_sizes] = tamano_total_string;
+
+               ++idx_sizes;
+               ++filas_escritas;
+               char_idx = 0;
+               ++inicio;
+               string_acumulada_bytes = 0;
+
+            }else{
+               // CASO B: La string no cabe entera:
+               // Copiamos solo el trozo exacto de caracteres que llene el espacio libre del buffer
+
+               std::memcpy(buffer + bytes_copiados, str_begin + char_idx, espacio_libre_en_buffer);
+               
+               // Sumamos los últimos bytes para llegar exactamente al 'limite' (64 KB)
+               bytes_copiados += espacio_libre_en_buffer;
+               
+               // ¡ESTADO FRAGMENTADO!: Recordamos la posición exacta de la letra donde nos quedamos
+               char_idx += espacio_libre_en_buffer; 
+               
+               // Rompemos el bucle 'while'. El buffer está lleno al 100%.
+               string_acumulada_bytes += espacio_libre_en_buffer;
+               break;
+            };
          };
       };
       return bytes_copiados;
@@ -545,7 +585,7 @@ void disk_out::escribir_particion_string(std::vector<Values>::iterator inicio, s
 
    out1.open(ruta_escritura + ".bin", std::ios::out | std::ios::binary | std::ios::app);
    out2.open(ruta_escritura + ".idx", std::ios::out | std::ios::binary | std::ios::app);
-   Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+   Logger::log(LogLevel::DEBUG, "La particion esta abierta");
 
 
 
@@ -601,7 +641,7 @@ void disk_out::escribir_particion_unknown(std::vector<Values>::iterator inicio, 
 
    out1.open(ruta_escritura + ".bin", std::ios::out | std::ios::binary | std::ios::app);
    out2.open(ruta_escritura + ".idx", std::ios::out | std::ios::binary | std::ios::app);
-   Logger::log(LogLevel::OUTPUT, "La particion esta abierta");
+   Logger::log(LogLevel::DEBUG, "La particion esta abierta");
 
 
 
@@ -655,7 +695,7 @@ void disk_out::bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_
    int filas_escritas = 0;
    int filas_totales_a_escribir = bytes_totales_a_escribir / 4;
    int size_particion = partition_entities * sizeof(int);
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 
    Logger::log(LogLevel::DEBUG, "Entramos en la funcion de escritura de INTs");
    Logger::log(LogLevel::DEBUG, "Tamano de la particion: ", false, true);
@@ -731,7 +771,7 @@ void disk_out::bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int byte
    int filas_escritas = 0;
    int filas_totales_a_escribir = bytes_totales_a_escribir / 4;
    int size_particion = partition_entities * sizeof(float);
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 
    Logger::log(LogLevel::DEBUG, "Entramos en la funcion de escritura de FLOATs");
    Logger::log(LogLevel::DEBUG, "Tamano de la particion: ", false, true);
@@ -808,7 +848,7 @@ void disk_out::bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes
    int filas_escritas = 0;
    int filas_totales_a_escribir = bytes_totales_a_escribir;
    int size_particion = partition_entities;
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 
    Logger::log(LogLevel::DEBUG, "Entramos en la funcion de escritura de BOOLs");
    Logger::log(LogLevel::DEBUG, "Tamano de la particion: ", false, true);
@@ -885,7 +925,7 @@ void disk_out::bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int byt
    int filas_escritas = 0;
    int filas_totales_a_escribir = bytes_totales_a_escribir / 4;
    int size_particion = partition_entities * sizeof(uint32_t);
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 
    Logger::log(LogLevel::DEBUG, "Entramos en la funcion de escritura de STRINGs");
    Logger::log(LogLevel::DEBUG, "Tamano de la particion: ", false, true);
@@ -963,7 +1003,7 @@ void disk_out::bucle_escritura_unknown(std::vector<Values>*& vec_var_ptr, int by
    int filas_escritas = 0;
    int filas_totales_a_escribir = bytes_totales_a_escribir / 4;
    int size_particion = partition_entities * sizeof(uint32_t);
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
 
    Logger::log(LogLevel::DEBUG, "Entramos en la funcion de escritura de UNKNOWNs");
    Logger::log(LogLevel::DEBUG, "Tamano de la particion: ", false, true);
@@ -1044,7 +1084,7 @@ void disk_out::write_table_data(table* tabla){
    // Recuperamos el nombre de la columna:
    std::vector<std::string> nombre_columnas = tabla->metadata_ptr->column_names;
    // Recuperamos el vector de vectores de los datos:
-   std::map<std::string, std::vector<Values>> vec_de_vec_vals = tabla->data_ptr->columns;
+   std::map<std::string, std::vector<Values>>& vec_de_vec_vals = tabla->data_ptr->columns;
    // Recuperamos el nombre de la tabla:
    std::string nombre_tabla = tabla->metadata_ptr->name;
    Logger::log(LogLevel::DEBUG, "Valores preliminares recuperados");
@@ -1081,8 +1121,8 @@ void disk_out::write_table_data(table* tabla){
       };
    };
 
-   Logger::log(LogLevel::OUTPUT, "Encontrada la ultima particion: ", false, true);
-   Logger::log(LogLevel::OUTPUT, ultima_particion_str, true, false);
+   Logger::log(LogLevel::DEBUG, "Encontrada la ultima particion: ", false, true);
+   Logger::log(LogLevel::DEBUG, ultima_particion_str, true, false);
    // Ahora obtenemos el ultimo numero en forma de string y entero, para hacerlo sólo una vez:
 
 

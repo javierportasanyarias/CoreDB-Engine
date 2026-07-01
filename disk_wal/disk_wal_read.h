@@ -15,19 +15,13 @@ namespace disk_wal_read {
 
 
     // Funcions relativas a la lectura del WAl de metadatos:
-    char* recuperar_meta_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
+    char* recuperar_meta_wal_tabla_buffer(std::ifstream& in, const std::string& nombre_tabla);
 
     std::string recuperar_meta_wal_tabla_nombre(std::ifstream& in);
 
-    void recuperar_data_wal_tabla_buffer(std::ifstream& in, std::string nombre_tabla);
+    void aux_read_single_table_wal_metadata(std::ifstream& in, const std::string& nombre_tabla);
 
-    //void aux_read_single_table_wal_metadata(std::ifstream& in);
-    void aux_read_single_table_wal_metadata(std::ifstream& in, std::string nombre_tabla);
 
-    //void aux_read_single_table_wal_data(std::ifstream& in);
-    void aux_read_single_table_wal_data(std::ifstream& in, std::string nombre_tabla);
-
-    bool is_eof_read_viejo(std::ifstream& in);
     bool is_eof_read(std::ifstream& in);
 
     void read_wal_viejo();
@@ -85,7 +79,7 @@ namespace disk_wal_read {
         // Reading pipeline:
         std::ifstream& in;
 
-        walDataReader(std::ifstream& in_obj, std::string table_name_str) 
+        walDataReader(std::ifstream& in_obj, const std::string& table_name_str) 
             : in(in_obj), eof_rows(false), buffer_tmp_size(0), buffer(nullptr), table(nullptr), state(0), table_name(table_name_str) {
             Logger::log(LogLevel::DEBUG, "Creacion de un objeto nuevo 'walDataReader'");
         };
@@ -99,6 +93,7 @@ namespace disk_wal_read {
 
         bool is_eof_rows(){
             return this->col_counter >= this->num_cols && this->row_counter + 1 >= this->num_rows;
+            //return this->col_counter >= this->num_cols && this->row_counter >= this->num_rows;
         };
 
         void fill_buffer();

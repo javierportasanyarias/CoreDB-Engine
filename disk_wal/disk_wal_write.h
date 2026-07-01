@@ -78,12 +78,6 @@ namespace disk_wal_write {
 
     };
 
-
-    // CODIGO LEGACY.
-    void write_table_data_wal_viejo(table* tabla, uint32_t n_rows_a_escribir);
-
-
-
 }; // Cerrar el namespace 'disk_wal_write'
 
 #endif

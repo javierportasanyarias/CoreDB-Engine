@@ -34,7 +34,7 @@ int main(){
    // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
-   Logger::level = LogLevel::DEBUG;
+   Logger::level = LogLevel::OUTPUT;
    
    // Antes de nada, vemos laa tablas en disco y escribimos sus metadatos en memoria
    disk_metadata::lectura_metadatos_todas_tablas();
@@ -57,7 +57,7 @@ int main(){
 
       // Ahora procesamos el texto:
       textUtils::simpleLinkedList* lista1 = textUtils::procesar_texto_pipeline(input);
-      Logger::flush();
+      Logger::flush(LogLevel::DEBUG);
       {
          std::string tmp_str = "EOS";
          lista1->add_node(tmp_str);
@@ -80,23 +80,23 @@ int main(){
       execPlan::delete_task_queue(excec_queue);
       excec_queue = nullptr;
       if(Logger::level == LogLevel::DEBUG){
-         Logger::log(LogLevel::OUTPUT, "handshake: ", false, true);
+         Logger::log(LogLevel::DEBUG, "handshake: ", false, true);
          Logger::login(handshake);
       };
       // Solo imprimimos el '__END__' si estamos en modo DEBUG
       if(Logger::level == LogLevel::DEBUG){
-         Logger::flush();
-         Logger::log(LogLevel::OUTPUT, "__END__", true, false);
+         Logger::flush(LogLevel::DEBUG);
+         Logger::log(LogLevel::DEBUG, "__END__", true, false);
       }else{
-         Logger::flush(false);
+         Logger::flush(LogLevel::DEBUG, false);
       };
 
 
    };  // Aquí termina el bucle principal
    disk_io::write_dump();
-   Logger::log(LogLevel::OUTPUT, "__END__", true, false);
+   Logger::log(LogLevel::DEBUG, "__END__", true, false);
    if(Logger::level == LogLevel::DEBUG){
-      Logger::log(LogLevel::OUTPUT, "__END__", true, false);
+      Logger::log(LogLevel::DEBUG, "__END__", true, false);
    };
 
    return 0;

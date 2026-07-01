@@ -130,9 +130,9 @@ void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::s
       };
       Logger::log(LogLevel::DEBUG, "Metadatos leidos con exito");
       if(Logger::level == LogLevel::DEBUG){
-         Logger::flush();
+         Logger::flush(LogLevel::DEBUG);
       }else{
-         Logger::flush(false);
+         Logger::flush(LogLevel::DEBUG, false);
       };
    } catch(...) {
       // Here we first delete the character buffer in the heap an then we throw the error:
@@ -160,14 +160,15 @@ uint32_t disk_metadata::calculate_metadata_byte_size(table_metadata* metadatos_p
 
    uint32_t num_cols = metadatos_ptr->n_cols;
 
-   // We add up the size of: n_cols, n_filas_disco and n_filas_ram: column_names, column_types and primary_list
-   meta_byte_size += sizeof(uint32_t) * 3;
+   // We add up the size of: n_cols, n_filas_disco and n_filas_ram:
+   // En realidad sólo escribimos las n_cols en el disco:
+   meta_byte_size += sizeof(uint32_t) * 1;
 
    // We add up the size of each element contained in: column_names, column_types and primary_list (as 8 bit integer)
    const std::vector<std::string>& col_name_list = metadatos_ptr->column_names;
    for(uint32_t i = 0; i < num_cols; i++){
-      meta_byte_size += col_name_list[i].size();
       meta_byte_size += sizeof(uint32_t);
+      meta_byte_size += col_name_list[i].size();
 
       meta_byte_size += sizeof(uint32_t);
 
@@ -175,6 +176,47 @@ uint32_t disk_metadata::calculate_metadata_byte_size(table_metadata* metadatos_p
    };
    return meta_byte_size;
 };
+
+
+
+uint32_t disk_metadata::calculate_metadata_byte_size_wal(table_metadata* metadatos_ptr){
+   /*
+   Function destined to calculate the total byte size
+   of the data stored within the table's metadata
+   */
+
+   uint32_t meta_byte_size = 0;
+
+   //meta_byte_size += sizeof(uint8_t); // Tipo de dato (En este caso Metadato)
+
+   if(!metadatos_ptr){
+      return meta_byte_size;
+   };
+
+   //meta_byte_size += metadatos_ptr->name.size();
+   //meta_byte_size += sizeof(uint32_t);
+
+   uint32_t num_cols = metadatos_ptr->n_cols;
+
+   // We add up the size of: n_cols, n_filas_disco and n_filas_ram:
+   // En realidad sólo escribimos las n_cols en el disco:
+   meta_byte_size += sizeof(uint32_t) * 1;
+
+   // We add up the size of each element contained in: column_names, column_types and primary_list (as 8 bit integer)
+   const std::vector<std::string>& col_name_list = metadatos_ptr->column_names;
+   for(uint32_t i = 0; i < num_cols; i++){
+      
+      meta_byte_size += sizeof(uint32_t);
+      meta_byte_size += col_name_list[i].size();
+
+      meta_byte_size += sizeof(uint32_t);
+
+      meta_byte_size += sizeof(uint8_t);
+   };
+   return meta_byte_size;
+};
+
+
 
 
 uint32_t disk_metadata::write_table_metadata(table* tabla){
@@ -237,11 +279,8 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
       // -- Escribimos el número de columnas -----------------------------
       uint32_t num_cols = metadatos_puntero->n_cols;
       tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
-      //buffer.insert(buffer.end(),
-                  //tmp_char_ptr,
-                  //tmp_char_ptr + sizeof(uint32_t)
-                  //);
       std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
+
       ptr_curr += sizeof(uint32_t);
 
       std::map<std::string, std::vector<Values>> columnas = tabla->data_ptr->columns;
@@ -259,12 +298,9 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
       Logger::log(LogLevel::DEBUG, n_rows_total, true, false);
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
       tmp_char_ptr = reinterpret_cast<char*>(&n_rows_total);
-      //buffer.insert(buffer.end(),
-                  //tmp_char_ptr,
-                  //tmp_char_ptr + sizeof(uint32_t)
-                  //);
       std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
       ptr_curr += sizeof(uint32_t);
+
       for(uint32_t i=0; i<num_cols; i++){
          // -- Escribimos los datos de cada columna ---------------------
          // -- Escribimos el nombre:

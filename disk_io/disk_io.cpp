@@ -122,8 +122,8 @@ void disk_io::debug_print_metadatos_memoria() {
    };
    Logger::log(LogLevel::DEBUG, "==============================================");
    if(Logger::level == LogLevel::DEBUG){
-   Logger::flush();
+   Logger::flush(LogLevel::DEBUG);
    }else{
-   Logger::flush(false);
+   Logger::flush(LogLevel::DEBUG, false);
    };
 };

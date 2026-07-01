@@ -42,7 +42,8 @@ public:
                            bool flush_bool = true,
                            bool flag = true);
 
-    static void flush(bool endl = true);
+    static void flush(LogLevel msgLevel = LogLevel::DEBUG,
+                      bool endl = true);
 
     static void login(std::string& input);
 
