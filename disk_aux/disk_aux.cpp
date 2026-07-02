@@ -119,41 +119,18 @@ Values disk_aux::read_aux_val(dataType tipo_dato, std::ifstream& in){
 ////////////////////////////////////////////////////////////////////
 
 
-
-
-/*std::vector<std::string> disk_aux::obtener_archivos_en_ruta(std::string ruta) {
-    std::vector<std::string> archivos;
-
-    // 1. Verificamos si la ruta existe y si es realmente un directorio
-    if (!fs::exists(ruta) || !fs::is_directory(ruta)) {
-        return archivos; // Devuelve vector vacío si no existe
-    }
-
-    // 2. Iteramos sobre los elementos de la carpeta
-    for (const auto& entrada : fs::directory_iterator(ruta)) {
-        // Verificamos que sea un archivo regular (no otra carpeta)
-        if (fs::is_regular_file(entrada.path())) {
-            // Guardamos solo el nombre del archivo (ej: "part_00001.dat")
-            archivos.push_back(entrada.path().filename().string());
-        }
-    }
-
-    return archivos;
-}*/
-
-
-std::vector<std::string> disk_aux::obtener_archivos_en_ruta(const std::string& ruta, dataType tipo_dato) {
+std::vector<std::string> disk_aux::obtener_archivos_en_ruta(const std::filesystem::path& ruta, dataType tipo_dato) {
    std::vector<std::string> archivos;
 
    // 1. Verificamos si la ruta existe y si es realmente un directorio
-   if (!fs::exists(ruta) || !fs::is_directory(ruta)) {
+   if (!std::filesystem::exists(ruta) || !std::filesystem::is_directory(ruta)) {
       return archivos; // Devuelve vector vacío si no existe
    }
 
    // 2. Iteramos sobre los elementos de la carpeta
-   for (const auto& entrada : fs::directory_iterator(ruta)) {
+   for (const auto& entrada : std::filesystem::directory_iterator(ruta)) {
       // Verificamos que sea un archivo regular (no otra carpeta)
-      if (!fs::is_regular_file(entrada.path())){
+      if (!std::filesystem::is_regular_file(entrada.path())){
       continue;
       };
       if(tipo_dato == dataType::STRING){
@@ -171,24 +148,46 @@ std::vector<std::string> disk_aux::obtener_archivos_en_ruta(const std::string& r
 };
 
 
-uint32_t disk_aux::obtener_tamano_archivo(const std::string& ruta) {
-    // Abrimos el archivo:
-    // binary: Para que no haya conversiones de caracteres extrañas
-    // ate: "At the end", para situar el puntero directamente al final
-    std::ifstream archivo(ruta, std::ios::binary | std::ios::ate);
+uint32_t disk_aux::obtener_tamano_archivo(const std::filesystem::path& ruta) {
+   Logger::log(LogLevel::DEBUG, "Dentro de la funcion que halla el tamano de un archivo");
+   // Abrimos el archivo:
+   // binary: Para que no haya conversiones de caracteres extrañas
+   // ate: "At the end", para situar el puntero directamente al final
+   std::ifstream archivo(ruta, std::ios::binary | std::ios::ate);
 
-    if (!archivo.is_open()) {
-        return 0; // Error al abrir
+   if (!archivo.is_open()) {
+      Logger::log(LogLevel::DEBUG, "ERROR al abrir el archivo para ver su tamano");
+      return 0; // Error al abrir
+   };
+
+   Logger::log(LogLevel::DEBUG, "El archivo se abrio con EXITO");
+
+   // tellg() devuelve la posición actual del cursor. 
+   // Como lo abrimos con 'ate', el cursor está al final, 
+   // dándonos el tamaño total en bytes.
+   long tamano = archivo.tellg();
+
+   archivo.close();
+   return tamano;
+};
+
+
+uint32_t disk_aux::obtener_tamano_archivo_aux(const std::filesystem::path& ruta) {
+    // 🚀 Forma nativa de C++: No abre el archivo, le pregunta directamente al Sistema Operativo
+    std::error_code ec;
+    uintmax_t tamano = std::filesystem::file_size(ruta, ec);
+
+    if (ec) {
+        // Si hay un error (ej: el archivo no existe o no hay permisos)
+        // Puedes imprimir ec.message() si quieres ver el error real del sistema
+        Logger::log(LogLevel::DEBUG, "Error de filesystem: " + ec.message());
+        return 0; 
     }
 
-    // tellg() devuelve la posición actual del cursor. 
-    // Como lo abrimos con 'ate', el cursor está al final, 
-    // dándonos el tamaño total en bytes.
-    long tamano = archivo.tellg();
+    return static_cast<uint32_t>(tamano);
+}
 
-    archivo.close();
-    return tamano;
-};
+
 
 
 
@@ -742,7 +741,9 @@ void disk_aux::eliminar_archivo_binario_metadatos(table*& tb){
 
    std::string tb_name = tb->metadata_ptr->name;
 
-   std::filesystem::path ruta = "metadata/" + tb_name + "_meta.bin";
+   //std::filesystem::path ruta = "metadata" + tb_name + "_meta.bin";
+   std::filesystem::path ruta = "metadata";
+   ruta /= (tb_name + "_meta.bin");
 
    if(std::filesystem::exists(ruta)){
       // Sólo eliminamos si existe el archivo:
@@ -759,7 +760,9 @@ void disk_aux::eliminar_archivo_binario_datos(table*& tb){
 
    std::string tb_name = tb->metadata_ptr->name;
 
-   std::filesystem::path ruta = "data/" + tb_name;
+   //std::filesystem::path ruta = "data/" + tb_name;
+   std::filesystem::path ruta = "data";
+   ruta /= (tb_name + "tb_name");
 
    if(std::filesystem::exists(ruta)){
       // Sólo eliminamos si existe el archivo:
@@ -774,11 +777,11 @@ void disk_aux::eliminar_archivo_binario_datos(table*& tb){
   // Funcion auxilar recursiva:
 void disk_aux::escanear_tablas_recursiva(const std::filesystem::path& ruta, std::vector<std::filesystem::path>& arr_tablas){
    // Iteramos por cada elemento:
-   for (const auto& entrada : fs::directory_iterator(ruta)){
+   for (const auto& entrada : std::filesystem::directory_iterator(ruta)){
       // Caso de quecsea una ruta:
-      if (fs::is_directory(entrada)){
+      if (std::filesystem::is_directory(entrada)){
          disk_aux::escanear_tablas_recursiva(entrada.path(), arr_tablas);
-      } else if(fs::is_regular_file(entrada) && entrada.path().extension().string() == ".bin" && entrada.path().filename().string().find("_meta") != std::string::npos){
+      } else if(std::filesystem::is_regular_file(entrada) && entrada.path().extension().string() == ".bin" && entrada.path().filename().string().find("_meta") != std::string::npos){
          /*
          Caso base de la recursion
          Solo adicionamos metadatos
@@ -791,7 +794,7 @@ void disk_aux::escanear_tablas_recursiva(const std::filesystem::path& ruta, std:
 // SOLO ESCANEA LOS METADATOS DE LAS TABLAS:
 std::vector<std::filesystem::path> disk_aux::escanear_tablas(){
 
-      fs::path ruta_tablas = "metadata";
+      std::filesystem::path ruta_tablas = "metadata";
       // Vector con el nombre de todas las tablas:
       std::vector<std::filesystem::path> arr_tablas;
 

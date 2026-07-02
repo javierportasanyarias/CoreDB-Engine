@@ -23,12 +23,12 @@
 
 void disk_metadata::read_table_metadata(std::filesystem::path ruta_tabla, std::string nombre_tabla_str){
    std::string tabla_nombre = ruta_tabla.stem().string();
-   std::string ruta_tabla_str = ruta_tabla.string();
+   //std::string ruta_tabla_str = ruta_tabla.string();
 
    table_metadata*& metadatos_puntero = global_table_dict.at(nombre_tabla_str)->metadata_ptr;
 
    // COMIENZA LA LECTURA:
-   std::ifstream in(ruta_tabla_str, std::ios::binary);
+   std::ifstream in(ruta_tabla, std::ios::binary);
 
    // We obtain the metadata file size in bytes:
    uint32_t file_size_bytes = 0;
@@ -234,7 +234,10 @@ uint32_t disk_metadata::write_table_metadata(table* tabla){
    };
 
    std::string nombre_tabla = metadatos_puntero->name;
-   std::string ruta_tabla = "metadata/" + nombre_tabla + "_meta.bin";
+   //std::string ruta_tabla = "metadata/" + nombre_tabla + "_meta.bin";
+   std::filesystem::path ruta_tabla = std::filesystem::path("metadata");
+   ruta_tabla /= nombre_tabla;
+   ruta_tabla += "_meta.bin";
 
    // Abrimos la escritura:
    std::ofstream out(ruta_tabla, std::ios::binary | std::ios::out);

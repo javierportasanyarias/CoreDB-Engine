@@ -42,7 +42,7 @@ void Logger::log(LogLevel msgLevel,
 
 // Sobrecarga int
 void Logger::log(LogLevel msgLevel,
-                 int msg,
+                 const int msg,
                  bool flush_bool,
                  bool flag)
 {
@@ -64,7 +64,7 @@ void Logger::log(LogLevel msgLevel,
 
 // Sobrecarga para el std::variant de Values:
 void Logger::log(LogLevel msgLevel,                                                          
-                 std::variant<int, float, bool, std::string, std::vector<char>>  msg,
+                 const std::variant<int, float, bool, std::string, std::vector<char>>  msg,
                  bool flush_bool,
                  bool flag)
 {
@@ -110,9 +110,9 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 };
 
-// Sobrecarga para std::variant constante y pasado por referencia:
-/*void Logger::log(LogLevel msgLevel,                                                          
-                 const std::variant<int, float, bool, std::string, std::vector<char>>& msg,
+// Sobrecarga std::filesystem::path
+void Logger::log(LogLevel msgLevel,
+                 const std::filesystem::path msg,
                  bool flush_bool,
                  bool flag)
 {
@@ -123,33 +123,14 @@ void Logger::log(LogLevel msgLevel,
             case LogLevel::DEBUG: std::cout << "[DEBUG] "; break;
             case LogLevel::INFO:  std::cout << "[INFO] ";  break;
             case LogLevel::WARN:  std::cout << "[WARN] ";  break;
-            case LogLevel::ERROR: std::cout << "[ERROR] "; break;                       
+            case LogLevel::ERROR: std::cout << "[ERROR] "; break;
             case LogLevel::OUTPUT: break;
-        };                                                                       
+        };
     };
 
-    std::visit(
-        [](const auto& arg){
-            using type = std::decay_t<decltype(arg)>;
-
-            if constexpr (std::is_same_v<type, std::vector<char>>){
-                for (char c : arg){
-                    std::cout << c;
-                };
-            } else if constexpr (std::is_same_v<type, bool>){
-                if(arg){
-                    std::cout << "TRUE";
-                }else{
-                    std::cout << "FALSE";
-                };
-            }else{
-                std::cout << arg;
-            };
-        },
-        msg
-    );
+    std::cout << msg;
     if (flush_bool) std::cout << std::endl;
-};*/
+};
 
 
 // character buffer logger:

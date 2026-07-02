@@ -105,19 +105,28 @@ void disk_io::debug_print_metadatos_memoria() {
          
          if (i < n_types) {
             switch(meta->column_types[i]) {
-               case dataType::INT:    tipo_str = "INT"; break;
-               case dataType::FLOAT:  tipo_str = "FLOAT"; break;
-               case dataType::STRING: tipo_str = "STRING"; break;
-               case dataType::BOOL:   tipo_str = "BOOL"; break;
-               case dataType::UNKNOWN: tipo_str = "UNKNOWN"; break;
+               case dataType::INT:
+                  tipo_str = "INT";
+                  break;
+               case dataType::FLOAT:
+                  tipo_str = "FLOAT";
+                  break;
+               case dataType::STRING:
+                  tipo_str = "STRING";
+                  break;
+               case dataType::BOOL:
+                  tipo_str = "BOOL";
+                  break;
+               case dataType::UNKNOWN:
+                  tipo_str = "UNKNOWN";
+                  break;
                // El compilador ya no se quejará, cubrimos todo el enum
                }
          }
          
          std::string es_pk = (i < n_pks && meta->primary_list[i]) ? "[PK]" : "    ";
          
-         Logger::log(LogLevel::DEBUG, "    [" + std::to_string(i) + "] " + es_pk + " " + 
-                     col_name + " (" + tipo_str + ")");
+         Logger::log(LogLevel::DEBUG, "    [" + std::to_string(i) + "] " + es_pk + " " +  col_name + " (" + tipo_str + ")");
       }
    };
    Logger::log(LogLevel::DEBUG, "==============================================");

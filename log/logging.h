@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <filesystem> //Para portabilidad de sistema de archivos
 
 
 enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
@@ -27,12 +28,17 @@ public:
                     bool flag = true);
 
     static void log(LogLevel msgLevel,
-                    int msg,
+                    const int msg,
                     bool flush_bool = true,
                     bool flag = true);
 
     static void log(LogLevel msgLevel,
-                    std::variant<int, float, bool, std::string, std::vector<char>>  msg,
+                    const std::variant<int, float, bool, std::string, std::vector<char>>  msg,
+                    bool flush_bool = true,
+                    bool flag = true);
+
+    static void log(LogLevel msgLevel,
+                    const std::filesystem::path msg,
                     bool flush_bool = true,
                     bool flag = true);
 

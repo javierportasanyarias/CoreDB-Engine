@@ -11,14 +11,13 @@
 #include "filesystem"
 #include <vector> // <--- FUNDAMENTAL
 
-namespace fs = std::filesystem;
 
 namespace disk_in {
 
-    void read_fixed_len_int_columns(std::string nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
-    void read_fixed_len_float_columns(std::string nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
-    void read_fixed_len_bool_columns(std::string nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
-    void read_fixed_len_string_columns(std::string nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
+    void read_fixed_len_int_columns(std::filesystem::path nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
+    void read_fixed_len_float_columns(std::filesystem::path nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
+    void read_fixed_len_bool_columns(std::filesystem::path nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
+    //void read_fixed_len_string_columns(std::filesystem::path nombre_tabla, std::string column_name, std::vector<Values>& vec_vals);
     //void read_table_data(table* tabla);
     class read_table_iterator{
         /*
@@ -43,10 +42,10 @@ namespace disk_in {
             // Metodo constructor
             read_table_iterator(table* tabla);
 
-            bool obtain_int_partition_rows(bool aux_bool, std::string path_var, std::string partition_current);
-            bool obtain_float_partition_rows(bool aux_bool, std::string path_var, std::string partition_current);
-            bool obtain_bool_partition_rows(bool aux_bool, std::string path_var, std::string partition_current);
-            bool obtain_string_partition_rows(bool aux_bool, std::string path_var, std::string partition_current);
+            bool obtain_int_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current);
+            bool obtain_float_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current);
+            bool obtain_bool_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current);
+            bool obtain_string_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current);
 
             // Lectura iteractiva a través de las particiones
             bool read_table();

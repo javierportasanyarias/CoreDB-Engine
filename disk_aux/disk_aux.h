@@ -36,10 +36,11 @@ namespace disk_aux{
     // FUNCIONES AUXILIARES ////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////
 
-    std::vector<std::string> obtener_archivos_en_ruta(const std::string& ruta, dataType tipo_dato);
+    std::vector<std::string> obtener_archivos_en_ruta(const std::filesystem::path& ruta, dataType tipo_dato);
 
 
-    uint32_t obtener_tamano_archivo(const std::string& ruta);
+    uint32_t obtener_tamano_archivo(const std::filesystem::path& ruta);
+    uint32_t obtener_tamano_archivo_aux(const std::filesystem::path& ruta);
 
 
 

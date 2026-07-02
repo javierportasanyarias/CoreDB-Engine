@@ -76,6 +76,13 @@ std::map<std::string, Values> disk_buffer::tableRowIterator_only_disk_part::get_
                //Logger::log(LogLevel::ERROR, "El mapa de columnas está vacío");
             //}else{
                Logger::log(LogLevel::DEBUG, "Escribimos el valor en la <<<fila a devolver>>>");
+               Logger::log(LogLevel::DEBUG, "Nombre de la columna: ", false, true);
+               Logger::log(LogLevel::DEBUG, nombre_col, true, false);
+               Logger::log(LogLevel::DEBUG, "Prueba de acceso al vector de dicha columna");
+               mapa_columnas.at(nombre_col);
+               Logger::log(LogLevel::DEBUG, "Prueba realizada con exito");
+               Logger::log(LogLevel::DEBUG, "Valor del contador: ", false, true);
+               Logger::log(LogLevel::DEBUG, contador, true, false);
                map_fila_retornar[nombre_col] = mapa_columnas.at(nombre_col)[contador];
             //};
          //} else{
@@ -222,7 +229,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::control_unit(){
    por lo que la propia máquina de estados finitos se encarga de eliminarlos.
    */
    Logger::log(LogLevel::DEBUG, "Realizamos un ciclo de la CU");
-   std::map<std::string, Values> map_fila_retornar;
+   std::map<std::string, Values> map_fila_retornar = {};
    switch(this->estado_fsm){
       case 0: {
          Logger::log(LogLevel::DEBUG, "Estado 0. Acabamos de empezar");
@@ -268,7 +275,7 @@ std::map<std::string, Values> disk_buffer::tableRowIterator::control_unit(){
          // Comprobamos de antemano si hay datos en DISCO:
          Logger::log(LogLevel::DEBUG, "Estado 2. Inicio de la lectura en disco");
          Logger::log(LogLevel::DEBUG, "Antes vemo si hay datos en disco");
-         if(fs::exists("data/" + this->table_name)){
+         if(std::filesystem::exists("data/" + this->table_name)){
             Logger::log(LogLevel::DEBUG, "SI que hay datos en disco");
             this->estado_fsm = 3;
             Logger::log(LogLevel::DEBUG, "Creamos el iterado de lectura y el de disco");

@@ -32,19 +32,19 @@ namespace disk_out {
 
     
     void obtener_indices_vector_valores(auto& inicio, auto& fin, std::vector<Values>*& vec_var_ptr, int filas_escritas, int& filas_a_escribir);
-    int obtener_size_disponible(std::string ruta_variable, std::string ultima_particion_str, int size_particion);
-    void escribir_particion_int(auto& inicio, auto& fin, std::string ruta_escritura);
-    void escribir_particion_float(auto& inicio, auto& fin, std::string ruta_escritura);
-    void escribir_particion_bool(auto& inicio, auto& fin, std::string ruta_escritura);
-    void escribir_particion_string(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::string ruta_escritura);
-    void escribir_particion_unknown(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::string ruta_escritura);
+    int obtener_size_disponible(std::filesystem::path ruta_variable, std::string ultima_particion_str, int size_particion);
+    void escribir_particion_int(auto& inicio, auto& fin, std::filesystem::path ruta_escritura);
+    void escribir_particion_float(auto& inicio, auto& fin, std::filesystem::path ruta_escritura);
+    void escribir_particion_bool(auto& inicio, auto& fin, std::filesystem::path ruta_escritura);
+    void escribir_particion_string(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::filesystem::path ruta_escritura);
+    void escribir_particion_unknown(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::filesystem::path ruta_escritura);
 
 
-    void bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
-    void bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
-    void bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
-    void bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
-    void bucle_escritura_unknown(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
+    void bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
+    void bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
+    void bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
+    void bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
+    void bucle_escritura_unknown(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int);
 
 
     void write_table_data(table* tabla);

@@ -736,13 +736,14 @@ void disk_wal_read::walDataParser::control_unit(){
    switch(this->state){
 
       case 0: {
+         std::filesystem::path tmp_path = "backup_data/wal.bin";
          Logger::log(LogLevel::DEBUG, "walDataParser State 0");
-         if(!fs::exists("backup_data/wal.bin")){
+         if(!fs::exists(tmp_path)){
             this->state = 255;
             break;
          };
          //this->in("backup_data/wal.bin", std::ios::binary);
-         this->in.open("backup_data/wal.bin", std::ios::binary);
+         this->in.open(tmp_path, std::ios::binary);
       };
 
       case 1: {

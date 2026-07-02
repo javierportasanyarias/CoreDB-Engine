@@ -13,17 +13,21 @@
 #include "part_sort.h"
 #include "disk_aux.h"
 #include "disk_in.h"
+#include <filesystem> //Para portabilidad de sistema de archivos
 
 
 ////////////////////////////////////////////////////////////////////
 // LECTURA DE DATOS ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
-void disk_in::read_fixed_len_int_columns(std::string path_var, std::string partition_current, std::vector<Values>& vec_vals){
+void disk_in::read_fixed_len_int_columns(std::filesystem::path path_var, std::string partition_current, std::vector<Values>& vec_vals){
 
    Logger::log(LogLevel::DEBUG, "Dentro de la lectura de los INT");
    std::ifstream in;
-   std::string ruta = path_var + partition_current + ".dat";
+   //fs::path ruta = path_var + partition_current + ".dat";
+   std::filesystem::path ruta = path_var;
+   ruta /= partition_current;
+   ruta += ".dat";
    Logger::log(LogLevel::DEBUG, "Abrimos el archivo de datos: ", false, true);
    Logger::log(LogLevel::DEBUG, ruta, true, false);
    in.open(ruta, std::ios::in | std::ios::binary);
@@ -94,11 +98,14 @@ void disk_in::read_fixed_len_int_columns(std::string path_var, std::string parti
 };
 
 
-void disk_in::read_fixed_len_float_columns(std::string path_var, std::string partition_current, std::vector<Values>& vec_vals){
+void disk_in::read_fixed_len_float_columns(std::filesystem::path path_var, std::string partition_current, std::vector<Values>& vec_vals){
    
    Logger::log(LogLevel::DEBUG, "Dentro de la lectura de los FLOAT");
    std::ifstream in;
-   std::string ruta = path_var + partition_current + ".dat";
+   //fs::path ruta = path_var + partition_current + ".dat";
+   std::filesystem::path ruta = path_var;
+   ruta /= partition_current;
+   ruta += ".dat";
    Logger::log(LogLevel::DEBUG, "Abrimos el archivo de datos: ", false, true);
    Logger::log(LogLevel::DEBUG, ruta, true, false);
    in.open(ruta, std::ios::in | std::ios::binary);
@@ -163,11 +170,14 @@ void disk_in::read_fixed_len_float_columns(std::string path_var, std::string par
 };
 
 
-void disk_in::read_fixed_len_bool_columns(std::string path_var, std::string partition_current, std::vector<Values>& vec_vals){
+void disk_in::read_fixed_len_bool_columns(std::filesystem::path path_var, std::string partition_current, std::vector<Values>& vec_vals){
    
    Logger::log(LogLevel::DEBUG, "Dentro de la lectura de los BOOLs");
    std::ifstream in;
-   std::string ruta = path_var + partition_current + ".dat";
+   //fs::path ruta = path_var + partition_current + ".dat";
+   std::filesystem::path ruta = path_var;
+   ruta /= partition_current;
+   ruta += ".dat";
    Logger::log(LogLevel::DEBUG, "Abrimos el archivo de datos: ", false, true);
    Logger::log(LogLevel::DEBUG, ruta, true, false);
    in.open(ruta, std::ios::in | std::ios::binary);
@@ -264,7 +274,8 @@ class stringReader_v2{
       // Variable auxiliar para ver si es una std::string o un vector de caracteres:
       bool is_unknown_type = false; // false = std::string, true = std::vector<char>
       // Variables como input y de control:
-      std::string path_var;
+      //std::string path_var;
+      std::filesystem::path path_var;
       std::string partition_current;
       uint8_t state = 0;
 
@@ -310,7 +321,7 @@ class stringReader_v2{
 
 ;
 
-      stringReader_v2(std::vector<Values>& vector_variable_variantes, std::string path_variable, std::string particion_actual, bool is_var_unknown) 
+      stringReader_v2(std::vector<Values>& vector_variable_variantes, std::filesystem::path path_variable, std::string particion_actual, bool is_var_unknown) 
         : vec_vals(vector_variable_variantes), path_var(path_variable),  partition_current(particion_actual), is_unknown_type(is_var_unknown)// Inicialización de la referencia y strings para las rutas
       {
          this->buffer_str = new char[size_buffer_bytes];
@@ -337,12 +348,12 @@ class stringReader_v2{
 
       bool condition_eof_str_partition(){
          //return this->file_str_ptr +  this->file_buffer_str_size > this->file_str_size;
-         return this->file_str_ptr > this->file_str_size;
+         return this->file_str_ptr >= this->file_str_size;
       };
 
       bool condition_eof_idx_partition(){
          // return this->file_idx_ptr + this->file_buffer_idx_size > this->file_idx_size;
-         return this->file_idx_ptr > this->file_idx_size;
+         return this->file_idx_ptr >= this->file_idx_size;
       };
 
       bool condicion_eof_buffer_str(){
@@ -433,13 +444,29 @@ class stringReader_v2{
 
          switch(this->state){
             case 0:{
+               Logger::log(LogLevel::DEBUG, "Estado 0 de stringReader_v2");
                // CASO ESPECIAL
                //Logger::log(LogLevel::DEBUG, "ESTADO 0: (setup inicial)");
                // Este estado no se volverá a repetir:
-               std::string ruta_str = this->path_var + this->partition_current + ".bin";
-               std::string ruta_idx = this->path_var + this->partition_current + ".idx";
+               //fs::path ruta_str = this->path_var + this->partition_current + ".bin";
+               std::filesystem::path ruta_str = this->path_var;
+               ruta_str /= this->partition_current;
+               ruta_str += ".bin";
+               //fs::path ruta_idx = this->path_var + this->partition_current + ".idx";
+               std::filesystem::path ruta_idx = this->path_var;
+               ruta_idx /= this->partition_current;
+               ruta_idx += ".idx";
+
+
+               Logger::log(LogLevel::DEBUG, "Ruta datos: ", false, true);
+               Logger::log(LogLevel::DEBUG, ruta_str, true, false);
+               Logger::log(LogLevel::DEBUG, "Ruta indices: ", false, true);
+               Logger::log(LogLevel::DEBUG, ruta_idx, true, false);
+
                this->in_str.open(ruta_str, std::ios::in | std::ios::binary);
                this->in_idx.open(ruta_idx, std::ios::in | std::ios::binary);
+
+               Logger::log(LogLevel::DEBUG, "Archivos leidos con exito");
 
                // Recuperamos el tamano de los archivos:
                this->file_str_size = disk_aux::return_file_size_bytes(in_str);
@@ -457,6 +484,7 @@ class stringReader_v2{
                break;
             };
             case 1:{
+               Logger::log(LogLevel::DEBUG, "Estado 1 de stringReader_v2");
                // CASO ESPECIAL
                // Este estad otambiñén es espacial. Solo se leerán las dos a la vez sólo la primera vez:
                //Logger::log(LogLevel::DEBUG, "ESTADO 1: (Lectura buffers inicial)");
@@ -470,6 +498,7 @@ class stringReader_v2{
                break;
             };
             case 2:{
+               Logger::log(LogLevel::DEBUG, "Estado 2 de stringReader_v2");
                //Logger::log(LogLevel::DEBUG, "ESTADO 2: (LECTURA INTELIGENTE)");
                //Logger::log(LogLevel::DEBUG, "  Recarga de buffers con comprobaciones:");
                bool eof_buffer_str = false;
@@ -515,6 +544,7 @@ class stringReader_v2{
                break;
             };
             case 3: {
+               Logger::log(LogLevel::DEBUG, "Estado 3 de stringReader_v2");
                //Logger::log(LogLevel::DEBUG, "ESTADO 3: (Offset checker)");
                if(this->offset){
                   // La string la arrastramos de antes
@@ -527,6 +557,7 @@ class stringReader_v2{
                };
             };
             case 4:{
+               Logger::log(LogLevel::DEBUG, "Estado 4 de stringReader_v2");
                // LECTURA TAMONO STRING
                //Logger::log(LogLevel::DEBUG, "ESTADO 4: (Lectura tamano string)");
                //Logger::log(LogLevel::DEBUG, "  Lectura del tamano de la string");
@@ -545,6 +576,7 @@ class stringReader_v2{
                break;
             };
             case 5:{
+               Logger::log(LogLevel::DEBUG, "Estado 5 de stringReader_v2");
                //Logger::log(LogLevel::DEBUG, "ESTADO 5: (Lectura de la STRING)");
                // Antes evaluamos si se ha llegado al EOF de los buffers:
                // Ahora calculamos los bytes a leer de la string:
@@ -635,6 +667,7 @@ class stringReader_v2{
                break;
             };
             case 255: {
+               Logger::log(LogLevel::DEBUG, "Estado 255 de stringReader_v2");
                //Logger::log(LogLevel::DEBUG, "ESTADO 2555: (ESTADO FINAL)");
                break;
             };
@@ -652,7 +685,7 @@ class stringReader_v2{
          bool aux_bool = true;
          //uint32_t contador_aux = 0;
          while(this->state != 255 && aux_bool){
-            //if(contador_aux == 1000000){
+            //if(contador_aux == 200){
                //break;
             //};
             if(this->state == 255){
@@ -725,14 +758,16 @@ disk_in::read_table_iterator::read_table_iterator(table* tabla){
 
 };
 
-bool disk_in::read_table_iterator::obtain_int_partition_rows(bool aux_bool, std::string path_var, std::string partition_current){
+bool disk_in::read_table_iterator::obtain_int_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current){
    
    if(aux_bool){
       Logger::log(LogLevel::DEBUG, "<<<<<CASO INT VEMOS TAMANO PARTICION>>>>>>>");
       uint32_t size_tmp = 0;
       Logger::log(LogLevel::DEBUG, "Primera ejecucion. Vemos el tamano de la particion: ");
-      Logger::log(LogLevel::DEBUG, path_var + partition_current);
-      size_tmp = disk_aux::obtener_tamano_archivo(path_var + partition_current + ".dat");
+      std::filesystem::path tmp_path = path_var;
+      tmp_path /= (partition_current + ".dat");
+      Logger::log(LogLevel::DEBUG, tmp_path);
+      size_tmp = disk_aux::obtener_tamano_archivo(tmp_path);
       Logger::log(LogLevel::DEBUG, "Tamano del archivo de particion: ", false, true);
       Logger::log(LogLevel::DEBUG, size_tmp, true, false);
       Logger::log(LogLevel::DEBUG, "Tamano de la particion recuperado, lo registramos");
@@ -745,14 +780,16 @@ bool disk_in::read_table_iterator::obtain_int_partition_rows(bool aux_bool, std:
 };
 
 
-bool disk_in::read_table_iterator::obtain_float_partition_rows(bool aux_bool, std::string path_var, std::string partition_current){
+bool disk_in::read_table_iterator::obtain_float_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current){
    
    if(aux_bool){
       Logger::log(LogLevel::DEBUG, "<<<<<CASO FLOAT VEMOS TAMANO PARTICION>>>>>>>");
       uint32_t size_tmp = 0;
       Logger::log(LogLevel::DEBUG, "Primera ejecucion. Vemos el tamano de la particion: ");
-      Logger::log(LogLevel::DEBUG, path_var + partition_current);
-      size_tmp = disk_aux::obtener_tamano_archivo(path_var + partition_current + ".dat");
+      std::filesystem::path tmp_path = path_var;
+      tmp_path /= (partition_current + ".dat");
+      Logger::log(LogLevel::DEBUG, tmp_path);
+      size_tmp = disk_aux::obtener_tamano_archivo(tmp_path);
       Logger::log(LogLevel::DEBUG, "Tamano del archivo de particion: ", false, true);
       Logger::log(LogLevel::DEBUG, size_tmp, true, false);
       Logger::log(LogLevel::DEBUG, "Tamano de la particion recuperado, lo registramos");
@@ -765,14 +802,16 @@ bool disk_in::read_table_iterator::obtain_float_partition_rows(bool aux_bool, st
 };
 
 
-bool disk_in::read_table_iterator::obtain_bool_partition_rows(bool aux_bool, std::string path_var, std::string partition_current){
+bool disk_in::read_table_iterator::obtain_bool_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current){
    
    if(aux_bool){
       uint32_t size_tmp = 0;
       Logger::log(LogLevel::DEBUG, "<<<<<CASO BOOL VEMOS TAMANO PARTICION>>>>>>>");
       Logger::log(LogLevel::DEBUG, "Primera ejecucion. Vemos el tamano de la particion: ");
-      Logger::log(LogLevel::DEBUG, path_var + partition_current);
-      size_tmp = disk_aux::obtener_tamano_archivo(path_var + partition_current + ".dat");
+      std::filesystem::path tmp_path = path_var;
+      tmp_path /= (partition_current + ".dat");
+      Logger::log(LogLevel::DEBUG, tmp_path);
+      size_tmp = disk_aux::obtener_tamano_archivo(tmp_path);
       Logger::log(LogLevel::DEBUG, "Tamano del archivo de particion: ", false, true);
       Logger::log(LogLevel::DEBUG, size_tmp, true, false);
       Logger::log(LogLevel::DEBUG, "Tamano de la particion recuperado, lo registramos");
@@ -785,14 +824,16 @@ bool disk_in::read_table_iterator::obtain_bool_partition_rows(bool aux_bool, std
 };
 
 
-bool disk_in::read_table_iterator::obtain_string_partition_rows(bool aux_bool, std::string path_var, std::string partition_current){
+bool disk_in::read_table_iterator::obtain_string_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current){
    
    if(aux_bool){
       uint32_t size_tmp = 0;
       Logger::log(LogLevel::DEBUG, "<<<<<CASO STRING VEMOS TAMANO PARTICION>>>>>>>");
       Logger::log(LogLevel::DEBUG, "Primera ejecucion. Vemos el tamano de la particion: ");
-      Logger::log(LogLevel::DEBUG, path_var + partition_current);
-      size_tmp = disk_aux::obtener_tamano_archivo(path_var + partition_current + ".idx");
+      std::filesystem::path tmp_path = path_var;
+      tmp_path /= (partition_current + ".idx");
+      Logger::log(LogLevel::DEBUG, tmp_path);
+      size_tmp = disk_aux::obtener_tamano_archivo(tmp_path);
       Logger::log(LogLevel::DEBUG, "Tamano del archivo de particion: ", false, true);
       Logger::log(LogLevel::DEBUG, size_tmp, true, false);
       Logger::log(LogLevel::DEBUG, "Tamano de la particion recuperado, lo registramos");
@@ -837,7 +878,9 @@ bool disk_in::read_table_iterator::read_table(){
          Logger::log(LogLevel::DEBUG, "Procesamos la columna: ", false, true);
          Logger::log(LogLevel::DEBUG, column_name, true, false);
          Logger::log(LogLevel::DEBUG, "Obtenemos la ruta: ", false, true);
-         std::string path_var = "data/" + this->nombre_tabla + "/" + column_name + "/";
+         //std::string path_var = "data/" + this->nombre_tabla + "/" + column_name + "/";
+         std::filesystem::path path_var = std::filesystem::path("data") / this->nombre_tabla / column_name;
+         //path_var = std::filesystem::absolute(path_var);
          Logger::log(LogLevel::DEBUG, path_var, true, false);
          Logger::log(LogLevel::DEBUG, "Accdemos a la particion actual: ", false, true);
          std::vector<Values> vec_vals;
@@ -870,7 +913,7 @@ bool disk_in::read_table_iterator::read_table(){
             case dataType::BOOL: {
                Logger::log(LogLevel::DEBUG, "++++++ CASE BOOL DEL SWITCH ++++++");
                aux_bool = this->obtain_bool_partition_rows(aux_bool, path_var, partition_current);
-               //std::vector<uint8_t> vec_vals;
+
                Logger::log(LogLevel::DEBUG, "Procedemos a adicionar el vector de BOOLs a la TABLA");
                disk_in::read_fixed_len_bool_columns(path_var, partition_current, vec_vals);
                buffer_ram_del_disco[column_name] = std::move(vec_vals);
@@ -881,7 +924,6 @@ bool disk_in::read_table_iterator::read_table(){
                Logger::log(LogLevel::DEBUG, "++++++ CASE STRING DEL SWITCH ++++++");
                aux_bool = this->obtain_string_partition_rows(aux_bool, path_var, partition_current);
                Logger::log(LogLevel::DEBUG, "Procedemos a adicionar el vector de STRINGs a la TABLA");
-               //disk_in::read_fixed_len_string_columns(path_var, partition_current, vec_vals);
                // Creamos el objeto:
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
@@ -904,7 +946,7 @@ bool disk_in::read_table_iterator::read_table(){
                Logger::log(LogLevel::DEBUG, "++++++ CASE UNKNOWN DEL SWITCH ++++++");
                aux_bool = this->obtain_string_partition_rows(aux_bool, path_var, partition_current);
                Logger::log(LogLevel::DEBUG, "Procedemos a adicionar el vector de UNKNOWNs a la TABLA");
-               //disk_in::read_fixed_len_string_columns(path_var, partition_current, vec_vals);
+
                // Creamos el objeto:
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);

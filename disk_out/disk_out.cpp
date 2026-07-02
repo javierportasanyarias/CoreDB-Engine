@@ -22,49 +22,6 @@
 
 
 
-/*void disk_out::write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<int>& vec_vals){
-
-   std::ofstream out;
-   out.open("data/" + nombre_tabla + "/" + column_name + ".dat", std::ios::out | std::ios::binary);
-
-   //
-   uint32_t size_valores = vec_vals.size() * sizeof(int);
-   char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
-
-   out.write(valores_chars, size_valores);
-   out.flush();
-   out.close();
-};
-
-void disk_out::write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<float>& vec_vals){
-
-   std::ofstream out;
-   out.open("data/" + nombre_tabla + "/" + column_name + ".dat", std::ios::out | std::ios::binary);
-
-   //
-   uint32_t size_valores = vec_vals.size() * sizeof(float);
-   char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
-
-   out.write(valores_chars, size_valores);
-   out.flush();
-   out.close();
-};
-
-void disk_out::write_fixed_len_columns(std::string nombre_tabla, std::string column_name, std::vector<uint8_t>& vec_vals){
-
-   std::ofstream out;
-   out.open("data/" + nombre_tabla + "/" + column_name + ".dat", std::ios::out | std::ios::binary);
-
-   //
-   uint32_t size_valores = vec_vals.size();
-   // Este es un caso especial, iteramos por cadaelemento
-   char* valores_chars = reinterpret_cast<char*>(vec_vals.data());
-
-   out.write(valores_chars, size_valores);
-   out.flush();
-   out.close();
-};*/
-
 
 
 
@@ -277,10 +234,10 @@ void disk_out::obtener_indices_vector_valores(auto& inicio, auto& fin, std::vect
    fin = vec_var_ptr->begin() + filas_escritas + filas_a_escribir;
 };
 
-int disk_out::obtener_size_disponible(std::string ruta_variable, std::string ultima_particion_str, int size_particion){
+int disk_out::obtener_size_disponible(std::filesystem::path ruta_variable, std::string ultima_particion_str, int size_particion){
 
    int size_disponible_para_escribir = 0;
-   std::string ruta_escritura = ruta_variable + ultima_particion_str;
+   std::filesystem::path ruta_escritura = ruta_variable += ultima_particion_str;
    uint32_t size_arhivo = disk_aux::obtener_tamano_archivo(ruta_escritura);
    Logger::log(LogLevel::DEBUG, "El tamaño del archivo a escribir es: ", false, true);
    Logger::log(LogLevel::DEBUG, size_arhivo, true, false);
@@ -295,7 +252,7 @@ int disk_out::obtener_size_disponible(std::string ruta_variable, std::string ult
 };
 
 
-void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::string ruta_escritura){
+void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::filesystem::path ruta_escritura){
 
    std::ofstream out;
    //std::vector<int> vec_vals;
@@ -306,7 +263,7 @@ void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::string ruta_
    try{
       arr_vals = new int[num_rows_buffer];
       //vec_vals.reserve(size_particion);
-      out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
+      out.open(ruta_escritura += ".dat", std::ios::out | std::ios::binary | std::ios::app);
       Logger::log(LogLevel::DEBUG, "La particion esta abierta");
       std::vector<Values>::iterator tmp_ini_index;
       tmp_ini_index = inicio;
@@ -341,7 +298,7 @@ void disk_out::escribir_particion_int(auto& inicio, auto& fin, std::string ruta_
    out.close();
 };
 
-void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::string ruta_escritura){
+void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::filesystem::path ruta_escritura){
    std::ofstream out;
    //std::vector<Values> sub_vector(inicio, fin);
    //std::vector<float> vec_vals;
@@ -352,7 +309,7 @@ void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::string rut
    try {
       arr_vals = new float[num_rows_buffer];
       //vec_vals.reserve(size_particion);
-      out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
+      out.open(ruta_escritura += ".dat", std::ios::out | std::ios::binary | std::ios::app);
       Logger::log(LogLevel::DEBUG, "La particion esta abierta");
       std::vector<Values>::iterator tmp_ini_index;
       tmp_ini_index = inicio;
@@ -388,7 +345,7 @@ void disk_out::escribir_particion_float(auto& inicio, auto& fin, std::string rut
 };
 
 
-void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta_escritura){
+void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::filesystem::path ruta_escritura){
    std::ofstream out;
    //std::vector<Values> sub_vector(inicio, fin);
    //std::vector<uint8_t> vec_vals;
@@ -401,7 +358,7 @@ void disk_out::escribir_particion_bool(auto& inicio, auto& fin, std::string ruta
    try {
       //vec_vals.reserve(size_particion);
       arr_vals = new uint8_t[num_rows_buffer];
-      out.open(ruta_escritura + ".dat", std::ios::out | std::ios::binary | std::ios::app);
+      out.open(ruta_escritura += ".dat", std::ios::out | std::ios::binary | std::ios::app);
       Logger::log(LogLevel::DEBUG, "La particion esta abierta");
       std::vector<Values>::iterator tmp_ini_index;
       tmp_ini_index = inicio;
@@ -574,7 +531,7 @@ struct byteStreamer {
 
 
 
-void disk_out::escribir_particion_string(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::string ruta_escritura){
+void disk_out::escribir_particion_string(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::filesystem::path ruta_escritura){
    
    // NO nos hace falta el argumento int size_disponible_para_escribir como input.
    // Ya que inicio y fin son las filas a escribir en una partición.
@@ -583,8 +540,13 @@ void disk_out::escribir_particion_string(std::vector<Values>::iterator inicio, s
    std::ofstream out2;
    //std::vector<uint32_t> vec_sizes;
 
-   out1.open(ruta_escritura + ".bin", std::ios::out | std::ios::binary | std::ios::app);
-   out2.open(ruta_escritura + ".idx", std::ios::out | std::ios::binary | std::ios::app);
+   std::filesystem::path path_bin = ruta_escritura;
+   path_bin += ".bin";
+   std::filesystem::path path_idx = ruta_escritura;
+   path_idx += ".idx";
+
+   out1.open(path_bin, std::ios::out | std::ios::binary | std::ios::app);
+   out2.open(path_idx, std::ios::out | std::ios::binary | std::ios::app);
    Logger::log(LogLevel::DEBUG, "La particion esta abierta");
 
 
@@ -630,7 +592,7 @@ void disk_out::escribir_particion_string(std::vector<Values>::iterator inicio, s
 };
 
 
-void disk_out::escribir_particion_unknown(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::string ruta_escritura){
+void disk_out::escribir_particion_unknown(std::vector<Values>::iterator inicio, std::vector<Values>::iterator fin, std::filesystem::path ruta_escritura){
    
    // NO nos hace falta el argumento int size_disponible_para_escribir como input.
    // Ya que inicio y fin son las filas a escribir en una partición.
@@ -639,8 +601,13 @@ void disk_out::escribir_particion_unknown(std::vector<Values>::iterator inicio, 
    std::ofstream out2;
    //std::vector<uint32_t> vec_sizes;
 
-   out1.open(ruta_escritura + ".bin", std::ios::out | std::ios::binary | std::ios::app);
-   out2.open(ruta_escritura + ".idx", std::ios::out | std::ios::binary | std::ios::app);
+   std::filesystem::path path_bin = ruta_escritura;
+   path_bin += ".bin";
+   std::filesystem::path path_idx = ruta_escritura;
+   path_idx += ".idx";
+
+   out1.open(path_bin, std::ios::out | std::ios::binary | std::ios::app);
+   out2.open(path_idx, std::ios::out | std::ios::binary | std::ios::app);
    Logger::log(LogLevel::DEBUG, "La particion esta abierta");
 
 
@@ -688,7 +655,7 @@ void disk_out::escribir_particion_unknown(std::vector<Values>::iterator inicio, 
 
 
 
-void disk_out::bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
+void disk_out::bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
 
    // Estas son las variables que usaremos para trackear lo que llevamos avanzado
    int bytes_escritos = 0;
@@ -747,7 +714,9 @@ void disk_out::bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_
                                                 );
 
          // 3) Realizamos la escritura
-         std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         //std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         std::filesystem::path ruta_escritura = ruta_variable;
+         ruta_escritura += ultima_particion_str;
          disk_out::escribir_particion_int(inicio, fin, ruta_escritura);
             // Una vez hecha la escritura, actualizamos los contadores
             // 4) Actualización de los contadores:
@@ -764,7 +733,7 @@ void disk_out::bucle_escritura_int(std::vector<Values>*& vec_var_ptr, int bytes_
    };
 };
 
-void disk_out::bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
+void disk_out::bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
 
    // Estas son las variables que usaremos para trackear lo que llevamos avanzado
    int bytes_escritos = 0;
@@ -823,7 +792,9 @@ void disk_out::bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int byte
                                                 );
 
          // 3) Realizamos la escritura
-         std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         //std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         std::filesystem::path ruta_escritura = ruta_variable;
+         ruta_escritura += ultima_particion_str;
          disk_out::escribir_particion_float(inicio, fin, ruta_escritura);
          // Una vez hecha la escritura, actualizamos los contadores
          // 4) Actualización de los contadores:
@@ -841,7 +812,7 @@ void disk_out::bucle_escritura_float(std::vector<Values>*& vec_var_ptr, int byte
 };
 
 
-void disk_out::bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
+void disk_out::bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
 
    // Estas son las variables que usaremos para trackear lo que llevamos avanzado
    int bytes_escritos = 0;
@@ -900,7 +871,9 @@ void disk_out::bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes
                                                 );
 
          // 3) Realizamos la escritura
-         std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         //std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         std::filesystem::path ruta_escritura = ruta_variable;
+         ruta_escritura += ultima_particion_str;
          disk_out::escribir_particion_bool(inicio, fin, ruta_escritura);
          // Una vez hecha la escritura, actualizamos los contadores
          // 4) Actualización de los contadores:
@@ -918,7 +891,7 @@ void disk_out::bucle_escritura_bool(std::vector<Values>*& vec_var_ptr, int bytes
 };
 
 
-void disk_out::bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
+void disk_out::bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
 
    // Estas son las variables que usaremos para trackear lo que llevamos avanzado
    int bytes_escritos = 0;
@@ -977,7 +950,9 @@ void disk_out::bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int byt
                                                 );
 
          // 3) Realizamos la escritura
-         std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         //std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         std::filesystem::path ruta_escritura = ruta_variable;
+         ruta_escritura += ultima_particion_str;
          disk_out::escribir_particion_string(inicio, fin, ruta_escritura);
          // Una vez hecha la escritura, actualizamos los contadores
          // 4) Actualización de los contadores:
@@ -996,7 +971,7 @@ void disk_out::bucle_escritura_string(std::vector<Values>*& vec_var_ptr, int byt
 
 
 
-void disk_out::bucle_escritura_unknown(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::string ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
+void disk_out::bucle_escritura_unknown(std::vector<Values>*& vec_var_ptr, int bytes_totales_a_escribir, int partition_entities, std::filesystem::path ruta_variable, std::string ultima_particion_str, int ultima_particion_int){
 
    // Estas son las variables que usaremos para trackear lo que llevamos avanzado
    int bytes_escritos = 0;
@@ -1055,7 +1030,9 @@ void disk_out::bucle_escritura_unknown(std::vector<Values>*& vec_var_ptr, int by
                                                 );
 
          // 3) Realizamos la escritura
-         std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         //std::string ruta_escritura = ruta_variable + ultima_particion_str;
+         std::filesystem::path ruta_escritura = ruta_variable;
+         ruta_escritura += ultima_particion_str;
          disk_out::escribir_particion_unknown(inicio, fin, ruta_escritura);
          // Una vez hecha la escritura, actualizamos los contadores
          // 4) Actualización de los contadores:
@@ -1096,7 +1073,7 @@ void disk_out::write_table_data(table* tabla){
 
    // Ahora, examinamos cuantas particiones hay:
    std::vector<std::string> particiones_nombres;
-   particiones_nombres = disk_aux::obtener_archivos_en_ruta("data/" + nombre_tabla + "/" + nombre_columnas[0], tipo_columnas[0]);
+   particiones_nombres = disk_aux::obtener_archivos_en_ruta(ruta_tabla / nombre_columnas[0], tipo_columnas[0]);
    std::string last_partition = "";
    //////////////////////////////////////////////////////////////////////
    // Obtenemos la última partición:
@@ -1138,9 +1115,11 @@ void disk_out::write_table_data(table* tabla){
       std::string& column_name = nombre_columnas[i];
       std::vector<Values>* vec_var_ptr = &(vec_de_vec_vals.at(column_name));
       // Creamos el directorio de cada varuiable de la tabla:
-      std::string ruta_columna = "data/" + nombre_tabla + "/" + column_name;
+      //td::string ruta_columna = "data/" + nombre_tabla + "/" + column_name;
+      std::filesystem::path ruta_columna = std::filesystem::path("data") / nombre_tabla / column_name;
       std::filesystem::create_directories(ruta_columna);
-      std::string ruta_variable = "data/" + nombre_tabla + "/" + column_name + "/" + "part_";
+      //std::string ruta_variable = "data/" + nombre_tabla + "/" + column_name + "/" + "part_";
+      std::filesystem::path ruta_variable = ruta_columna / "part_";
 
       switch(tipo_dato){
          case dataType::INT: {

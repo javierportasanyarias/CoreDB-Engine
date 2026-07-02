@@ -38,7 +38,7 @@ void disk_wal_write::write_table_wal_metadata(table* tabla){
    std::string nombre_tabla = metadatos_puntero->name;
  
    // Volvemos a abrir el archivo ,esta vez en modo append:
-   std::ofstream out("backup_data/wal.bin", std::ios::binary | std::ios::app);
+   std::ofstream out(std::filesystem::path("backup_data/wal.bin"), std::ios::binary | std::ios::app);
    //out.seekp(0, std::ios::end); // Volvemos al final para escribir el nuevo bloque de metadatos
 
 
@@ -194,7 +194,7 @@ void disk_wal_write::walDataWriter::control_unit(){
          table_metadata* metadata = this->table_obj->metadata_ptr;
          std::string nombre_tabla = metadata->name;
          
-         this->out.open("backup_data/wal.bin", std::ios::binary | std::ios::app);
+         this->out.open(std::filesystem::path("backup_data/wal.bin"), std::ios::binary | std::ios::app);
          Logger::log(LogLevel::DEBUG, "Ya se ha abierto el archivo");
 
          this->tipos_datos = metadata->column_types;

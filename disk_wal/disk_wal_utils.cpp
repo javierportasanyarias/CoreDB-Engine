@@ -27,7 +27,7 @@ void disk_wal_utils::delete_wal_bin_file(){
    de haber realizado la escritura de los archivos binarios de
    metadatos y datos binarios sin fallos
    */
-   if(fs::remove("backup_data/wal.bin")){
+   if(fs::remove(std::filesystem::path("backup_data/wal.bin"))){
       Logger::log(LogLevel::DEBUG, "Archivo WAl eliminado con EXITO");
    } else {
       Logger::log(LogLevel::DEBUG, "El archivo WAL no existía, por lo que NO ha sido eliminado");
