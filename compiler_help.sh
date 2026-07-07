@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
 clang++ -std=c++20 \
+  -include-pch pch_app.h.pch \
   -Iexecution \
   -Iplanning_execution \
   -Inodes_for_trees \
   -Itext_manipulation \
-  -Iglobals \
-  -I"data_structure" \
-  -Ilog \
   -I"disk_io" \
   -I"disk_in" \
   -I"disk_out" \
@@ -15,18 +13,14 @@ clang++ -std=c++20 \
   -I"disk_aux" \
   -I"disk_wal" \
   -I"disk_buffer" \
-  -Itests \
   -Ipartition_sorting \
+  log/logging.cpp \
   app/main.cpp \
   execution/execution.cpp \
   planning_execution/execution_planning.cpp \
   nodes_for_trees/node_for_trees.cpp \
   text_manipulation/process_tokens.cpp \
   text_manipulation/textutils.cpp \
-  globals/globals.cpp \
-  log/logging.cpp \
-  tests/data_structs.cpp \
-  tests/bateria_tests.cpp \
   disk_io/disk_io.cpp \
   disk_in/disk_in.cpp \
   disk_out/disk_out.cpp \

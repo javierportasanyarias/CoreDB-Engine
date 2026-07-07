@@ -1,9 +1,5 @@
 #include "text_utils.h"
-#include <iostream>
-#include <string>
-#include <vector>
-#include <cctype>  // para std::isspace
-#include "logging.h"
+
 
 std::string textUtils::espaciar_texto(const std::string& input){
    /*
@@ -44,7 +40,7 @@ std::string textUtils::espaciar_texto(const std::string& input){
 };
 
 
-void textUtils::simpleLinkedList::add_node(std::string& valor){
+void textUtils::simpleLinkedList::add_node(const std::string& valor){
    /*
    Método de la lista enlazada simple para añadir un nodo (al final de la lista enlazada).
    */

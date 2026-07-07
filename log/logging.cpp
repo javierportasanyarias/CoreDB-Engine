@@ -1,6 +1,4 @@
 #include "logging.h"
-#include <iostream>
-#include <limits>
 
 // Definición del miembro estático
 LogLevel Logger::level = LogLevel::INFO;

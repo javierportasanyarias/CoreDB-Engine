@@ -1,17 +1,9 @@
-#ifndef DISK_METADATA
-#define DISK_METADATA
+#pragma once
 
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-#include "filesystem"
-#include <vector> // <--- FUNDAMENTAL
+// Forward declarations:
+struct table;
+struct table_metadata;
 
-namespace fs = std::filesystem;
 
 namespace disk_metadata {
 
@@ -25,6 +17,3 @@ namespace disk_metadata {
     void lectura_metadatos_todas_tablas();
 
 }; // Cerrar el namespace 'disk_metadata'
-
-
-#endif

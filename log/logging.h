@@ -1,14 +1,4 @@
-#ifndef LOGGING_H
-#define LOGGING_H
-
-#include <iostream>
-#include <string>
-#include <variant>
-#include <vector>
-#include <sstream>
-#include <iomanip>
-#include <filesystem> //Para portabilidad de sistema de archivos
-
+#pragma once
 
 enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
 
@@ -55,5 +45,3 @@ public:
 
     static void clear_in();
 };
-
-#endif

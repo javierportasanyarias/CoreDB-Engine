@@ -1,12 +1,5 @@
-#ifndef DATA_STRUCT_H
-#define DATA_STRUCT_H
+#pragma once
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <variant>
-//#include <unordered_map>
-#include <map>
 
 enum class dataType {
    /*
@@ -97,5 +90,3 @@ struct table {
 
    table(): metadata_ptr(nullptr), data_ptr(nullptr), data_buffer_ptr(nullptr){};
 };
-
-#endif

@@ -1,15 +1,4 @@
-#ifndef DISK_IN
-#define DISK_IN
-
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-#include "filesystem"
-#include <vector> // <--- FUNDAMENTAL
+#pragma once
 
 
 namespace disk_in {
@@ -53,6 +42,3 @@ namespace disk_in {
     };
 
 }; // Cerrar el namespace 'disk_in'
-
-
-#endif

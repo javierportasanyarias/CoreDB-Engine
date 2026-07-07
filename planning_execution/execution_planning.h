@@ -1,14 +1,15 @@
-#ifndef EXECUTION_PLANNING_H
-#define EXECUTION_PLANNING_H
+#pragma once
 
-#include <iostream>
-#include <variant>
-// #include "nodes_for_trees/node_for_trees.h"
 #include "node_for_trees.h"
-// #include "globals/globals.h"
-#include "globals.h"
-// #include "execution/execution.h"
 #include "execution.h"
+
+// Forward declarations:
+class DropTableNode;
+class NodeType1;
+class NodeType2;
+class NodeType3;
+class QueryNode;
+
 
 namespace execPlan {
     ///////////////////////////////////////////////////////////
@@ -54,6 +55,3 @@ namespace execPlan {
     // Method for deleting not only the object, but all it contains:
     void delete_whole_task_queue(Queue* cola);
 };
-
-
-# endif

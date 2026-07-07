@@ -1,19 +1,6 @@
-
-
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-#include "filesystem"
-#include "disk_buffer.h"
-#include <cstring> // Para usar std::memcpy
 #include "part_sort.h"
 #include "disk_aux.h"
 #include "disk_out.h"
-
 
 
 ////////////////////////////////////////////////////////////////////

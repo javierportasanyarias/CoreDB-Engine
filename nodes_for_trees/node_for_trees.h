@@ -1,11 +1,5 @@
-#ifndef NODE_FOR_TREES_H
-#define NODE_FOR_TREES_H
+#pragma once
 
-#include <iostream>
-#include <string>
-#include <vector>
-// #include "data_structure/data_struct.h"
-#include "data_struct.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
@@ -171,5 +165,3 @@ class tree_for_schema{
       void imprimir_arbol();
 
 };
-
-#endif

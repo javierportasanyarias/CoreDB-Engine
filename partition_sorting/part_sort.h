@@ -1,10 +1,5 @@
-#ifndef PART_SORT
-#define PART_SORT
+#pragma once
 
-#include <string>
-#include <iostream>
-#include <vector>
-#include "logging.h"
 
 namespace part_sort {
 
@@ -29,5 +24,3 @@ namespace part_sort {
     void bubble_sort(std::vector<std::string>& vec);
 
 };
-
-#endif

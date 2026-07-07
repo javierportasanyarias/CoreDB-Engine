@@ -1,9 +1,12 @@
-#ifndef DISK_BUFFER
-#define DISK_BUFFER
+#pragma once
 
-#include "globals.h"
 #include "disk_in.h"
-#include "logging.h"
+
+// Foward declarations:
+namespace disk_in {
+class read_table_iterator;
+};
+
 
 namespace disk_buffer {
 
@@ -216,5 +219,3 @@ namespace disk_buffer {
    };
 
 }; // Cierre del namespace 'disk_buffer'
-
-#endif

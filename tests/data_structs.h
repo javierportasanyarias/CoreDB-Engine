@@ -1,7 +1,5 @@
-#ifndef DATA_STRUCTS_H
-#define DATA_STRUCTS_H
+#pragma once
 
-#include<iostream>
 
 class FifoNode {
 
@@ -26,5 +24,3 @@ class FIFO {
 
 // Para eliminar toda la fifo:
 void delete_fifo(FIFO*& fifo_obj);
-
-#endif

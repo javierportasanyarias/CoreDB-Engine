@@ -1,9 +1,4 @@
-#ifndef TEXT_UTILS_H
-#define TEXT_UTILS_H
-
-#include <iostream>
-#include <string>
-#include <vector>
+#pragma once
 
 namespace textUtils {
    std::string espaciar_texto(const std::string& input);
@@ -30,7 +25,7 @@ namespace textUtils {
             clear();
          };
 
-         void add_node(std::string& valor);
+         void add_node(const std::string& valor);
 
          void print_list();
 
@@ -49,5 +44,3 @@ namespace textUtils {
 
    simpleLinkedList* procesar_texto_pipeline(std::string& input);
 };
-
-# endif

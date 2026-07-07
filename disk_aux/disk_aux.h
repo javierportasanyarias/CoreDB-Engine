@@ -1,16 +1,6 @@
-#ifndef DISK_AUX
-#define DISK_AUX
+#pragma once
 
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-#include "filesystem"
 #include "disk_buffer.h"
-#include <cstring> // Para usar std::memcpy
 #include "part_sort.h"
 
 
@@ -82,5 +72,3 @@ namespace disk_aux{
     // SOLO ESCANEA LOS METADATOS DE LAS TABLAS:
     std::vector<std::filesystem::path> escanear_tablas();
 };
-
-#endif

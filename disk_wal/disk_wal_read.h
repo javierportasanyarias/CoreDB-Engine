@@ -1,14 +1,4 @@
-#ifndef DISK_WAL_READ
-#define DISK_WAL_READ
-
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-
+#pragma once
 
 
 namespace disk_wal_read {
@@ -146,5 +136,3 @@ namespace disk_wal_read {
 
 
 }; // Cerrar el namespace 'disk_wal_read'
-
-#endif

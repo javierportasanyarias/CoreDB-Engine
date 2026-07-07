@@ -1,17 +1,5 @@
-#ifndef DISK_OUT
-#define DISK_OUT
+#pragma once
 
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-#include "filesystem"
-#include <vector> // <--- FUNDAMENTAL
-
-namespace fs = std::filesystem;
 
 namespace disk_out {
 
@@ -50,6 +38,3 @@ namespace disk_out {
     void write_table_data(table* tabla);
 
 }; // Cerrar el namespace 'disk_io'
-
-
-#endif

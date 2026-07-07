@@ -1,15 +1,5 @@
-#ifndef DISK_WAL_WRITE
-#define DISK_WAL_WRITE
+#pragma once
 
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-//#include <sstream>
-#include <cstring> // Para usar std::memcpy y memset
 #include "disk_buffer.h"
 
 
@@ -79,5 +69,3 @@ namespace disk_wal_write {
     };
 
 }; // Cerrar el namespace 'disk_wal_write'
-
-#endif

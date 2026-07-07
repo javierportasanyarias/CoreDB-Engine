@@ -1,19 +1,8 @@
-#include <iostream>
-#include <vector>
-// #include "data_structure/data_struct.h"
-#include "data_struct.h"
-#include <unordered_map>
-// #include "globals/globals.h"
-#include "globals.h"
-#include <variant>
-#include "execution.h"
-#include "logging.h"
-
-#include <cctype> // Para isprint
 #include "disk_wal_write.h"
-#include "disk_buffer.h"
 #include "disk_aux.h"
-
+#include "disk_buffer.h"
+#include "node_for_trees.h"
+#include "execution.h"
 
 
 ///////////////////////////////////////////////////////////////////////

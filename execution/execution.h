@@ -1,16 +1,14 @@
-#ifndef PLAN_EXECUTION_H
-#define PLAN_EXECUTION_H
+#pragma once
 
-#include <iostream>
-#include <vector>
-// #include "data_structure/data_struct.h"
-#include "data_struct.h"
-#include <unordered_map>
-// #include "globals/globals.h"
-#include "globals.h"
-#include <variant>
-// #include "nodes_for_trees/node_for_trees.h"
 #include "node_for_trees.h"
+
+// Forward declarations:
+class DropTableNode;
+class NodeType1;
+class NodeType2;
+class NodeType3;
+class QueryNode;
+
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -52,5 +50,3 @@ void sanitize_global_dict();
 void delete_all_tables_dict();
 
 void delete_all_tables_dict_only_mem();
-
-#endif

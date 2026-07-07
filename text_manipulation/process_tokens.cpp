@@ -1,18 +1,12 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include "text_utils.h"
-// #include "planning_execution/execution_planning.h"
+#include "execution.h"
 #include "execution_planning.h"
-// #include "nodes_for_trees/node_for_trees.h"
 #include "node_for_trees.h"
-#include <any>
-// #include "data_structure/data_struct.h"
-#include "data_struct.h"
-// #include "globals/globals.h"
-#include "globals.h"
+#include "text_utils.h"
 #include "process_tokens.h"
-#include "logging.h"
+
+// Forward declaration:
+struct table;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Auxiliar class for keeping track of the tables created o already present:

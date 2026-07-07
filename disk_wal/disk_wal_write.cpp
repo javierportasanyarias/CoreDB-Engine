@@ -1,15 +1,7 @@
-#include "data_struct.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "globals.h"
-#include <map>
-#include "logging.h"
-#include "filesystem"
-#include "disk_aux.h"
 #include "disk_aux.h"
 #include "disk_metadata.h"
 #include "disk_wal_write.h"
+
 
 //========================================================
 //== FUNION ESCRITURA METADATOS EN EL WAL: ===============

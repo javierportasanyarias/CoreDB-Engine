@@ -1,23 +1,23 @@
-#ifndef PROCESS_TOKENS_H
-#define PROCESS_TOKENS_H
+#pragma once
 
-
-#include <iostream>
-#include <string>
-#include <vector>
 #include "text_utils.h"
-// #include "planning_execution/execution_planning.h"
 #include "execution_planning.h"
-// #include "nodes_for_trees/node_for_trees.h"
 #include "node_for_trees.h"
-#include <any>
-// #include "data_structure/data_struct.h"
-#include "data_struct.h"
-// #include "globals/globals.h"
-#include "globals.h"
 #include "execution.h"
 
-#include <unordered_set>
+// Forward declarations:
+class NodeType1;
+class NodeType2;
+class NodeType3;
+class QueryNode;
+namespace execPlan {
+class Queue;
+};
+namespace textUtils {
+class NodeLista1;
+class simpleLinkedList;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Auxiliar class for keeping track of the tables created o already present:
@@ -73,5 +73,3 @@ void drop_table(execPlan::Queue*& excec_queue, textUtils::NodeLista1*& table_nom
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 execPlan::Queue* procesar_lista_tokens(textUtils::simpleLinkedList*& lista);
-
-#endif
