@@ -23,4 +23,8 @@ namespace part_sort {
 
     void bubble_sort(std::vector<std::string>& vec);
 
+    void quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::string>& vec);
+
+    void quick_sort(std::vector<std::string>& vec);
+
 };

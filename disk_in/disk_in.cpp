@@ -458,10 +458,10 @@ class stringReader_v2{
                // Recuperamos el tamano de los archivos:
                this->file_str_size = disk_aux::return_file_size_bytes(in_str);
                this->file_idx_size = disk_aux::return_file_size_bytes(in_idx);
-               //Logger::log(LogLevel::DEBUG, "  Eñl archivo de strings pesa: ", false, true);
-               //Logger::log(LogLevel::DEBUG, this->file_str_size, true, false);
-               //Logger::log(LogLevel::DEBUG, "  Eñl archivo de indices pesa: ", false, true);
-               //Logger::log(LogLevel::DEBUG, this->file_idx_size, true, false);
+               Logger::log(LogLevel::DEBUG, "  El archivo de strings pesa: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_str_size, true, false);
+               Logger::log(LogLevel::DEBUG, "  El archivo de indices pesa: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_idx_size, true, false);
 
                if(this->file_str_size > 0 && this->file_idx_size > 0){
                   this->state = 1;
@@ -470,6 +470,7 @@ class stringReader_v2{
                this->state = 255;
                break;
             };
+
             case 1:{
                Logger::log(LogLevel::DEBUG, "Estado 1 de stringReader_v2");
                // CASO ESPECIAL
@@ -484,6 +485,7 @@ class stringReader_v2{
                this->state = 4; // Saltamos a ver el tamano de la string
                break;
             };
+
             case 2:{
                Logger::log(LogLevel::DEBUG, "Estado 2 de stringReader_v2");
                //Logger::log(LogLevel::DEBUG, "ESTADO 2: (LECTURA INTELIGENTE)");
@@ -492,6 +494,35 @@ class stringReader_v2{
                bool eof_buffer_idx = false;
                bool eof_file_str = false;
                bool eof_file_idx = false;
+               Logger::log(LogLevel::DEBUG, "<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+               Logger::log(LogLevel::DEBUG, "DIAGNOSTICO DE PARADA:");
+
+               Logger::flush(LogLevel::DEBUG);
+               Logger::log(LogLevel::DEBUG, "-> condition_eof_str_partition:");
+               Logger::log(LogLevel::DEBUG, "  Valor del puntero de datos: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_str_ptr, true, false);
+               Logger::log(LogLevel::DEBUG, "  Tamano del arhivo de datos: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_str_size, true, false);
+               Logger::flush(LogLevel::DEBUG);
+               Logger::log(LogLevel::DEBUG, "-> condition_eof_idx_partition:");
+               Logger::log(LogLevel::DEBUG, "  Valor del puntero de indices: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_idx_ptr, true, false);
+               Logger::log(LogLevel::DEBUG, "  Tamano del arhivo de indices: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_idx_size, true, false);
+               Logger::flush(LogLevel::DEBUG);
+               Logger::log(LogLevel::DEBUG, "-> condicion_eof_buffer_idx:");
+               Logger::log(LogLevel::DEBUG, "  Bytes leidos temporalmente: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->buffer_idx_read_bytes_tmp, true, false);
+               Logger::log(LogLevel::DEBUG, "  Tamano del buffer: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_buffer_idx_size, true, false);
+               Logger::flush(LogLevel::DEBUG);
+               Logger::log(LogLevel::DEBUG, "-> condicion_eof_buffer_str:");
+               Logger::log(LogLevel::DEBUG, "  Bytes leidos temporalmente: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->buffer_str_read_bytes_tmp, true, false);
+               Logger::log(LogLevel::DEBUG, "  Tamano del buffer: ", false, true);
+               Logger::log(LogLevel::DEBUG, this->file_buffer_str_size, true, false);
+               Logger::flush(LogLevel::DEBUG);
+               Logger::log(LogLevel::DEBUG, "<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
                // Ahora realizamos la lectura de los indices:
                if(this->condition_eof_idx_partition()){
@@ -562,6 +593,7 @@ class stringReader_v2{
                this->state = 5; // Saltamos a leer la string
                break;
             };
+
             case 5:{
                Logger::log(LogLevel::DEBUG, "Estado 5 de stringReader_v2");
                //Logger::log(LogLevel::DEBUG, "ESTADO 5: (Lectura de la STRING)");
@@ -672,7 +704,7 @@ class stringReader_v2{
          bool aux_bool = true;
          //uint32_t contador_aux = 0;
          while(this->state != 255 && aux_bool){
-            //if(contador_aux == 200){
+            //if(contador_aux == 50){
                //break;
             //};
             if(this->state == 255){
@@ -726,7 +758,8 @@ disk_in::read_table_iterator::read_table_iterator(table* tabla){
    if(!(this->particiones_nombres.empty())){
       Logger::log(LogLevel::DEBUG, "SI que hay archivos en DISCO");
       Logger::log(LogLevel::DEBUG, "Procedemos a ordenarlas de menor a mayor:");
-      part_sort::bubble_sort(this->particiones_nombres);
+      //part_sort::bubble_sort(this->particiones_nombres);
+      part_sort::quick_sort(this->particiones_nombres);
       Logger::log(LogLevel::DEBUG, "Ordenamoento de las particiones realizado con exito");
       Logger::log(LogLevel::DEBUG, "Hallamos el número de particiones:");
       this->total_partitions = this->particiones_nombres.size();

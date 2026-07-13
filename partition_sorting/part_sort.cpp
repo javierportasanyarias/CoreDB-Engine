@@ -172,3 +172,69 @@ void part_sort::bubble_sort(std::vector<std::string>& vec){
         p1++;
     };
 };
+
+
+void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::string>& vec){
+
+
+    // Base case:
+    if(beg >= end){
+        return;
+    };
+
+    // For getting the number:
+    //part_sort::procesar_numero_particion(string_1)
+
+
+    int32_t arr_len = end - beg;
+    int32_t mid_index = beg + arr_len / 2;
+    int32_t pivot_var = part_sort::procesar_numero_particion(vec[mid_index]);
+    std::string tmp_ptr;
+    // We initialize the new pointers
+    int32_t i = beg - 1;
+    int32_t tmp_i_val = 0;
+    int32_t j = end + 1;
+    int32_t tmp_j_val = 0;
+
+
+    while(i < j){
+        // Advance phase:
+        do{
+            i++;
+            tmp_i_val = part_sort::procesar_numero_particion(vec[i]);
+        } while(tmp_i_val < pivot_var);
+        do{
+            j--;
+            tmp_j_val = part_sort::procesar_numero_particion(vec[j]);
+        } while(tmp_j_val > pivot_var);
+        //Switch phase:
+        if(i < j){
+            tmp_ptr = vec[i];
+            vec[i] = vec[j];
+            vec[j] = tmp_ptr;
+        };
+    };
+
+    // out of the loop we call te recursive
+    part_sort::quick_sort_recursive(beg, j, vec);
+    part_sort::quick_sort_recursive(j+1, end, vec);
+};
+
+
+
+void part_sort::quick_sort(std::vector<std::string>& vec){
+    /*
+    Implementation of the Quick Sort algortihm using hoare partitions
+    */
+    if (vec.empty()) return;
+
+    std::string* ptr_ini = vec.data();
+    std::string* ptr_end = ptr_ini + vec.size() - 1;
+    int32_t arr_len = ptr_end - ptr_ini;
+    int32_t i = 0;
+    int32_t j = arr_len;
+
+    // We initialize the recursion:
+    part_sort::quick_sort_recursive(i, j, vec);
+
+};
