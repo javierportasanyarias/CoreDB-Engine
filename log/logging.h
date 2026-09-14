@@ -43,5 +43,4 @@ public:
 
     static void login(std::string& input);
 
-    static void clear_in();
 };

@@ -9,8 +9,8 @@
 #include <unordered_map>
 #include <map>
 #include "filesystem"
-#include <cstring> // Para usar std::memcpy y memset
-#include <cctype> // Para isprint y std::isspace
+#include <cstring>
+#include <cctype>
 #include <sstream>
 #include <iomanip>
 #include <limits>

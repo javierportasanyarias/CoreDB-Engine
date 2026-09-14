@@ -19,31 +19,28 @@ dataType transform_str_to_datatype(const std::string& input);
 /// PARA RELLENAR LAS TABLAS:
 
 
-void fill_table_with_values_v4(NodeType3* nodo_ptr);
+void fill_table_with_values_v4(NodeType3* node_ptr_input);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// PARA RELLENAR METADATOS:
 
-void recursive_metadata_fill_lv2(NodeType2* nodo_ptr, table* tb_created);
+void recursive_metadata_fill_lv2(NodeType2* node_ptr_input, table* tb_created);
 
-void recursive_metadata_fill_lv1(NodeType1* nodo_ptr);
+void recursive_metadata_fill_lv1(NodeType1* node_ptr_input);
 
 
 ///////////////////////////////////////////////////////////////
 // MOSTRAR TABLA:
 
-void mostrar_consulta_v1(QueryNode*& nodo_root);
-
-
-void mostrar_tabla_query(QueryNode* nodo_root);
+void show_table_query(QueryNode* root_node_input);
 
 ////////////////////////////////////////////////////////////////
 // ELIMINACIÓN:
-void liberar_tabla(table*& tb);
+void table_deletion(table*& tb);
 
-void liberar_tabla_solo_memoria(table*& tb);
+void table_deletion_only_memory(table*& tb);
 
-void drop_table_from_global_dict(DropTableNode*& nodo_ptr);
+void drop_table_from_global_dict(DropTableNode*& node_ptr_input);
 
 void sanitize_global_dict();
 

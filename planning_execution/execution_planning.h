@@ -14,18 +14,23 @@ class QueryNode;
 namespace execPlan {
     ///////////////////////////////////////////////////////////
     // Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
+
+    // Variant type of variable holding all the task's nodes:
     using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*, DropTableNode*>;
+
     class queueNode1 {
         public:
             NodeVariant nodePtr;
-            // Proximo nodo de la cola:
             queueNode1* nxt_node_queue;
             queueNode1* prv_node_queue;
             queueNode1();
     };
 
-    // en el header
+
     class Queue {
+        /*
+        FIFO queue determines the execution tasks's order
+        */
         public:
             queueNode1* first_ptr;
             queueNode1* last_ptr;
@@ -34,24 +39,25 @@ namespace execPlan {
 
             void add_node_to_queue(queueNode1* node_queue_to_add);
 
-            // saca del frente y devuelve el nodo (no lo borra)
+            // Method for reasigning the last queue node (It does not delete it):
             queueNode1* pop_front_node();
 
-            // Función para imprimir todos los nodos de la cola y su tipo:
+            // Mrthod for printing all the queue node and types:
             void printNodeTypes() const;
 
 
-            // Funcion para ejecutar la cola:
+            // Task execution method:
             void execute_queue_tasks();
 
-            // Función para eliminar nodos de la cola:
-            void delete_current_queue_node(queueNode1* nodo_cola_a_eliminar);
+            // Method for deleting a queue's node.
+            void delete_current_queue_node(queueNode1* queue_node_to_del);
     };
 
-    void delete_queue_node(queueNode1* nodo_cola_a_eliminar);
-    // Método a parte de la cola para eliminarla:
-    void delete_task_queue(Queue* cola);
+    void delete_queue_node(queueNode1* queue_node_to_del);
+
+
+    void delete_task_queue(Queue* queue);
 
     // Method for deleting not only the object, but all it contains:
-    void delete_whole_task_queue(Queue* cola);
+    void delete_whole_task_queue(Queue* queue);
 };

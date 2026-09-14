@@ -45,27 +45,14 @@ std::string read_until_marker_4(int (&pipe_out)[2], const std::string& marker="_
 };
 
 
-std::string response_selector(int& counter){
-
-   std::string output = "";
-   if(counter ==0){
-      output = "uno";
-   } else if(counter == 1){
-      output = "dos";
-   } else{
-      output = "exit";
-   };
-   return output;
-};
-
-void manejador_sigaction_hijo(int msg){
+void sigaction_child_manager(int msg){
    const char* input = "\nHas matado al hijo\n";
    write(STDOUT_FILENO, input, 20);
    //_exit(0);
 };
 
 
-void manejador_sigaction_padre(int msg){
+void sigaction_parent_manager(int msg){
    const char* input = "\nAntes de morir, esperare a que mi hijo muera\n";
    write(STDOUT_FILENO, input, 46);
    // Matamos al hijo:
@@ -82,8 +69,8 @@ void manejador_sigaction_padre(int msg){
 // == PROCESO HIJO ==========================
 // ==========================================
 
-void ejecutar_proceso_hijo(int (&pipe1)[2], int (&pipe2)[2]){
-   sa.sa_handler = manejador_sigaction_hijo;
+void execute_child_process(int (&pipe1)[2], int (&pipe2)[2]){
+   sa.sa_handler = sigaction_child_manager;
    if(sigaction(SIGINT, &sa, NULL) == -1){
       perror("Error al configurar el sigaction del hijo");                     
    };
@@ -100,12 +87,12 @@ void ejecutar_proceso_hijo(int (&pipe1)[2], int (&pipe2)[2]){
 };
 
 //== PROCESO PADRE ============
-void ejecutar_proceso_padre(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*& fifo_obj){
+void execute_father_process(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*& fifo_obj){
    // == El padre: ======================
    FifoNode* c_n_ptr = fifo_obj->head;
                                                                               
    // Definimos ma funcion de sigaction:
-   sa.sa_handler = manejador_sigaction_padre;
+   sa.sa_handler = sigaction_parent_manager;
    if(sigaction(SIGINT, &sa, NULL) == -1){
       perror("Error al configurar el sigaction del hijo");
    };
@@ -166,7 +153,7 @@ void ejecutar_proceso_padre(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*&
 
 // == TESTEO PROCESOS: ===============
 
-int run_test_subproceso(FIFO*& fifo_obj){
+int run_test_subprocess(FIFO*& fifo_obj){
    int pipe1[2]; // Padre-> hijo
    int pipe2[2]; // Hijo -> padre
    if (pipe(pipe1) ==-1 || pipe(pipe2) == -1){                                    
@@ -186,10 +173,10 @@ int run_test_subproceso(FIFO*& fifo_obj){
    case 0:                                                                        
    // == El hijo: ==========================
       // Denimos la funcion de sigaction:
-      ejecutar_proceso_hijo(pipe1, pipe2);
+      execute_child_process(pipe1, pipe2);
    default:                                                                       
    // == El padre: =======================
-      ejecutar_proceso_padre(pipe1, pipe2, pid, fifo_obj);                            
+      execute_father_process(pipe1, pipe2, pid, fifo_obj);                            
    };
 
    return 0;
@@ -216,7 +203,7 @@ int main(){
       fifo_obj = define_test_4();                                              
    };
 
-   run_test_subproceso(fifo_obj);
+   run_test_subprocess(fifo_obj);
    Logger::flush();
                                                                       
    return 0;

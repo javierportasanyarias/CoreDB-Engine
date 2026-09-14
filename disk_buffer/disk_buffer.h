@@ -10,26 +10,17 @@ class read_table_iterator;
 
 namespace disk_buffer {
 
-   // ==========================================
-   // == FUNCIONES AUXILIARES: CONTEO FILAS ====
-   // ==========================================
-
-   void contar_datos_ram_una_tabla(std::string& nombre_tabla);
-
-
-   void contar_datos_en_ram_todas_tablas();
-
 
    //====================================================
-   //== tableRowIterator pero solo para RAM =============
+   //========= tableRowIterator only RAM ================
    //====================================================
    class tableRowIterator_only_ram {
       /*
       Muy similar a la clase 'tableRowIterator', pero sólo itera por los datos añadidos
       en la misma sesión (RAM viva).
       Posee los siguientes atributos:
-         -> contador: para trackear la fila por la que se está iterando/recuperando
-         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> counter: para trackear la fila por la que se está iterando/recuperando
+         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
          -> eof: condicional que indica si ya no qudan más filas por las que iterar:
             * Si es true: se ha llegado al final y no hay más filas que devolver
             * Si es false: todavía queda una fila o más por iterar
@@ -38,33 +29,33 @@ namespace disk_buffer {
          -> Se calcula el valor inicial de la variable eof.
       */
       public:
-         uint32_t contador;
-         table* tabla_ptr;
-         uint32_t n_f_total;
+         uint32_t counter;
+         table* table_ptr;
+         uint32_t n_rows_total;
          bool eof;
 
-      tableRowIterator_only_ram(const std::string& tabla_nombre);
+      tableRowIterator_only_ram(const std::string& table_name_str);
 
       // Para consultar eof:
       bool is_eof() const;
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
-      std::map<std::string, Values> get_next_row_ram_viva();
+      std::map<std::string, Values> get_next_row_ram();
    };
 
 
    //====================================================
-   //== tableRowIterator pero solo para DISCO ===========
+   //========= tableRowIterator only disk ===============
    //====================================================
    
    class tableRowIterator_only_disk_part {
       public:
-         uint32_t contador;
-         table* tabla_ptr;
+         uint32_t counter;
+         table* table_ptr;
          bool eof;
 
          // Metodo constructor:
-         tableRowIterator_only_disk_part(const std::string& tabla_nombre);
+         tableRowIterator_only_disk_part(const std::string& table_name_str);
 
          // Para consultar eof:
          bool is_eof() const;
@@ -75,9 +66,9 @@ namespace disk_buffer {
    };
 
 
-   // ==========================================
-   // == FUNCION PRINCIPAL: ITERADOR FILAS =====
-   // ==========================================
+   //====================================================
+   //========= FSM iterator for disk and RAM ============
+   //====================================================
 
    class tableRowIterator {
       /*
@@ -85,7 +76,7 @@ namespace disk_buffer {
       Esta clase engloba lo que es una máquina de estados finitos, manejando así
       la lectrua de filas tanto de la RAM como de las particiones en disco.
       Posee los siguientes atributos:
-         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
          -> first_execution: booleano que trackea si ha sido la primera ejecución o no
          -> eof: condicional que indica si ya no qudan más filas por las que iterar:
             * Si es true: se ha llegado al final y no hay más filas que devolver
@@ -97,7 +88,7 @@ namespace disk_buffer {
          -> eof_partition: condicional para medir si se ha terminado de leer una partición.
          -> eof_ram: condicional para medir si se ha llegado al final de las filas
             definidas provenientes de los datos en disco.
-         ->estado_fsm: Es el estado de la máquina de estados finitos, sus estados son los siguientes:
+         ->fsm_state: Es el estado de la máquina de estados finitos, sus estados son los siguientes:
             * 1:
             * 2:
             * 3:
@@ -110,26 +101,26 @@ namespace disk_buffer {
               misma sesión.
             * table_reader_obj: objeto que lee y carga temporalmente en memoria de la tabla los datos
               de cada partición. Va recuperando y cargando dicha información partición a partición.
-            * iterator_disco: iterador que devuelve las filas exclusivamente recupoerdas al leer del disco.
+            * disk_iterator: iterador que devuelve las filas exclusivamente recupoerdas al leer del disco.
       */
       public:
-         //uint32_t contador;
-         table* tabla_ptr;
+         //uint32_t counter;
+         table* table_ptr;
          bool first_execution;
          bool eof;
          bool eof_ram;
          bool eof_partition; // Si se ha terminado o no de leer una particion
          bool eof_disk;
-         uint8_t estado_fsm;
+         uint8_t fsm_state;
          std::string table_name;
          
          // Iteradores auxiliares:
          tableRowIterator_only_ram* iterator_ram;
          disk_in::read_table_iterator* table_reader_obj;
-         tableRowIterator_only_disk_part* iterator_disco;
+         tableRowIterator_only_disk_part* disk_iterator;
 
          // Metodo constructor
-         tableRowIterator(const std::string& tabla_nombre);
+         tableRowIterator(const std::string& table_name_str);
 
          // Para consultar eof:
          bool is_eof() const;
@@ -141,21 +132,20 @@ namespace disk_buffer {
          std::map<std::string, Values> get_next_row();
    };
 
-
-
    //====================================================
-   //== tableRowIterator pero solo para RAM en WAL ======
+   //== tableRowIterator only WAL (inverse insertion order)
    //====================================================
+   
    class tableRowIterator_only_ram_for_wal_inverse_order {
       /*
       Muy similar a la clase 'tableRowIterator', pero sólo itera por los datos añadidos
       en una sola operación de inserción de datos.
       Retornará las últimas N filas insertadas en una operación de inserción
       Posee los siguientes atributos:
-         -> contador: para trackear la fila por la que se está iterando/recuperando.
+         -> counter: para trackear la fila por la que se está iterando/recuperando.
             en este caso, empezará a contar desde el final hacia el principio, para
             recuperar las N últimas filas.
-         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
          -> eof: condicional que indica si ya no qudan más filas por las que iterar:
             * Si es true: se han recuperado las N filas añadidas en la operación de inserción de datos en RAM viva.
             * Si es false: todavía queda una fila o más por iterar
@@ -164,25 +154,27 @@ namespace disk_buffer {
          -> Se calcula el valor inicial de la variable eof.
       */
       public:
-         int32_t contador; // Caso especial, este puede tomar el valor de negativos
-         uint32_t n_filas_insertadas;
-         uint32_t n_f_total;
+         int32_t counter; // Caso especial, este puede tomar el valor de negativos
+         uint32_t n_rows_inserted;
+         uint32_t n_rows_total;
          uint32_t lower_limit;
-         table* tabla_ptr;
+         table* table_ptr;
          bool eof;
 
-      tableRowIterator_only_ram_for_wal_inverse_order(const std::string& tabla_nombre, const int num_filas_a_insertar);
+      tableRowIterator_only_ram_for_wal_inverse_order(const std::string& table_name_str, const int num_rows_to_insert);
 
       // Para consultar eof:
       bool is_eof() const;
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
-      std::map<std::string, Values> get_next_row_ram_viva();
+      std::map<std::string, Values> get_next_row_ram();
    };
 
 
 
-
+   //====================================================
+   //== tableRowIterator only WAL =======================
+   //====================================================
 
 
    class tableRowIterator_only_ram_for_wal {
@@ -191,10 +183,10 @@ namespace disk_buffer {
       en una sola operación de inserción de datos.
       Retornará las últimas N filas insertadas en una operación de inserción
       Posee los siguientes atributos:
-         -> contador: para trackear la fila por la que se está iterando/recuperando.
+         -> counter: para trackear la fila por la que se está iterando/recuperando.
             en este caso, empezará a contar desde el final hacia el principio, para
             recuperar las N últimas filas.
-         -> tabla_ptr: puntero a la tabla por la que se quiere obtener las filas
+         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
          -> eof: condicional que indica si ya no qudan más filas por las que iterar:
             * Si es true: se han recuperado las N filas añadidas en la operación de inserción de datos en RAM viva.
             * Si es false: todavía queda una fila o más por iterar
@@ -203,19 +195,19 @@ namespace disk_buffer {
          -> Se calcula el valor inicial de la variable eof.
       */
       public:
-         uint32_t contador;
-         uint32_t n_filas_insertadas;
-         uint32_t n_f_total;
-         table* tabla_ptr;
+         uint32_t counter;
+         uint32_t n_rows_inserted;
+         uint32_t n_rows_total;
+         table* table_ptr;
          bool eof;
 
-      tableRowIterator_only_ram_for_wal(const std::string& tabla_nombre, const int num_filas_a_insertar);
+      tableRowIterator_only_ram_for_wal(const std::string& table_name_str, const int num_rows_to_insert);
 
       // Para consultar eof:
       bool is_eof() const;
 
       // == PARA OBTENER LA PROXIMA FILA de la ram viva:
-      std::map<std::string, Values> get_next_row_ram_viva();
+      std::map<std::string, Values> get_next_row_ram();
    };
 
 }; // Cierre del namespace 'disk_buffer'

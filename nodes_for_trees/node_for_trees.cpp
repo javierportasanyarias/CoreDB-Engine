@@ -10,81 +10,79 @@ NodeType1::NodeType1(): alias(""){};
 ////////////////////////////////////
 /// NODOS PARA CONSULTAS:
 
-FromNode::FromNode(): nombre(""), alias(""){};
+FromNode::FromNode(): name(""), alias(""){};
 
 
-ItemNode::ItemNode(): nombre(""), alias(""){};
+ItemNode::ItemNode(): name(""), alias(""){};
 
 
-QueryNode::QueryNode(): nodo_select(nullptr), nodo_from(nullptr){};
+QueryNode::QueryNode(): select_node(nullptr), from_node(nullptr){};
 
-DropTableNode::DropTableNode(): nombre_tabla(""){};
+DropTableNode::DropTableNode(): table_name(""){};
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Métodos de los árboles:
 
 /////////////////////////////////////////
 // Metodos para visualizar árboles:
-void recursive_tree_print(const NodeType2* nodo_ptr){
-   if(!nodo_ptr){
+void recursive_tree_print(const NodeType2* node_ptr){
+   if(!node_ptr){
       return;
    };
-   if(nodo_ptr->is_primary){
-      // std::cout<<(nodo_ptr->name_campo)<<" "<<(nodo_ptr->tipo)<<" PRIMARY KEY"<<std::endl;
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->name_campo), false, false);
+   if(node_ptr->is_primary){
+      Logger::log(LogLevel::DEBUG, (node_ptr->filed_name), false, false);
       Logger::log(LogLevel::DEBUG, " ", false, false);
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->tipo), false, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->type), false, false);
       Logger::log(LogLevel::DEBUG, " PRIMARY KEY", true, false);
    }else {
-      // std::cout<<(nodo_ptr->name_campo)<<" "<<(nodo_ptr->tipo)<<std::endl;
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->name_campo), false, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->filed_name), false, false);
       Logger::log(LogLevel::DEBUG, " ", false, false);
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->tipo), true, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->type), true, false);
    };
-   for (auto* hijo : nodo_ptr->hijos) {
-      recursive_tree_print(hijo);
+   for (auto* child : node_ptr->children) {
+      recursive_tree_print(child);
    };
 };
 
-void recursive_tree_print(const NodeType1* nodo_ptr){
-   if(!nodo_ptr){
+void recursive_tree_print(const NodeType1* node_ptr){
+   if(!node_ptr){
       return;
    };
-   if(nodo_ptr->alias != ""){
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->nombre_tabla), false, false);
+   if(node_ptr->alias != ""){
+      Logger::log(LogLevel::DEBUG, (node_ptr->table_name), false, false);
       Logger::log(LogLevel::DEBUG, " ", false, false);
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->alias), true, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->alias), true, false);
    }else {
-      Logger::log(LogLevel::DEBUG, (nodo_ptr->nombre_tabla), true, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->table_name), true, false);
    };
-   for (auto* hijo : nodo_ptr->hijos) {
-      recursive_tree_print(hijo);
+   for (auto* child: node_ptr->children) {
+      recursive_tree_print(child);
    };
 };
 
 // Funciones auxiliares a la impresión de columnas:
-void imprimir_columnas(const NodeType3*& nodo){
-	if((nodo->columnas).size() != 0){
-      Logger::log(LogLevel::DEBUG, "Columnas a insertar: ", false, false);
-	   for(int i = 0; i<(nodo->columnas).size(); i++){
-         Logger::log(LogLevel::DEBUG, (nodo->columnas)[i], false, false);
+void print_columns(const NodeType3*& node_ptr){
+	if((node_ptr->columns).size() != 0){
+      Logger::log(LogLevel::DEBUG, "Columns to insert: ", false, false);
+	   for(int i = 0; i<(node_ptr->columns).size(); i++){
+         Logger::log(LogLevel::DEBUG, (node_ptr->columns)[i], false, false);
          Logger::log(LogLevel::DEBUG, " ", false, false);
 	   };
       Logger::flush(LogLevel::DEBUG);
 	}else{
-      Logger::log(LogLevel::DEBUG, "No se han especificado las columnas", true, false);
+      Logger::log(LogLevel::DEBUG, "Columns have not been specified", true, false);
 	};
 };
 
-void imptimir_valores(const NodeType3*& nodo){
+void print_values(const NodeType3*& node_ptr){
 
-	for(int i = 0; i<(nodo->filas).size(); i++){
-	   const std::vector<std::string>& fila_current = (nodo->filas)[i];
-      Logger::log(LogLevel::DEBUG, "Valores de la fila ", false, false);
+	for(int i = 0; i<(node_ptr->rows).size(); i++){
+	   const std::vector<std::string>& current_row = (node_ptr->rows)[i];
+      Logger::log(LogLevel::DEBUG, "Row value ", false, false);
       Logger::log(LogLevel::DEBUG, i+1, false, false);
       Logger::log(LogLevel::DEBUG, " : ", false, false);
-         for(int j= 0; j<(fila_current).size(); j++){
-            Logger::log(LogLevel::DEBUG, fila_current[j], false, false);
+         for(int j= 0; j<(current_row).size(); j++){
+            Logger::log(LogLevel::DEBUG, current_row[j], false, false);
             Logger::log(LogLevel::DEBUG, " ", false, false);
          };
       Logger::flush(LogLevel::DEBUG);
@@ -92,28 +90,16 @@ void imptimir_valores(const NodeType3*& nodo){
 };
 
 // Esta función es puramente auxiliar:
-void insert_data_node_print(const NodeType3* nodo){
+void insert_data_node_print(const NodeType3* node_ptr){
 
-   Logger::log(LogLevel::DEBUG, "Nombre de la tabla en la que se inserta: ", false, false);
-   Logger::log(LogLevel::DEBUG, nodo->nombre_tabla, true, false);
+   Logger::log(LogLevel::DEBUG, "Table name where it has been inserted: ", false, false);
+   Logger::log(LogLevel::DEBUG, node_ptr->table_name, true, false);
 
 	// Imprimimos las columnas:
-	imprimir_columnas(nodo);
+	print_columns(node_ptr);
 
 	// Imprimimos los valores:
-	imptimir_valores(nodo);
+	print_values(node_ptr);
 };
-
-
-/////////////////////////////////////////
-// Métodos para construir árboles:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Árboles:
-
-tree_for_schema::tree_for_schema() : root(nullptr) {}
-
-// Método imprimir_arbol
-void tree_for_schema::imprimir_arbol() {
-   recursive_tree_print(root);
-};

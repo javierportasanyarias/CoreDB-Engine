@@ -12,74 +12,70 @@ int main(){
 
    std::string input = "";
    std::string handshake = "";
-   //Pequeño cambio para probsr push desde termux
-   // Cambio realizado desde otro dispositivo
 
    // Fijamos el nivel de logs a debug:
    Logger::level = LogLevel::OUTPUT;
    
-   // Antes de nada, vemos laa tablas en disco y escribimos sus metadatos en memoria
-   disk_metadata::lectura_metadatos_todas_tablas();
+   // Reding all table's metadata within disk beforehand:
+   disk_metadata::read_all_tables_metadata();
 
-   // Leemos también los datos recuperados del WAL:
+   // Reading WAL data (if there is any):
    disk_wal_read::read_wal();
-   //return 0;
 
 
    while(true){
+
+      // Mian program loop
 
       Logger::log(LogLevel::OUTPUT, "\n> ", false, false);
       Logger::login(input);
       Logger::flush();
 
-      // Condicion de salida:
+      // Exit condition:
       if(input == "exit" || input == "exit\n"){
          break;
       };
 
-      // Ahora procesamos el texto:
-      textUtils::simpleLinkedList* lista1 = textUtils::procesar_texto_pipeline(input);
+      // Input text processing (token list construction):
+      textUtils::simpleLinkedList* token_list = textUtils::process_text_pipeline(input);
       Logger::flush(LogLevel::DEBUG);
       {
          std::string tmp_str = "EOS";
-         lista1->add_node(tmp_str);
+         token_list->add_node(tmp_str);
       };
 
-      // Construimos la cola de ejecucion:                                                                            
+      // Constructiong execution queue;                                                                           
       execPlan::Queue* excec_queue = new execPlan::Queue;                   
-      excec_queue = procesar_lista_tokens(lista1);
-      // Liberamos la lista dectokens ya quw n9 la usamos ya:
-      delete lista1;
-      lista1 = nullptr;
+      excec_queue = process_token_list(token_list);
+      // We no longer will be needing the token list, thus we erase it:
+      delete token_list;
+      token_list = nullptr;
     
       if(Logger::level == LogLevel::DEBUG){
          excec_queue->printNodeTypes();
       };
 
-      // Ejecutamos la cola de ejecucion:
+      // Carrying execution queue;
       excec_queue->execute_queue_tasks();
-      // Eliminamos la cola de tareas una vez ejecutada:
+      // Deleting execution queue;
       execPlan::delete_task_queue(excec_queue);
       excec_queue = nullptr;
       if(Logger::level == LogLevel::DEBUG){
          Logger::log(LogLevel::DEBUG, "handshake: ", false, true);
          Logger::login(handshake);
       };
-      // Solo imprimimos el '__END__' si estamos en modo DEBUG
-      if(Logger::level == LogLevel::DEBUG){
-         Logger::flush(LogLevel::DEBUG);
-         Logger::log(LogLevel::DEBUG, "__END__", true, false);
-      }else{
-         Logger::flush(LogLevel::DEBUG, false);
-      };
-
-
-   };  // Aquí termina el bucle principal
-   disk_io::write_dump();
-   Logger::log(LogLevel::DEBUG, "__END__", true, false);
-   if(Logger::level == LogLevel::DEBUG){
+      Logger::flush(LogLevel::DEBUG);
+      // only printing '__END__' if DEBUG mode is active
       Logger::log(LogLevel::DEBUG, "__END__", true, false);
-   };
+
+
+   };  // Main loop end
+   // Outside the main loop, program will be soon be terminated
+
+   // Writing all table data defined within session:
+   disk_io::write_dump();
+   // only printing '__END__' if DEBUG mode is active
+   Logger::log(LogLevel::DEBUG, "__END__", true, false);
 
    return 0;
 }; // Aquí acaba el main

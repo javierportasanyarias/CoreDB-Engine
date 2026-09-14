@@ -3,12 +3,12 @@
 
 enum class dataType {
    /*
-   Tipo de datos para los datos de las tablas, los cuales son:
-      -> INT: correspondiente a 'int' en C++
-      -> FLOAT: correspondiente a 'float' en C++
-      -> STRING: correspondiente a 'std::string' en C++
-      -> BOOL: correspondiente a 'bool' en C++
-      -> UNKNOWN: tipo de datos desconocido o indeterminado. Será tratado como una 'std::string' de C++
+   All data types considered in this SQL database engine:
+      -> INT: Equivalent to 'int' in C++.
+      -> FLOAT: Equivalent to 'float' in C++.
+      -> STRING: Equivalent to 'std::string' in C++.
+      -> BOOL: Equivalent to 'bool' in C++.
+      -> UNKNOWN: unknown data type. It will be interpeted as a character array in C++.
    */
    INT,
    FLOAT,
@@ -19,19 +19,18 @@ enum class dataType {
 
 struct table_metadata {
    /*
-   Metadatos de las tablas.
-   Posee los siguientes atributos:
-      -> name: nombre de la tabla
-      -> column_names: nombres en orden definición de las columnas
-      -> column_types: tipo de dato (dataType) de las columnas en orden de deffinción
-      -> primary_list:vector que indica ssi la columna es clave primaria (true) o no (false). Definido por orden definición de las columnas
-      -> n_filas_disco: Nº de filas en "disco" (o filas que han sido leidas desde el disco y cargadas en memoria volátil)
-      ->n_filas_ram: Nº de filas añadidas en la misma sesión o ejecución del programa 
+   Table metada struct. It's attributes are the following:
+      -> name: nombre of the table.
+      -> column_names: Column names. The order is defined by their insertion.
+      -> column_types: Column types. The order is also determied by insertion order.
+      -> primary_list: Boolean array indicationg if the filed is a primary key or not. The order is also determied by insertion order.
+      -> n_rows_disk: Nº of rows in disk.
+      -> n_rows_ram: Nº of rows defined within the volatile memory associated with a current program execution.
 
-   Inicializador:
-      -> name como string vacía y de longitud nula
-      -> n_filas_disco a cero
-      -> n_filas_ram a cero
+   Inicialization:
+      -> name as an empty string
+      -> n_rows_disk as zero
+      -> n_rows_ram as zero
 
    */
    std::string name;
@@ -39,26 +38,26 @@ struct table_metadata {
    std::vector<dataType> column_types;
    std::vector<bool> primary_list;
    uint32_t n_cols;
-   uint32_t n_filas_disco;
-   uint32_t n_filas_ram;
+   uint32_t n_rows_disk;
+   uint32_t n_rows_ram;
    table_metadata():
       name(""), 
       n_cols(0),
-      n_filas_disco(0), 
-      n_filas_ram(0) 
+      n_rows_disk(0), 
+      n_rows_ram(0) 
       {};
 };
 
-
+// Variant variable holding all the table possible types of data within the program:
 using Values = std::variant<int, float, bool, std::string, std::vector<char>>;
 
 
 struct table_data {
    /*
-   Datos de la tabla que fueron añadidos en la misma sesión/ejecución del programa.
-   Los datos están en un diccionario o hash map en donde:
-      -> La clave es el nombre de la columna
-      -> El valor es el vector con los valores de la columna
+   Data associated with the information added within the same session/execution of the engine.
+   The data is presented as a hash map in which:
+      -> The key id the name of the column.
+      -> The value is an std::vector containing it's values.
    */
 	std::map<std::string, std::vector<Values>> columns;
 };
@@ -66,23 +65,22 @@ struct table_data {
 
 struct table_data_buffer {
    /*
-   Datos de la tabla recuperados del disco duro.
-   Los datos están en un diccionario o hash map en donde:
-      -> La clave es el nombre de la columna
-      -> El valor es el vector con los valores de la columna
+   Data associated with the information retrieved for the disk.
+   The data is presented as a hash map in which:
+      -> The key id the name of the column.
+      -> The value is an std::vector containing it's values.
    */
    std::map<std::string, std::vector<Values>> columns;
 };
 
 struct table {
    /*
-   Estructura de una tabla, la cual cuenta con los siguientes punteros:
-      -> metadata_ptr: puntero a los metadatos de la tabla
-      -> data_ptr: puntero a los datos definidos en la misma sesión
-      -> data_buffer_ptr: puntero a los datos recuperados/leídos desde el disco
-   
-   Estos tres punteros son iniializados cuando se crea la instancia de la clase
-   como punteros nulos para mayor seguridad.
+   Table's struct. It holds the following pointers:
+      -> metadata_ptr: metadata pointer.
+      -> data_ptr: pointer to the data defined in the current execution (within volatile memory).
+      -> data_buffer_ptr: pointer to the data retrieved form disk.
+
+   These three poniters are initialized as null when a table instance is created, for greater memory security.
    */
    table_metadata* metadata_ptr;
    table_data* data_ptr;

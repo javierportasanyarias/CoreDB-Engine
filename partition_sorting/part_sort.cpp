@@ -1,7 +1,7 @@
 #include "part_sort.h"
 
 
-std::string part_sort::quitar_extension_archivo(std::string& input){
+std::string part_sort::erase_file_extension(std::string& input){
 
     uint32_t size_str = input.size();
     std::string output;
@@ -14,28 +14,6 @@ std::string part_sort::quitar_extension_archivo(std::string& input){
     };
     return output;
 };
-
-
-// 1. Función para extraer el número (Mejorada con punteros)
-/*std::string part_sort::obtain_number(std::string input) {
-    size_t pos_guion = input.find('_');
-    size_t pos_punto = input.find('.');
-
-    // Si no encuentra el guion, devolvemos "0" para evitar que stoi explote
-    if (pos_guion == std::string::npos) return "0";
-
-    // Extraemos la subcadena. 
-    // Empezamos en pos_guion + 1
-    // La longitud es (pos_punto - pos_guion - 1)
-    std::string resultado;
-    if (pos_punto != std::string::npos && pos_punto > pos_guion) {
-        resultado = input.substr(pos_guion + 1, pos_punto - pos_guion - 1);
-    } else {
-        resultado = input.substr(pos_guion + 1);
-    }
-
-    return resultado;
-}*/
 
 std::string part_sort::obtain_number(std::string input) {
 
@@ -54,28 +32,10 @@ std::string part_sort::obtain_number(std::string input) {
         };
     };
     return output;
-}
-
-/*std::string part_sort::quitar_ceros(std::string input){
-    char* p = input.data();
-    char* ptr_end = p + input.size();
-    std::string resultado = "";
-    bool aux_bool = false;
-    char* aux_ptr = p;
-    while (aux_ptr < ptr_end) {
-        if(aux_bool){
-            resultado += *aux_ptr;
-        };
-        if (*aux_ptr == '0' && !aux_bool){
-            aux_bool = true;
-        };
-        aux_ptr++;
-    }
-    return resultado;
-}*/
+};
 
 
-std::string part_sort::quitar_ceros(std::string input){
+std::string part_sort::erase_zeroes(std::string input){
     
     std::string output = "";
     bool aux_bool = false;
@@ -94,48 +54,40 @@ std::string part_sort::quitar_ceros(std::string input){
         };
     };
     return output;
-}
+};
 
 
 
 
-int part_sort::procesar_numero_particion(std::string input) {
-    std::string numero_str = part_sort::obtain_number(input);
+int part_sort::process_partition_number(std::string input) {
+    std::string number_str = part_sort::obtain_number(input);
     
-    if (numero_str.empty()) return 0;
+    if (number_str.empty()) return 0;
 
     try {
-        // stoi convierte "0001" en 1, "0012" en 12, etc.
-        return std::stoi(numero_str);
+        return std::stoi(number_str);
     } catch (...) {
         // Si hay basura en el nombre del archivo, devolvemos 0 para no crashear
         return 0;
     }
 }
 
-std::string part_sort::procesar_numero_particion_como_str(std::string input){
+std::string part_sort::process_partition_number_as_string(std::string input){
     std::string tmp;
     tmp = part_sort::obtain_number(input);
-    Logger::log(LogLevel::DEBUG, "El numero de la particion es: ", false, true);
+    Logger::log(LogLevel::DEBUG, "Partition number: ", false, true);
     Logger::log(LogLevel::DEBUG, tmp, true, false);
-    Logger::log(LogLevel::DEBUG, "Ahora le quitamos los ceros");
-    tmp = part_sort::quitar_ceros(tmp);
-    Logger::log(LogLevel::DEBUG, "Después de quitar los ceros, se queda en: ", false, true);
+    Logger::log(LogLevel::DEBUG, "Erasing zeroes");
+    tmp = part_sort::erase_zeroes(tmp);
+    Logger::log(LogLevel::DEBUG, "After zeroes erasure: ", false, true);
     Logger::log(LogLevel::DEBUG, tmp, true, false);
     return tmp;
 };
 
 
-bool part_sort::compare_ints(int num_1, int num_2){
-    if(num_1 > num_2){
-        return true;
-    };
-    return false;
-};
-
 bool part_sort::compare_partition_values(std::string string_1, std::string string_2) {
-    int num_1 = part_sort::procesar_numero_particion(string_1);
-    int num_2 = part_sort::procesar_numero_particion(string_2);
+    int num_1 = part_sort::process_partition_number(string_1);
+    int num_2 = part_sort::process_partition_number(string_2);
     return num_1 > num_2; // Devuelve true si el primero es mayor (para el swap del bubble)
 }
 
@@ -182,13 +134,9 @@ void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::
         return;
     };
 
-    // For getting the number:
-    //part_sort::procesar_numero_particion(string_1)
-
-
     int32_t arr_len = end - beg;
     int32_t mid_index = beg + arr_len / 2;
-    int32_t pivot_var = part_sort::procesar_numero_particion(vec[mid_index]);
+    int32_t pivot_var = part_sort::process_partition_number(vec[mid_index]);
     std::string tmp_ptr;
     // We initialize the new pointers
     int32_t i = beg - 1;
@@ -201,11 +149,11 @@ void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::
         // Advance phase:
         do{
             i++;
-            tmp_i_val = part_sort::procesar_numero_particion(vec[i]);
+            tmp_i_val = part_sort::process_partition_number(vec[i]);
         } while(tmp_i_val < pivot_var);
         do{
             j--;
-            tmp_j_val = part_sort::procesar_numero_particion(vec[j]);
+            tmp_j_val = part_sort::process_partition_number(vec[j]);
         } while(tmp_j_val > pivot_var);
         //Switch phase:
         if(i < j){

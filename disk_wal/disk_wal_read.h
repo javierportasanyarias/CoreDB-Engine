@@ -5,16 +5,16 @@ namespace disk_wal_read {
 
 
     // Funcions relativas a la lectura del WAl de metadatos:
-    char* recuperar_meta_wal_tabla_buffer(std::ifstream& in, const std::string& nombre_tabla);
+    char* recover_meta_wal_table_buffer(std::ifstream& in, const std::string& table_name_str_input);
 
-    std::string recuperar_meta_wal_tabla_nombre(std::ifstream& in);
 
-    void aux_read_single_table_wal_metadata(std::ifstream& in, const std::string& nombre_tabla);
+    std::string recover_meta_wal_table_name(std::ifstream& in);
+
+    void aux_read_single_table_wal_metadata(std::ifstream& in, const std::string& table_name_str_input);
 
 
     bool is_eof_read(std::ifstream& in);
 
-    void read_wal_viejo();
     void read_wal();
 
 
@@ -27,9 +27,6 @@ namespace disk_wal_read {
 
         char* buffer = nullptr;
         char* data_buffer_pointer = nullptr;
-        
-        // Auxiliary counters:
-        //uint32_t num_rows_written = 0;
 
         // Table info:
         table* table = nullptr;
@@ -41,12 +38,10 @@ namespace disk_wal_read {
         // Buffer counters:
         uint32_t buffer_tmp_size = 0;
         uint32_t buffer_bytes_read = 0;
-        //uint32_t buffer_size = size_buffer_bytes;
         uint32_t buffer_bytes_available = buffer_tmp_size;
         bool offset = false;
 
         // Reading:
-        //uint32_t bytes_read = size_buffer_bytes;
         uint32_t bytes_read = 0;
         uint32_t tmp_var_len_bytes = 0;
 
@@ -57,12 +52,8 @@ namespace disk_wal_read {
         uint32_t var_len_bytes_read = 0;
 
 
-        // Row iterator:
-        //disk_buffer::tableRowIterator_only_ram_for_wal* row_iterator;
-
-        //std::map<std::string, std::vector<Values>>& columnas; // = tabla->data_ptr->columns;
         table_metadata* metadata = nullptr;
-        std::map<std::string, std::vector<Values>>* columnas = nullptr;
+        std::map<std::string, std::vector<Values>>* columns = nullptr;
         std::vector<std::string> col_names; //= tabla->metadata_ptr->column_names;
         std::vector<dataType> data_types; //= tabla->metadata_ptr->column_types;
 
@@ -83,7 +74,6 @@ namespace disk_wal_read {
 
         bool is_eof_rows(){
             return this->col_counter >= this->num_cols && this->row_counter + 1 >= this->num_rows;
-            //return this->col_counter >= this->num_cols && this->row_counter >= this->num_rows;
         };
 
         void fill_buffer();
@@ -105,14 +95,6 @@ namespace disk_wal_read {
         uint32_t wal_data_type;
         std::string table_name;
 
-        // punteros de metadatos:
-        //char* meta_buffer = nullptr;
-
-        // Punteros de datos:
-
-        // Row iterator:
-        //disk_buffer::tableRowIterator_only_ram_for_wal* row_iterator;
-
         // Reading pipeline:
         std::ifstream in;
 
@@ -122,7 +104,6 @@ namespace disk_wal_read {
         }
 
         ~walDataParser() {
-            //delete this->row_iterator;
             if (this->in.is_open()) {
                 this->in.close();
             }

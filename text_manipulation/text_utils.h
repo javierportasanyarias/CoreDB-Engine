@@ -1,46 +1,42 @@
 #pragma once
 
 namespace textUtils {
-   std::string espaciar_texto(const std::string& input);
+   std::string space_text(const std::string& input);
 
-   // Nodo para la lista enlaza simple de tokens:
-   class NodeLista1{
+   // Node for token linked simple list:
+   class NodeList1{
 
       public:
          std::string val;
-         NodeLista1* nxt_node;
-         NodeLista1(): nxt_node(nullptr), val(""){};
+         NodeList1* nxt_node;
+         NodeList1(): nxt_node(nullptr), val(""){};
    };
 
    class simpleLinkedList{
+      /*
+      Simple linked list, but with a tail pointer so it does not have to be traversed in each node addition
+      */
 
       public:
-         NodeLista1* head;
-         NodeLista1* tail; // Se podrá elimniar en el futuro ?
+         NodeList1* head;
+         NodeList1* tail;
 
-         simpleLinkedList(): head(nullptr), tail(nullptr){};
+         simpleLinkedList(): head(nullptr), tail(nullptr) {};
 
-         // Añade el destructor
          ~simpleLinkedList() {
             clear();
          };
 
-         void add_node(const std::string& valor);
+         void add_node(const std::string& value);
 
          void print_list();
 
          void clear();
    };
 
-   //std::string borrar_espacios_repetidos(const std::string& input);
-
-   //std::string borrar_espacios_principio(const std::string& input);
-
-   //void borrar_espacios_final(std::string& input);
-
    std::string normalize_spaces(const std::string& input);
 
-   simpleLinkedList* crear_lista_tokens(const std::string& input);
+   simpleLinkedList* create_token_list(const std::string& input);
 
-   simpleLinkedList* procesar_texto_pipeline(std::string& input);
+   simpleLinkedList* process_text_pipeline(std::string& input);
 };

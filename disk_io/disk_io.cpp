@@ -5,7 +5,7 @@
 
 
 ////////////////////////////////////////////////////////////////////
-// ESCRITURA MASIVA ////////////////////////////////////////////////
+// WRITE DUMP //////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
 // Fución que itera sobre las tablas en las que escribir:
@@ -14,7 +14,7 @@ void disk_io::write_dump(){
    // Primero vemos si el diccionario esta vacio o no:
    if(global_table_dict.empty()){
       // El diccionario esta vacio, salimos
-      Logger::log(LogLevel::DEBUG, "EL DICCIONARIO DE TABLAS NO EXISTE. SALIMOS");
+      Logger::log(LogLevel::DEBUG, "TABLE HASH MAP DOES NOT EXIST. PROGRAM TERMINATION");
       return;
    }else{
       //El diccionario tiene contenido:
@@ -33,86 +33,85 @@ void disk_io::write_dump(){
                   disk_out::write_table_data(table_ptr);
 
                   // Actualizamos los metadatos de la tabla para mostar el numero de filas escritas en disco:
-                  table_ptr->metadata_ptr->n_filas_disco = n_rows;
+                  table_ptr->metadata_ptr->n_rows_disk = n_rows;
                } else {
-                  Logger::log(LogLevel::DEBUG, "EXISTE la tabla en el diccionario, pero NO tiene datos en RAM viva. NO LA ESCRIBIMOS");
+                  Logger::log(LogLevel::DEBUG, "Table dies EXIST within th hash map, but there is no data in the volatile memory. WRITE OPERATION CANCELED");
                };
             } else {
-               Logger::log(LogLevel::DEBUG, "EXISTE la tabla en el diccionario. NO EXISTE SU ENTRADA DE DATOS. NO LA ESCRIBIMO0S");
+               Logger::log(LogLevel::DEBUG, "Table dies EXIST within th hash map. There is no data entry. WRITE OPERATION CANCELED");
             };
          }else{
-            Logger::log(LogLevel::DEBUG, "ERROR: Se ha encontrado una entrada vacia para la tabla: " + table_name);
+            Logger::log(LogLevel::DEBUG, "ERROR: Table entry does not exist in global table dictionary. Table name is: " + table_name);
          };
       };
    };
 
    // Justo Antes de concluir la escritura, eliminamos el archivo WAL:
-   Logger::log(LogLevel::DEBUG, "ELIMINAMOS EL ARCHIVO WAL DE DATOS DE BACKUP");
+   Logger::log(LogLevel::DEBUG, "WAL BACKUP FILE DELETION");
    disk_wal_utils::delete_wal_bin_file();
 };
 
 
-void disk_io::debug_print_metadatos_memoria() {
-   Logger::log(LogLevel::DEBUG, "======= DEBUG DE METADATOS EN MEMORIA =======");
+void disk_io::debug_print_mem_metadata() {
+   Logger::log(LogLevel::DEBUG, "======= METADATA IN MEMORY DEBUG =======");
     
    if (global_table_dict.empty()) {
-      Logger::log(LogLevel::ERROR, "El diccionario global de tablas está VACÍO.");
+      Logger::log(LogLevel::ERROR, "Global table dictionary is EMPTY.");
       return;
     };
 
-   for (auto const& [nombre, tabla_ptr] : global_table_dict) {
-      Logger::log(LogLevel::DEBUG, "TABLA (Dicc): " + nombre);
+   for (auto const& [name_tmp, table_ptr] : global_table_dict) {
+      Logger::log(LogLevel::DEBUG, "TABLE (Dicc): " + name_tmp);
       
-      if (!tabla_ptr || !tabla_ptr->metadata_ptr) {
-         Logger::log(LogLevel::ERROR, "  [!] Error: Puntero a tabla o metadatos es NULL");
+      if (!table_ptr || !table_ptr->metadata_ptr) {
+         Logger::log(LogLevel::ERROR, "  [!] Error: Table or metadata pointers are NULL");
          continue;
       };
 
-      table_metadata* meta = tabla_ptr->metadata_ptr;
-      Logger::log(LogLevel::DEBUG, "  Nombre en Struct: " + meta->name);
-      Logger::log(LogLevel::DEBUG, "  Filas en disco:   " + std::to_string(meta->n_filas_disco));
+      table_metadata* meta = table_ptr->metadata_ptr;
+      Logger::log(LogLevel::DEBUG, "  Struct name: " + meta->name);
+      Logger::log(LogLevel::DEBUG, "  Rows in disk:   " + std::to_string(meta->n_rows_disk));
       
       size_t n_cols = meta->n_cols;
       size_t n_types = meta->column_types.size();
       size_t n_pks = meta->primary_list.size();
 
-      Logger::log(LogLevel::DEBUG, "  Sincronización de Vectores:");
-      Logger::log(LogLevel::DEBUG, "    - Nombres: " + std::to_string(n_cols));
-      Logger::log(LogLevel::DEBUG, "    - Tipos:   " + std::to_string(n_types));
+      Logger::log(LogLevel::DEBUG, "  Data vectors:");
+      Logger::log(LogLevel::DEBUG, "    - Names: " + std::to_string(n_cols));
+      Logger::log(LogLevel::DEBUG, "    - Types:   " + std::to_string(n_types));
       Logger::log(LogLevel::DEBUG, "    - PKs:     " + std::to_string(n_pks));
 
-      Logger::log(LogLevel::DEBUG, "  DETALLE DE COLUMNAS:");
+      Logger::log(LogLevel::DEBUG, "  COLUMNS DETAIL:");
       // Iteramos sobre el máximo encontrado para detectar desajustes
       size_t max_idx = std::max({n_cols, n_types, n_pks});
       
       for (size_t i = 0; i < max_idx; i++) {
          std::string col_name = (i < n_cols) ? meta->column_names[i] : "!!! MISSING NAME !!!";
-         std::string tipo_str = "NOT_READ";
+         std::string type_str = "NOT_READ";
          
          if (i < n_types) {
             switch(meta->column_types[i]) {
                case dataType::INT:
-                  tipo_str = "INT";
+                  type_str = "INT";
                   break;
                case dataType::FLOAT:
-                  tipo_str = "FLOAT";
+                  type_str = "FLOAT";
                   break;
                case dataType::STRING:
-                  tipo_str = "STRING";
+                  type_str = "STRING";
                   break;
                case dataType::BOOL:
-                  tipo_str = "BOOL";
+                  type_str = "BOOL";
                   break;
                case dataType::UNKNOWN:
-                  tipo_str = "UNKNOWN";
+                  type_str = "UNKNOWN";
                   break;
-               // El compilador ya no se quejará, cubrimos todo el enum
                }
          }
          
-         std::string es_pk = (i < n_pks && meta->primary_list[i]) ? "[PK]" : "    ";
+         std::string is_pk = (i < n_pks && meta->primary_list[i]) ? "[PK]" : "    ";
          
-         Logger::log(LogLevel::DEBUG, "    [" + std::to_string(i) + "] " + es_pk + " " +  col_name + " (" + tipo_str + ")");
+         Logger::log(LogLevel::DEBUG, "    [" + std::to_string(i) + "] " + is_pk + " " +  col_name + " (" + type_str + ")");
       }
    };
    Logger::log(LogLevel::DEBUG, "==============================================");

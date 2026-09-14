@@ -3,19 +3,16 @@
 
 namespace part_sort {
 
-    std::string quitar_extension_archivo(std::string& input);
+    std::string erase_file_extension(std::string& input);
 
     std::string obtain_number(std::string input);
 
-    std::string quitar_ceros(std::string input);
+    std::string erase_zeroes(std::string input);
 
 
-    int procesar_numero_particion(std::string input);
+    int process_partition_number(std::string input);
 
-    std::string procesar_numero_particion_como_str(std::string input);
-
-
-    bool compare_ints(int num_1, int num_2);
+    std::string process_partition_number_as_string(std::string input);
 
     bool compare_partition_values(std::string string_1, std::string string_2);
 
