@@ -9,14 +9,12 @@ class NodeType2;
 class NodeType3;
 class QueryNode;
 
-
 ///////////////////////////////////////////////////////////////////////
 
 dataType transform_str_to_datatype(const std::string& input);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// FOR FILLING TABLE DATA:
-
 
 void fill_table_with_values_v4(NodeType3* node_ptr_input);
 
@@ -26,7 +24,6 @@ void fill_table_with_values_v4(NodeType3* node_ptr_input);
 void recursive_metadata_fill_lv2(NodeType2* node_ptr_input, table* tb_created);
 
 void recursive_metadata_fill_lv1(NodeType1* node_ptr_input);
-
 
 ///////////////////////////////////////////////////////////////
 // SHOW TABLE:

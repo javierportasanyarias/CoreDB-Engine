@@ -1,25 +1,20 @@
 #pragma once
 
-
 class FifoNode {
+ public:
+  std::string comando;
+  FifoNode* nxt_node;
 
-   public:
-   std::string comando;
-   FifoNode* nxt_node;
-
-   FifoNode();
-
+  FifoNode();
 };
 
 class FIFO {
+ public:
+  FifoNode* head;
 
-   public:
-      FifoNode* head;
+  FIFO();
 
-      FIFO();
-
-      void delete_fifo_content(FifoNode*& head);
-
+  void delete_fifo_content(FifoNode*& head);
 };
 
 // For deleting FIFO queue:
