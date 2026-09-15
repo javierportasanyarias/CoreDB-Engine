@@ -3,7 +3,7 @@
 namespace textUtils {
    std::string space_text(const std::string& input);
 
-   // Node for token linked simple list:
+   // Node for token simple linked list:
    class NodeList1{
 
       public:
@@ -14,7 +14,8 @@ namespace textUtils {
 
    class simpleLinkedList{
       /*
-      Simple linked list, but with a tail pointer so it does not have to be traversed in each node addition
+      Simple linked list, but with a tail pointer so it does not have to be traversed in each
+      node addition, or while quiering current last node.
       */
 
       public:

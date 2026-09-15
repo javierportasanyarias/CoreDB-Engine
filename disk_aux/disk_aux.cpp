@@ -7,7 +7,7 @@
 void disk_aux::aux_vector_buffer_write_disk(char* ptr_ini, uint32_t size_buffer, std::ofstream& out){
 
    if (out.is_open()) {
-         // Write whole buffer:
+         // Write entire buffer:
          out.write(ptr_ini, size_buffer);
    };
 };
@@ -15,14 +15,14 @@ void disk_aux::aux_vector_buffer_write_disk(char* ptr_ini, uint32_t size_buffer,
 std::vector<std::string> disk_aux::obtain_files_in_path(const std::filesystem::path& path, dataType data_type) {
    std::vector<std::string> files;
    /*
-   Method for obtaining a vector containing the files's names within a certain path and data type.
+   Method for obtaining a vector containing the file names within a certain path and data type.
    */
    // 1. Path verification:
    if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
       return files;
    }
 
-   // 2. Folder's element iteration:
+   // 2. Folder element iteration:
    for (const auto& entry : std::filesystem::directory_iterator(path)) {
       // We verify that it is a regular file (and not a folder)
       if (!std::filesystem::is_regular_file(entry.path())){
@@ -34,7 +34,7 @@ std::vector<std::string> disk_aux::obtain_files_in_path(const std::filesystem::p
             files.push_back(entry.path().filename().string());
          };
       }else{
-         // We keep only the file's name (ej: "part_00001.dat"):
+         // We keep only the file's name (e.g., "part_00001.dat"):
          files.push_back(entry.path().filename().string());
       };
    };
@@ -45,7 +45,7 @@ std::vector<std::string> disk_aux::obtain_files_in_path(const std::filesystem::p
 
 uint32_t disk_aux::obtain_file_size(const std::filesystem::path& path) {
    /*
-   Method for obtaining a file's size given it's path.
+   Method for obtaining a file's size given its path.
    */
    Logger::log(LogLevel::DEBUG, "Inside the 'obtain_file_size' function");
 
@@ -144,16 +144,16 @@ void disk_aux::write_aux_val_buffer_with_size_check(const Values& value, dataTyp
          string_size = string_val.size();
          uint8_t uint32_size = sizeof(uint32_t);
 
-         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] >>> Auxiliary function adtional entry <<<");
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] >>> Auxiliary function additional entry <<<");
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] Text content: " + string_val);
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] string_size: ", false, true); Logger::log(LogLevel::DEBUG, string_size, true, false);
-         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] bytes_remain en buffer: ", false, true); Logger::log(LogLevel::DEBUG, bytes_remain, true, false);
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] bytes_remain in buffer: ", false, true); Logger::log(LogLevel::DEBUG, bytes_remain, true, false);
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] Base address for string_val.data(): ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(string_val.data()), true, false);
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] ptr_str_ini initial value: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
 
-         // Pĥase 1 -> Readig the string's size:
+         // Phase 1 -> Reading the string's size:
          if(!ptr_str_ini){
-            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 1] ptr_str_ini is nullptr. Trying to write it'size...");
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 1] ptr_str_ini is nullptr. Trying to write its size...");
             tmp_char_ptr = reinterpret_cast<char*>(&string_size);
             if(uint32_size <= bytes_remain){
                tmp_char_ptr = reinterpret_cast<char*>(&string_size);
@@ -234,16 +234,16 @@ void disk_aux::write_aux_val_buffer_with_size_check(const Values& value, dataTyp
          unk_size = char_vec_val.size();
          uint8_t uint32_size = sizeof(uint32_t);
 
-         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] >>> Auxiliary function adtional entry <<<");
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] >>> Auxiliary function additional entry <<<");
          Logger::log(LogLevel::DEBUG, std::string("[WRITE_STRING] Text content: ") + char_vec_val.data());
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] unk_size: ", false, true); Logger::log(LogLevel::DEBUG, unk_size, true, false);
-         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] bytes_remain en buffer: ", false, true); Logger::log(LogLevel::DEBUG, bytes_remain, true, false);
+         Logger::log(LogLevel::DEBUG, "[WRITE_STRING] bytes_remain in buffer: ", false, true); Logger::log(LogLevel::DEBUG, bytes_remain, true, false);
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] Base address for char_vec_val.data(): ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(char_vec_val.data()), true, false);
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] ptr_str_ini initial value: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
 
-         // Pĥase 1 -> Readig the character array's size:
+         // Phase 1 -> Reading the character array's size:
          if(!ptr_str_ini){
-            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 1] ptr_str_ini is nullptr. Trying to write it'size...");
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 1] ptr_str_ini is nullptr. Trying to write its size...");
             tmp_char_ptr = reinterpret_cast<char*>(&unk_size);
             if(uint32_size <= bytes_remain){
                tmp_char_ptr = reinterpret_cast<char*>(&unk_size);
@@ -268,13 +268,13 @@ void disk_aux::write_aux_val_buffer_with_size_check(const Values& value, dataTyp
             }; 
          };
 
-         // Phase 2 -> character array writing:
+         // Phase 2 -> Character array writing:
          if (ptr_str_ini && bytes_remain > 0) {
             uint32_t bytes_remaining = (char_vec_val.data() + unk_size) - ptr_str_ini;
             
             Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 2] ptr_str_ini valid. Calculating remaining bytes.");
             Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 2] char_vec_val.data() + unk_size = ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(char_vec_val.data() + unk_size), true, false);
-            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 2] ptr_str_ini actual = ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+            Logger::log(LogLevel::DEBUG, "[WRITE_STRING] ptr_str_ini actual = ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
             Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 2] bytes_remaining: ", false, true); Logger::log(LogLevel::DEBUG, bytes_remaining, true, false);
 
             uint32_t bytes_to_write = 0;
@@ -297,12 +297,12 @@ void disk_aux::write_aux_val_buffer_with_size_check(const Values& value, dataTyp
                bytes_remain -= bytes_to_write;
                bytes_written += bytes_to_write;
                
-               Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 2] Bytes copied to the buffer.Updating ptr_str_ini to: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
+               Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 2] Bytes copied to the buffer. Updating ptr_str_ini to: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
             };
          };
 
 
-         // Phase 3 -> Character's array writing termination:
+         // Phase 3 -> Character array writing termination:
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 3] Evaluating the character array...");
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 3] ptr_str_ini: ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(ptr_str_ini), true, false);
          Logger::log(LogLevel::DEBUG, "[WRITE_STRING] [Phase 3] Final limit (data+size): ", false, true); Logger::log(LogLevel::DEBUG, reinterpret_cast<uintptr_t>(char_vec_val.data() + unk_size), true, false);

@@ -1,6 +1,6 @@
 #pragma once
 
-enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
+enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT};
 
 
 class Logger {

@@ -67,7 +67,7 @@ void textUtils::simpleLinkedList::print_list() {
 
    /*
    Method for printing the token list.
-   Solely used for debuggung purposes
+   Solely used for debugging purposes
    */
 
    if (!head) {
@@ -86,11 +86,10 @@ void textUtils::simpleLinkedList::print_list() {
 };
 
 
-// Metodo para borrar la lista de tokens:
 void textUtils::simpleLinkedList::clear() {
 
    /*
-   Method for managing safe memory deletion of all the list nodes.
+   Method for managing safe memory deletion of all the linked list nodes.
    Should only be invoked once the execution tree has been constructed.
    */
 
@@ -107,7 +106,7 @@ void textUtils::simpleLinkedList::clear() {
 std::string textUtils::normalize_spaces(const std::string& input){
 
    /*
-   This function erases repeted whitespaces, leaving only one between SQL tokens
+   This function erases repeated whitespaces, leaving only one between SQL tokens
    */
 
    bool allow_space = false;
@@ -148,8 +147,8 @@ std::string textUtils::normalize_spaces(const std::string& input){
 textUtils::simpleLinkedList* textUtils::create_token_list(const std::string& input){
 
    /*
-   Given a clean/processed SQL code, it tokenized it into a simple linked list, used later
-   for instruction interpetation and excetion trees construction.
+   Given a clean/processed SQL code, it is tokenized into a simple linked list, used later
+   for instruction interpetation and execution trees construction.
    Each token corresponds to a SQL one.
    */
 
@@ -181,7 +180,7 @@ textUtils::simpleLinkedList* textUtils::create_token_list(const std::string& inp
       };
       ++ptr_current;
    };
-   // Just inn case some elements from the buffer were left unnadded, we append them here at the end:
+   // Just in case some elements from the buffer were left unadded, we append them here at the end:
    if(!buffer.empty()) {
       list->add_node(buffer);
    };

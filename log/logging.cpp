@@ -1,9 +1,10 @@
 #include "logging.h"
 
-// Definición del miembro estático
+
+// Static member definition:
 LogLevel Logger::level = LogLevel::INFO;
 
-// Sobrecarga string
+// String overload
 void Logger::log(LogLevel msgLevel,
                  const std::string& msg,
                  bool flush_bool,
@@ -25,20 +26,19 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 };
 
-/* Sobrecarga para char* (Esta sobrecarga la ponemos
-   porque si se pone una "..." se 'lia' y no sabe
-   usar la de std::string o std::variant)
+/* Overload for char* (This overload is provided 
+   because passing a string literal causes ambiguity 
+   between std::string and std::variant)
 */
 void Logger::log(LogLevel msgLevel,
 		const char* msg,
 		bool flush_bool,
 		bool flag)
 {
-    // Simplemente "empujamos" el puntero a la función de string que ya tenías
     log(msgLevel, std::string(msg), flush_bool, flag);
 };
 
-// Sobrecarga int
+// Int overload
 void Logger::log(LogLevel msgLevel,
                  const int msg,
                  bool flush_bool,
@@ -60,7 +60,7 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 };
 
-// Sobrecarga para el std::variant de Values:
+cc
 void Logger::log(LogLevel msgLevel,                                                          
                  const std::variant<int, float, bool, std::string, std::vector<char>>  msg,
                  bool flush_bool,
@@ -79,18 +79,18 @@ void Logger::log(LogLevel msgLevel,
     };
 
     std::visit(
-        // Función lambda:
+        // Lambda function for telling variant datatype:
         [](const auto& arg){
             using type = std::decay_t<decltype(arg)>;
 
             if constexpr (std::is_same_v<type, std::vector<char>>){
-                // Caso vector de caracteres:
+                // Character vector case:
                 for (char c : arg){
                     std::cout << c;
                 };
                 std::cout.flush();
             } else if constexpr (std::is_same_v<type, bool>){
-                // Hacemos más expresiva la muestra de booleanos:
+                // Bool case:
                 if(arg){
                     std::cout << "TRUE";
                 }else{
@@ -105,7 +105,7 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 };
 
-// Sobrecarga std::filesystem::path
+// std::filesystem::path overload
 void Logger::log(LogLevel msgLevel,
                  const std::filesystem::path msg,
                  bool flush_bool,
@@ -194,7 +194,7 @@ void Logger::flush(LogLevel msgLevel,
     std::cout.flush();
 };
 
-// Funcion para input:
+// Input function:
 void Logger::login(std::string& input){
    input = "";
    std::getline(std::cin, input);

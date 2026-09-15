@@ -39,33 +39,28 @@ class tableCatalog {
         static void delete_table(std::string name);
 };
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DEFINIMOS LAS FUNCIONES AUXILIARES:
-
+// AUXILIARY FUNCTIONS:
 
 NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n);
 
-// FUNCIONES PARA DEFINIR EL ESQUEMA:
+// FUNCTIONS FOR SCHEMA DEFINITION:
 void create_children_by_parent(textUtils::NodeList1*& c_l_n, NodeType1* node_ptr, execPlan::Queue* excec_queue);
-
 
 void process_list_to_define_schema(execPlan::Queue* excec_queue, textUtils::NodeList1*& c_l_n);
 
-
 void insert_values_add_columns_to_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n);
-
 
 void aux_iterative_value_filler(textUtils::NodeList1*& c_l_n, std::vector<std::string>& vector_fila);
 
 void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n, execPlan::Queue* excec_queue);
 
-// FUNCIONES PARA INSERTAR VALORES:
+// FUNCTIONS FOR VALUE INSERTION:
 void process_list_to_insert_values(execPlan::Queue* excec_queue, textUtils::NodeList1*& c_l_n);
 
 void aux_col_query(QueryNode*& query_node, textUtils::NodeList1*& c_l_n);
 
-// PARA DEFINIR LAS CONSULTAS:
+// FUNCTIONS FOR QUERIES:
 void process_list_for_selection(execPlan::Queue*& excec_queue, textUtils::NodeList1*& c_l_n);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

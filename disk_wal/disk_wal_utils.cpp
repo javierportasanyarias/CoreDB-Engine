@@ -8,11 +8,11 @@
 
 void disk_wal_utils::delete_wal_bin_file(){
    /*
-   Función que elimina el arhivo de recuperación o 'WAL'.
-   Debería ejecutarse al final de cada sesión sólo y únicamente después
-   de haber realizado la escritura de los archivos binarios de
-   metadatos y datos binarios sin fallos
+   Function that deletes the recovery file or 'WAL'.
+   It should run at the end of each session/execution if and only if
+   the binary metadata and data files have been written without errors.
    */
+
    if(fs::remove(std::filesystem::path("backup_data/wal.bin"))){
       Logger::log(LogLevel::DEBUG, "WAl file deleted SUCCESSFULLY");
    } else {

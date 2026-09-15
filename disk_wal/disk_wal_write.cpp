@@ -8,33 +8,31 @@
 //========================================================
 void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
    /*
-   Función que escribe los metadatos nada más han sido creados en la memoria RAM.
-   Lo que se escribe en el bloque de matadatos es lo siguiente:
-      1º Tipo de dato: 0 porque es metadato.
-      2º Tamaño del nombre de la tabla.
-      3º Nombre de la tabla.
-      4º Tamaño del buffer de datos
-      5º Buffer de datos:
-   El número de filas totales se escribe siempre a cero, a diferencia de los
-   metadatos escritos de forma normal, no en el wal.
-
+   Writes metadata immediately after it is created in RAM.
+   The metadata block consists of the following:
+      1. Data type: 0, as it indicates metadata.
+      2. Table name length.
+      3. Table name.
+      4. Data buffer size.
+      5. Data buffer.
+   The total row count is always written as zero, unlike
+   standard metadata writes outside the WAL.
    */
+
    Logger::log(LogLevel::DEBUG, "Inside the metadata writing within the WAL file");
    /*
-   Función que escribe los metadatos en el archivo WAL para
-   persistecia de los datos
+   Writes metadata to the WAL file for data persistence.
    */
    if (!table_ptr_input) return;
-   // We do not make metadata pointer an alias as we do not need to modify any value
+   // Not making metadata pointer an alias, as we do not neet to modify it
    table_metadata* metadata_pointer = table_ptr_input->metadata_ptr;
    std::string table_name = metadata_pointer->name;
  
-   // Volvemos a abrir el archivo ,esta vez en modo append:
+   // Re-opening WAL file, this time in append mode:
    std::ofstream out(std::filesystem::path("backup_data/wal.bin"), std::ios::binary | std::ios::app);
 
    /*
-   Usamos un vector de punteros de caracteres para así no 
-   realizar tantas llamadas a la escritura
+   We use a vector of char pointers to minimize the number of write calls.
    */
 
    uint32_t meta_byte_size = disk_metadata::calculate_metadata_byte_size_wal(metadata_pointer);
@@ -44,19 +42,19 @@ void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
       buffer = new char[meta_byte_size];
       char* ptr_curr = buffer;
       /*
-      Al ser una escritura en el WAL, antes debemos escribir por separado y antes:
-      -> Tipo de datos (1 byte):
-         * 0: metadatos
-         * 1: datos
-      -> Tamaño (4 bytes):
-         Almacena el tamaño en bytes de la información en sí
+      Since this is a WAL write, we must first write separately beforehand:
+      -> Data type (1 byte):
+          * 0: metadata
+          * 1: data
+      -> Size (4 bytes):
+          * Stores the size in bytes of the actual payload
       */
-      // Escribimos el tipo de dato
+      // Writing data type:
       uint8_t data_type = 0; // 0 porque es un metadato
       out.write(reinterpret_cast<char*>(&data_type), sizeof(uint8_t));
-      // == Escribimos los metadatos: ===============================
+      // == Writing metadata: =======================================
 
-      // -- Escribimos el nombre -----------------------------------------
+      // -- Writing table's name ------------------------------------
       Logger::log(LogLevel::DEBUG, "Proceeding to write the table's name:");
 
       uint32_t table_name_size = table_name.size();
@@ -66,7 +64,8 @@ void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
 
 
       Logger::log(LogLevel::DEBUG, "Table name registered within the buffer successfully");
-      // -- Escribimos el número de columnas -----------------------------
+
+      // -- Writing column number -----------------------------------
       uint32_t num_cols = metadata_pointer->n_cols;
       Logger::flush(LogLevel::DEBUG);
       Logger::log(LogLevel::DEBUG, "=========================================");
@@ -81,9 +80,9 @@ void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
       Logger::log(LogLevel::DEBUG, "Nº of columns registered successfully");
 
       for(uint32_t i=0; i<num_cols; i++){
-         // -- Escribimos los datos de cada columna ---------------------
+         // -- Writing each column data --------------------------------
 
-         // -- Escribimos el nombre:
+         // -- Writing column name:
          Logger::log(LogLevel::DEBUG, "Loop iteration: ", false, true);
          Logger::log(LogLevel::DEBUG, i, true, false);
          std::string column_name = (metadata_pointer->column_names)[i];
@@ -103,7 +102,7 @@ void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
          ptr_curr += size_column_name;
          Logger::log(LogLevel::DEBUG, "Column name registered within the buffer successfully");
 
-         // -- Escribimos el tipo de dato:
+         // -- Writing column data type:
          Logger::log(LogLevel::DEBUG, "Inserting data type");
          dataType col_type = (metadata_pointer->column_types)[i];
          uint32_t col_type_disk = static_cast<uint32_t>(col_type);
@@ -113,7 +112,7 @@ void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
          ptr_curr += sizeof(uint32_t);
          Logger::log(LogLevel::DEBUG, "Data type registered within the buffer successfully");
 
-         // -- Escribimos si es clave primaria:
+         // -- Writing primary key status(it is/is not primary key):
          Logger::log(LogLevel::DEBUG, "Accessing to primary key status");
          bool column_is_key = (metadata_pointer->primary_list)[i];
          Logger::log(LogLevel::DEBUG, "'column_is_key' accessed correctly");
@@ -128,15 +127,17 @@ void disk_wal_write::write_table_wal_metadata(table* table_ptr_input){
       };
       Logger::log(LogLevel::DEBUG, "Metadata has already been all been written within the buffer");
       Logger::log(LogLevel::DEBUG, "As it is a WAL write, data type (metadata) and size must also be registered");
-      /* Ya tenemos el buffer listo para escritura, pero al ser la escritura en WAL, antes debemos
-      escribir el tamaño de la información.
+      /* 
+      The buffer is ready for writing, but since this is a WAL write, we must
+      first write the size of the payload.
       */
-      // Escribimos el tamaño de los metadatos:
+
+      // Writing metadata size:
       Logger::log(LogLevel::DEBUG, "Registering metadata size");
       out.write(reinterpret_cast<char*>(&meta_byte_size), sizeof(uint32_t));
       Logger::log(LogLevel::DEBUG, "Metadata size written successfully");
       Logger::log(LogLevel::DEBUG, "Proceeding to write the metadata buffer:");
-      // Ahora ya sí podemos escribir el contenido del buffer en sí
+      // Writing buffer content on disk:
       disk_aux::aux_vector_buffer_write_disk(buffer, 
                                              meta_byte_size,
                                              out
@@ -188,7 +189,7 @@ void disk_wal_write::walDataWriter::control_unit(){
          Logger::log(LogLevel::DEBUG, "Inserted rows to write in WAL file: ", false, true);
          Logger::log(LogLevel::DEBUG, this->n_rows_to_write, true, false);
          this->out.write(reinterpret_cast<char*>(&this->n_rows_to_write), sizeof(uint32_t));
-         // We write the buffer size used to wirte this very same data batch:
+         // Writitng buffer size:
          this->out.write(reinterpret_cast<char*>(&size_buffer_bytes), sizeof(uint32_t));
          this->out.flush();
 
@@ -264,7 +265,7 @@ void disk_wal_write::walDataWriter::control_unit(){
             this->state = 6;
             break;
          }else{
-            // Si no se ha legado al offset
+            // If offset condition has not yet been reached
             this->state = 1;
             break;
          };
@@ -275,7 +276,7 @@ void disk_wal_write::walDataWriter::control_unit(){
          Logger::log(LogLevel::DEBUG, "State reached when buffer EOF happens");
 
 
-         // LOG PARA VER LO QUE SE HA ESCRITO EN EL BUFFER:
+         // LOG ENABLING USER TO SEE BUFFER SIZE:
          Logger::log(LogLevel::DEBUG, "?????????????????????????????????????????????????????????????");
          Logger::log_buffer(LogLevel::DEBUG, this->buffer, size_buffer_bytes, true, true);
          Logger::flush(LogLevel::DEBUG);
@@ -356,9 +357,3 @@ void disk_wal_write::write_table_data_wal(table* table_ptr_input, uint32_t n_row
    // We execute the data writing FSM within:
    data_writer_obj.execute_fsm();
 };
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////

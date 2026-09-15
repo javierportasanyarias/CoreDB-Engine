@@ -13,7 +13,7 @@ class QueryNode;
 
 namespace execPlan {
     ///////////////////////////////////////////////////////////
-    // Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
+    //  FIFO execution queue: it will determine the order of execution tasks.
 
     // Variant type of variable holding all the task's nodes:
     using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*, DropTableNode*>;
@@ -42,7 +42,7 @@ namespace execPlan {
             // Method for reasigning the last queue node (It does not delete it):
             queueNode1* pop_front_node();
 
-            // Mrthod for printing all the queue node and types:
+            // Method for printing all the queue node and types:
             void printNodeTypes() const;
 
 

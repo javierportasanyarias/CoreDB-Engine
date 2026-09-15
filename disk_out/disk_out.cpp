@@ -4,16 +4,15 @@
 
 
 ////////////////////////////////////////////////////////////////////
-// ESCRITURA DE DATOS //////////////////////////////////////////////
+// DATA STRUCTURE //////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
 
 
 void disk_out::fix_vect_vals(std::vector<Values>::iterator start_iterator, std::vector<Values>::iterator end_iterator, int* arr_vals){
-   /* CASO para INTs:
-
-   start_iterator y end_iterator son sólo del buffer, no los totales
-   de todos los datos ni los d la partición
+   /* INT case:
+   Note: start_iterator and end_iterator are buffer-relative only;
+   they do not represent global dataset or partition boundaries.
    */
 
    int index = 0;
@@ -29,10 +28,9 @@ void disk_out::fix_vect_vals(std::vector<Values>::iterator start_iterator, std::
 
 
 void disk_out::fix_vect_vals(std::vector<Values>::iterator start_iterator, std::vector<Values>::iterator end_iterator, float* arr_vals){
-   /* CASO para FLOATs:
-
-   start_iterator y end_iterator son sólo del buffer, no los totales
-   de todos los datos ni los d la partición
+   /* FLOAT case:
+   Note: start_iterator and end_iterator are buffer-relative only;
+   they do not represent global dataset or partition boundaries.
    */
 
    int index = 0;
@@ -46,10 +44,9 @@ void disk_out::fix_vect_vals(std::vector<Values>::iterator start_iterator, std::
 
 
 void disk_out::fix_vect_vals(std::vector<Values>::iterator start_iterator, std::vector<Values>::iterator end_iterator, uint8_t* arr_vals){
-   /* CASO para BOOLs:
-
-   start_iterator y end_iterator son sólo del buffer, no los totales
-   de todos los datos ni los d la partición
+   /* BOOL case:
+   Note: start_iterator and end_iterator are buffer-relative only;
+   they do not represent global dataset or partition boundaries.
    */
 
    int index = 0;
@@ -65,11 +62,7 @@ void disk_out::fix_vect_vals(std::vector<Values>::iterator start_iterator, std::
    };
 };
 
-
 // FUNCIONES AUXILIARES DE LAS FUNCIONES DE ESCRITURA:
-
-
-
 
 void disk_out::obtain_writing_indexes(auto& idx_start, auto& idx_end, std::vector<Values>*& vec_var_ptr, int written_rows_input, int& rows_to_write_input){
    idx_start = vec_var_ptr->begin() + written_rows_input;
@@ -109,14 +102,14 @@ void disk_out::write_partition_int(auto& idx_start, auto& idx_end, std::filesyst
       tmp_ini_index = idx_start;
       std::vector<Values>::iterator tmp_end_index;
       while(tmp_ini_index < idx_end){
-         // Calculamos el tamaño del subvector a crear:
+         // Calculating yet to create sub-vector size:
          tmp_end_index = tmp_ini_index + num_rows_buffer;
          if(tmp_end_index > idx_end){
             tmp_end_index = idx_end;
          };
          written_rows_num = tmp_end_index - tmp_ini_index;
 
-         ////// PROCESO DE ESCRIURA ///////////////////
+         ////// WRITING PROCESS ///////////////////////
 
          disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, arr_vals);
          Logger::log(LogLevel::DEBUG, "'fix_vect_vals' executed successfully");
@@ -154,14 +147,14 @@ void disk_out::write_partition_float(auto& idx_start, auto& idx_end, std::filesy
       std::vector<Values>::iterator tmp_end_index;
 
       while(tmp_ini_index < idx_end){
-         // Calculamos el tamaño del subvector a crear:
+         // Calculating yet to create sub-vector size:
          tmp_end_index = tmp_ini_index + num_rows_buffer;
          if(tmp_end_index > idx_end){
             tmp_end_index = idx_end;
          };
          written_rows_num = tmp_end_index - tmp_ini_index;
 
-         ////// PROCESO DE ESCRIURA ///////////////////
+         ////// WRITING PROCESS ///////////////////////
 
          disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, arr_vals);
          Logger::log(LogLevel::DEBUG, "'fix_vect_vals' executed successfully");
@@ -199,14 +192,14 @@ void disk_out::write_partition_bool(auto& idx_start, auto& idx_end, std::filesys
       tmp_ini_index = idx_start;
       std::vector<Values>::iterator tmp_end_index;
       while(tmp_ini_index < idx_end){
-         // Calculamos el tamaño del subvector a crear:
+         // Calculating yet to create sub-vector size:
          tmp_end_index = tmp_ini_index + num_rows_buffer;
          if(tmp_end_index > idx_end){
             tmp_end_index = idx_end;
          };
          written_rows_num = tmp_end_index - tmp_ini_index;
 
-         ////// PROCESO DE ESCRIURA ///////////////////
+         ////// WRITING PROCESS ///////////////////////
 
          disk_out::fix_vect_vals(tmp_ini_index, tmp_end_index, arr_vals);
          Logger::log(LogLevel::DEBUG, "'fix_vect_vals' executed successfully");
@@ -231,12 +224,12 @@ void disk_out::write_partition_bool(auto& idx_start, auto& idx_end, std::filesys
 
 struct byteStreamer {
    /*
-   Los datos residen en un std::vector<Values>, esto significa
-   que las strings que puedan albergar NO son contiguas.
-   Para no complicar más el buffer de escritura, creamos este
-   struct, cuyo objetivo es abstraer totalmente en la obtención
-   del buffer, pudiendo así mantener un bucle de escritura muy sencillo
+   Data is stored in a std::vector<Values>, meaning any contained 
+   strings are not contiguous in memory. 
+   To keep the write buffer manageable, this struct abstracts the buffer 
+   retrieval, allowing us to maintain a clean and straightforward write loop.
    */
+
    std::vector<Values>::iterator start_iterator;
    std::vector<Values>::iterator end_iterator;
    uint32_t char_idx = 0;
@@ -248,7 +241,7 @@ struct byteStreamer {
       return start_iterator < end_iterator;
    };
 
-   // Función que retornará un buffer lleno
+   // Function that will return the buffer full:
    uint32_t extract_bytes(char* buffer, uint32_t* buffer_sizes, uint32_t limit_input){
       written_rows = 0;
       uint32_t idx_sizes = 0;
@@ -261,7 +254,7 @@ struct byteStreamer {
       if(this->is_unknown_type){
          while(start_iterator < end_iterator && bytes_copied < limit_input){
 
-            // Case UNKNOWN
+            // UNKNOWN case:
             auto& arg = std::get<std::vector<char>>(*start_iterator);
             str_size = arg.size();
             str_begin = reinterpret_cast<const char*>(arg.data());
@@ -269,9 +262,9 @@ struct byteStreamer {
             uint32_t string_remaining_bytes = str_size - char_idx;
             uint32_t buffer_free_space = limit_input - bytes_copied;
 
-            // Sólo insertamos en el buffer si cabe en el buffer:
+            // Only if it fits will we insert it into the buffer:
             if(string_remaining_bytes <= buffer_free_space){
-               // CASo A: La string o lo que queda de esta cabe entera:
+               // The string or what remains fits whole:
                std::memcpy(buffer + bytes_copied, str_begin + char_idx, string_remaining_bytes);
 
                bytes_copied += string_remaining_bytes;
@@ -286,18 +279,18 @@ struct byteStreamer {
                string_accumulated_bytes = 0;
 
             }else{
-               // CASO B: La string no cabe entera:
-               // Copiamos solo el trozo exacto de caracteres que llene el espacio libre del buffer
+               // The string does not fit whole:
 
+               // Copying only what fits inside the buffer:
                std::memcpy(buffer + bytes_copied, str_begin + char_idx, buffer_free_space);
                
-               // Sumamos los últimos bytes para llegar exactamente al 'limit_input' (64 KB)
+               // Summing fitted bytes (what was left free in the buffer):
                bytes_copied += buffer_free_space;
                
-               // ¡ESTADO FRAGMENTADO!: Recordamos la posición exacta de la letra donde nos quedamos
+               // Adding to the index counter the bytes already filled:
                char_idx += buffer_free_space; 
                
-               // Rompemos el bucle 'while'. El buffer está lleno al 100%.
+               // Forcing loop exist as the buffer is full:
                string_accumulated_bytes += buffer_free_space;
                break;
             };
@@ -305,7 +298,7 @@ struct byteStreamer {
       }else{
          while(start_iterator < end_iterator && bytes_copied < limit_input){
 
-            // Case STRING
+            // STRING case:
             auto& arg = std::get<std::string>(*start_iterator);
             str_size = arg.size();
             str_begin = reinterpret_cast<const char*>(arg.data());
@@ -313,9 +306,9 @@ struct byteStreamer {
             uint32_t string_remaining_bytes = str_size - char_idx;
             uint32_t buffer_free_space = limit_input - bytes_copied;
 
-            // Sólo insertamos en el buffer si cabe en el buffer:
+            // Only if it fits will we insert it into the buffer:
             if(string_remaining_bytes <= buffer_free_space){
-               // CASo A: La string o lo que queda de esta cabe entera:
+               // The character vector or what remains fits whole:
                std::memcpy(buffer + bytes_copied, str_begin + char_idx, string_remaining_bytes);
 
                bytes_copied += string_remaining_bytes;
@@ -330,18 +323,18 @@ struct byteStreamer {
                string_accumulated_bytes = 0;
 
             }else{
-               // CASO B: La string no cabe entera:
-               // Copiamos solo el trozo exacto de caracteres que llene el espacio libre del buffer
+               // The character vector does not fit whole:
 
+               // Copying only what fits inside the buffer:
                std::memcpy(buffer + bytes_copied, str_begin + char_idx, buffer_free_space);
                
-               // Sumamos los últimos bytes para llegar exactamente al 'limit_input' (64 KB)
+               // Summing fitted bytes (what was left free in the buffer):
                bytes_copied += buffer_free_space;
                
-               // ¡ESTADO FRAGMENTADO!: Recordamos la posición exacta de la letra donde nos quedamos
+               // Adding to the index counter the bytes already filled:
                char_idx += buffer_free_space; 
                
-               // Rompemos el bucle 'while'. El buffer está lleno al 100%.
+               // Forcing loop exist as the buffer is full:
                string_accumulated_bytes += buffer_free_space;
                break;
             };
@@ -357,8 +350,8 @@ struct byteStreamer {
 
 void disk_out::write_partition_string(std::vector<Values>::iterator start_iterator, std::vector<Values>::iterator end_iterator, std::filesystem::path write_path_input){
    
-   // NO nos hace falta el argumento int available_space_to_write como input.
-   // Ya que start_iterator y end_iterator son las filas a escribir en una partición.
+   // The 'int available_space_to_write' parameter is unnecessary as input.
+   // 'start_iterator' and 'end_iterator' already define the range of rows to write in a partition.
    
    std::ofstream out1;
    std::ofstream out2;
@@ -381,7 +374,7 @@ void disk_out::write_partition_string(std::vector<Values>::iterator start_iterat
       arr_vals = new char[size_buffer_bytes];
       arr_sizes = new uint32_t[num_rows_buffer];
 
-      // inicializamos una sinstancia de byteStreamer:
+      // Initializing a byteStreamer instance/object:
       byteStreamer byte_streamer;
       byte_streamer.start_iterator = start_iterator;
       byte_streamer.end_iterator = end_iterator;
@@ -414,8 +407,8 @@ void disk_out::write_partition_string(std::vector<Values>::iterator start_iterat
 
 void disk_out::write_partition_unknown(std::vector<Values>::iterator start_iterator, std::vector<Values>::iterator end_iterator, std::filesystem::path write_path_input){
    
-   // NO nos hace falta el argumento int available_space_to_write como input.
-   // Ya que start_iterator y end_iterator son las filas a escribir en una partición.
+   // The 'int available_space_to_write' parameter is unnecessary as input.
+   // 'start_iterator' and 'end_iterator' already define the range of rows to write in a partition.
    
    std::ofstream out1;
    std::ofstream out2;
@@ -438,7 +431,7 @@ void disk_out::write_partition_unknown(std::vector<Values>::iterator start_itera
       arr_vals = new char[size_buffer_bytes];
       arr_sizes = new uint32_t[num_rows_buffer];
 
-      // inicializamos una sinstancia de byteStreamer:
+      // Initializing a byteStreamer instance/object:
       byteStreamer byte_streamer;
       byte_streamer.start_iterator = start_iterator;
       byte_streamer.end_iterator = end_iterator;
@@ -473,7 +466,7 @@ void disk_out::write_partition_unknown(std::vector<Values>::iterator start_itera
 
 void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_bytes_to_write_input, int partition_entities, std::filesystem::path path_var_input, std::string last_partition_str_input, int last_partition_int_input){
 
-   // Estas son las variables que usaremos para trackear lo que llevamos avanzado
+   // These variables will track writing progress:
    int bytes_written = 0;
    int written_rows = 0;
    int total_rows_to_write = total_bytes_to_write_input / 4;
@@ -484,7 +477,7 @@ void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_byt
    Logger::log(LogLevel::DEBUG, "Partition file size: ", false, true);
    Logger::log(LogLevel::DEBUG, size_partition, false, true);
 
-   // Ahora consultamos la última partición para saber realmente en que númerio estamos:
+   // Quering las partition number:
    std::vector<Values>::iterator start_iterator;
    std::vector<Values>::iterator end_iterator;
    int rows_to_write;
@@ -497,9 +490,9 @@ void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_byt
    
    while(total_bytes_to_write_input > bytes_written){
       /*
-      1) Consultamos el tamaño que le queda a la partición por escribir
-         Si no existiera, se asigna el tmaño de una partición entera
-         (del tipo concreto)
+      1) Query the remaining writable space for the partition.
+         If it does not exist, assign the full partition size 
+         for its specific type.
       */
       available_space_to_write = disk_out::obtain_available_size(path_var_input,
                                                                        last_partition_str_input + ".dat",
@@ -507,7 +500,7 @@ void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_byt
                                                                       );
       Logger::log(LogLevel::DEBUG, "Available space within the partition file is: ", false, true);
       Logger::log(LogLevel::DEBUG, available_space_to_write, true, false);
-      // 1) Calculamos las filas a escribir:
+      // 2) Calculating rows to write:
       rows_left_to_write = total_rows_to_write - written_rows;
       bytes_left_to_write = total_bytes_to_write_input - bytes_written;
       rows_that_fit_in_current_partition = available_space_to_write / sizeof(int);
@@ -521,7 +514,7 @@ void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_byt
       Logger::log(LogLevel::DEBUG, "Rows left to write: ", false, true);
       Logger::log(LogLevel::DEBUG, rows_to_write, true, false);
       if(rows_to_write > 0){
-         // Sacamos los índices inicial y final;
+         // Obtaining initial and final indices:
          disk_out::obtain_writing_indexes(start_iterator,
                                                 end_iterator,
                                                 vec_var_ptr,
@@ -529,16 +522,15 @@ void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_byt
                                                 rows_to_write
                                                 );
 
-         // 3) Realizamos la escritura
+         // 3) Performing writing operation:
          std::filesystem::path write_path = path_var_input;
          write_path += last_partition_str_input;
          disk_out::write_partition_int(start_iterator, end_iterator, write_path);
-         // Una vez hecha la escritura, actualizamos los contadores
-         // 4) Actualización de los contadores:
+         // 4) Once it is done, we update the writing counters:
          bytes_written += bytes_to_write;
          written_rows += rows_to_write;
       };
-      // Actualizamos el nombre de las particiones:
+      // Updating partition names:
       Logger::log(LogLevel::DEBUG, "'last_partition_str_input' value before: ", false, true);
       Logger::log(LogLevel::DEBUG, last_partition_str_input, true, false);
       last_partition_int_input += 1;
@@ -550,7 +542,7 @@ void disk_out::writing_loop_int(std::vector<Values>*& vec_var_ptr, int total_byt
 
 void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_bytes_to_write_input, int partition_entities, std::filesystem::path path_var_input, std::string last_partition_str_input, int last_partition_int_input){
 
-   // Estas son las variables que usaremos para trackear lo que llevamos avanzado
+   // These variables will track writing progress:
    int bytes_written = 0;
    int written_rows = 0;
    int total_rows_to_write = total_bytes_to_write_input / 4;
@@ -561,7 +553,7 @@ void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_b
    Logger::log(LogLevel::DEBUG, "Partition file size: ", false, true);
    Logger::log(LogLevel::DEBUG, size_partition, false, true);
 
-   // Ahora consultamos la última partición para saber realmente en que númerio estamos:
+   // Quering las partition number:
    std::vector<Values>::iterator start_iterator;
    std::vector<Values>::iterator end_iterator;
    int rows_to_write;
@@ -574,9 +566,9 @@ void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_b
    
    while(total_bytes_to_write_input > bytes_written){
       /*
-      1) Consultamos el tamaño que le queda a la partición por escribir
-         Si no existiera, se asigna el tmaño de una partición entera
-         (del tipo concreto)
+      1) Query the remaining writable space for the partition.
+         If it does not exist, assign the full partition size 
+         for its specific type.
       */
       available_space_to_write = disk_out::obtain_available_size(path_var_input,
                                                                        last_partition_str_input + ".dat",
@@ -584,7 +576,7 @@ void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_b
                                                                       );
       Logger::log(LogLevel::DEBUG, "Available space within the partition file is: ", false, true);
       Logger::log(LogLevel::DEBUG, available_space_to_write, true, false);
-      // 1) Calculamos las filas a escribir:
+      // 2) Calculating rows to write:
       rows_left_to_write = total_rows_to_write - written_rows;
       bytes_left_to_write = total_bytes_to_write_input - bytes_written;
       rows_that_fit_in_current_partition = available_space_to_write / sizeof(float);
@@ -598,7 +590,7 @@ void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_b
       Logger::log(LogLevel::DEBUG, "Rows left to write: ", false, true);
       Logger::log(LogLevel::DEBUG, rows_to_write, true, false);
       if(rows_to_write > 0){
-         // Sacamos los índices inicial y final;
+         // Obtaining initial and final indices:
          disk_out::obtain_writing_indexes(start_iterator,
                                                 end_iterator,
                                                 vec_var_ptr,
@@ -606,16 +598,15 @@ void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_b
                                                 rows_to_write
                                                 );
 
-         // 3) Realizamos la escritura
+         // 3) Performing writing operation:
          std::filesystem::path write_path = path_var_input;
          write_path += last_partition_str_input;
          disk_out::write_partition_float(start_iterator, end_iterator, write_path);
-         // Una vez hecha la escritura, actualizamos los contadores
-         // 4) Actualización de los contadores:
+         // 4) Once it is done, we update the writing counters:
          bytes_written += bytes_to_write;
          written_rows += rows_to_write;
       };
-      // Actualizamos el nombre de las particiones:
+      // Updating partition names:
       Logger::log(LogLevel::DEBUG, "'last_partition_str_input' value before: ", false, true);
       Logger::log(LogLevel::DEBUG, last_partition_str_input, true, false);
       last_partition_int_input += 1;
@@ -628,7 +619,7 @@ void disk_out::writing_loop_float(std::vector<Values>*& vec_var_ptr, int total_b
 
 void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_bytes_to_write_input, int partition_entities, std::filesystem::path path_var_input, std::string last_partition_str_input, int last_partition_int_input){
 
-   // Estas son las variables que usaremos para trackear lo que llevamos avanzado
+   // These variables will track writing progress:
    int bytes_written = 0;
    int written_rows = 0;
    int total_rows_to_write = total_bytes_to_write_input;
@@ -639,7 +630,7 @@ void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_by
    Logger::log(LogLevel::DEBUG, "Partition file size: ", false, true);
    Logger::log(LogLevel::DEBUG, size_partition, false, true);
 
-   // Ahora consultamos la última partición para saber realmente en que númerio estamos:
+   // Quering las partition number:
    std::vector<Values>::iterator start_iterator;
    std::vector<Values>::iterator end_iterator;
    int rows_to_write;
@@ -652,9 +643,9 @@ void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_by
    
    while(total_bytes_to_write_input > bytes_written){
       /*
-      1) Consultamos el tamaño que le queda a la partición por escribir
-         Si no existiera, se asigna el tmaño de una partición entera
-         (del tipo concreto)
+      1) Query the remaining writable space for the partition.
+         If it does not exist, assign the full partition size 
+         for its specific type.
       */
       available_space_to_write = disk_out::obtain_available_size(path_var_input,
                                                                        last_partition_str_input + ".dat",
@@ -662,7 +653,7 @@ void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_by
                                                                       );
       Logger::log(LogLevel::DEBUG, "Available space within the partition file is: ", false, true);
       Logger::log(LogLevel::DEBUG, available_space_to_write, true, false);
-      // 1) Calculamos las filas a escribir:
+      // 2) Calculating rows to write:
       rows_left_to_write = total_rows_to_write - written_rows;
       bytes_left_to_write = total_bytes_to_write_input - bytes_written;
       rows_that_fit_in_current_partition = available_space_to_write / sizeof(uint8_t);
@@ -676,7 +667,7 @@ void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_by
       Logger::log(LogLevel::DEBUG, "Rows left to write: ", false, true);
       Logger::log(LogLevel::DEBUG, rows_to_write, true, false);
       if(rows_to_write > 0){
-         // Sacamos los índices inicial y final;
+         // Obtaining initial and final indices:
          disk_out::obtain_writing_indexes(start_iterator,
                                                 end_iterator,
                                                 vec_var_ptr,
@@ -684,16 +675,15 @@ void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_by
                                                 rows_to_write
                                                 );
 
-         // 3) Realizamos la escritura
+         // 3) Performing writing operation:
          std::filesystem::path write_path = path_var_input;
          write_path += last_partition_str_input;
          disk_out::write_partition_bool(start_iterator, end_iterator, write_path);
-         // Una vez hecha la escritura, actualizamos los contadores
-         // 4) Actualización de los contadores:
+         // 4) Once it is done, we update the writing counters:
          bytes_written += bytes_to_write;
          written_rows += rows_to_write;
       };
-      // Actualizamos el nombre de las particiones:
+      // Updating partition names:
       Logger::log(LogLevel::DEBUG, "'last_partition_str_input' value before: ", false, true);
       Logger::log(LogLevel::DEBUG, last_partition_str_input, true, false);
       last_partition_int_input += 1;
@@ -706,7 +696,7 @@ void disk_out::writing_loop_bool(std::vector<Values>*& vec_var_ptr, int total_by
 
 void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_bytes_to_write_input, int partition_entities, std::filesystem::path path_var_input, std::string last_partition_str_input, int last_partition_int_input){
 
-   // Estas son las variables que usaremos para trackear lo que llevamos avanzado
+   // These variables will track writing progress:
    int bytes_written = 0;
    int written_rows = 0;
    int total_rows_to_write = total_bytes_to_write_input / 4;
@@ -717,7 +707,7 @@ void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_b
    Logger::log(LogLevel::DEBUG, "Partition file size: ", false, true);
    Logger::log(LogLevel::DEBUG, size_partition, false, true);
 
-   // Ahora consultamos la última partición para saber realmente en que númerio estamos:
+   // Quering las partition number:
    std::vector<Values>::iterator start_iterator;
    std::vector<Values>::iterator end_iterator;
    int rows_to_write;
@@ -730,9 +720,9 @@ void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_b
    
    while(total_bytes_to_write_input > bytes_written){
       /*
-      1) Consultamos el tamaño que le queda a la partición por escribir
-         Si no existiera, se asigna el tmaño de una partición entera
-         (del tipo concreto)
+      1) Query the remaining writable space for the partition.
+         If it does not exist, assign the full partition size 
+         for its specific type.
       */
       available_space_to_write = disk_out::obtain_available_size(path_var_input,
                                                                        last_partition_str_input + ".idx",
@@ -740,7 +730,7 @@ void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_b
                                                                       );
       Logger::log(LogLevel::DEBUG, "Available space within the partition file is: ", false, true);
       Logger::log(LogLevel::DEBUG, available_space_to_write, true, false);
-      // 1) Calculamos las filas a escribir:
+      // 2) Calculating rows to write:
       rows_left_to_write = total_rows_to_write - written_rows;
       bytes_left_to_write = total_bytes_to_write_input - bytes_written;
       rows_that_fit_in_current_partition = available_space_to_write / sizeof(uint32_t);
@@ -754,7 +744,7 @@ void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_b
       Logger::log(LogLevel::DEBUG, "Rows left to write: ", false, true);
       Logger::log(LogLevel::DEBUG, rows_to_write, true, false);
       if(rows_to_write > 0){
-         // Sacamos los índices inicial y final;
+         // Obtaining initial and final indices:
          disk_out::obtain_writing_indexes(start_iterator,
                                                 end_iterator,
                                                 vec_var_ptr,
@@ -762,16 +752,15 @@ void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_b
                                                 rows_to_write
                                                 );
 
-         // 3) Realizamos la escritura
+         // 3) Performing writing operation:
          std::filesystem::path write_path = path_var_input;
          write_path += last_partition_str_input;
          disk_out::write_partition_string(start_iterator, end_iterator, write_path);
-         // Una vez hecha la escritura, actualizamos los contadores
-         // 4) Actualización de los contadores:
+         // 4) Once it is done, we update the writing counters:
          bytes_written += bytes_to_write;
          written_rows += rows_to_write;
       };
-      // Actualizamos el nombre de las particiones:
+      // Updating partition names:
       Logger::log(LogLevel::DEBUG, "'last_partition_str_input' value before: ", false, true);
       Logger::log(LogLevel::DEBUG, last_partition_str_input, true, false);
       last_partition_int_input += 1;
@@ -785,7 +774,7 @@ void disk_out::writing_loop_tring(std::vector<Values>*& vec_var_ptr, int total_b
 
 void disk_out::writing_loop_unknown(std::vector<Values>*& vec_var_ptr, int total_bytes_to_write_input, int partition_entities, std::filesystem::path path_var_input, std::string last_partition_str_input, int last_partition_int_input){
 
-   // Estas son las variables que usaremos para trackear lo que llevamos avanzado
+   // These variables will track writing progress:
    int bytes_written = 0;
    int written_rows = 0;
    int total_rows_to_write = total_bytes_to_write_input / 4;
@@ -796,7 +785,7 @@ void disk_out::writing_loop_unknown(std::vector<Values>*& vec_var_ptr, int total
    Logger::log(LogLevel::DEBUG, "Partition file size: ", false, true);
    Logger::log(LogLevel::DEBUG, size_partition, false, true);
 
-   // Ahora consultamos la última partición para saber realmente en que númerio estamos:
+   // Quering las partition number:
    std::vector<Values>::iterator start_iterator;
    std::vector<Values>::iterator end_iterator;
    int rows_to_write;
@@ -809,9 +798,9 @@ void disk_out::writing_loop_unknown(std::vector<Values>*& vec_var_ptr, int total
    
    while(total_bytes_to_write_input > bytes_written){
       /*
-      1) Consultamos el tamaño que le queda a la partición por escribir
-         Si no existiera, se asigna el tmaño de una partición entera
-         (del tipo concreto)
+      1) Query the remaining writable space for the partition.
+         If it does not exist, assign the full partition size 
+         for its specific type.
       */
       available_space_to_write = disk_out::obtain_available_size(path_var_input,
                                                                        last_partition_str_input + ".idx",
@@ -819,7 +808,7 @@ void disk_out::writing_loop_unknown(std::vector<Values>*& vec_var_ptr, int total
                                                                       );
       Logger::log(LogLevel::DEBUG, "Available space within the partition file is: ", false, true);
       Logger::log(LogLevel::DEBUG, available_space_to_write, true, false);
-      // 1) Calculamos las filas a escribir:
+      // 2) Calculating rows to write:
       rows_left_to_write = total_rows_to_write - written_rows;
       bytes_left_to_write = total_bytes_to_write_input - bytes_written;
       rows_that_fit_in_current_partition = available_space_to_write / sizeof(uint32_t);
@@ -833,7 +822,7 @@ void disk_out::writing_loop_unknown(std::vector<Values>*& vec_var_ptr, int total
       Logger::log(LogLevel::DEBUG, "Rows left to write: ", false, true);
       Logger::log(LogLevel::DEBUG, rows_to_write, true, false);
       if(rows_to_write > 0){
-         // Sacamos los índices inicial y final;
+         // Obtaining initial and final indices:
          disk_out::obtain_writing_indexes(start_iterator,
                                                 end_iterator,
                                                 vec_var_ptr,
@@ -841,16 +830,15 @@ void disk_out::writing_loop_unknown(std::vector<Values>*& vec_var_ptr, int total
                                                 rows_to_write
                                                 );
 
-         // 3) Realizamos la escritura
+         // 3) Performing writing operation:
          std::filesystem::path write_path = path_var_input;
          write_path += last_partition_str_input;
          disk_out::write_partition_unknown(start_iterator, end_iterator, write_path);
-         // Una vez hecha la escritura, actualizamos los contadores
-         // 4) Actualización de los contadores:
+         // 4) Once it is done, we update the writing counters:
          bytes_written += bytes_to_write;
          written_rows += rows_to_write;
       };
-      // Actualizamos el nombre de las particiones:
+      // Updating partition names:
       Logger::log(LogLevel::DEBUG, "'last_partition_str_input' value before: ", false, true);
       Logger::log(LogLevel::DEBUG, last_partition_str_input, true, false);
       last_partition_int_input += 1;
@@ -867,31 +855,32 @@ void disk_out::write_table_data(table* table_ptr_input){
 
    Logger::log(LogLevel::DEBUG, "<<< ENTERING PARTITION WRITING FUNCTION >>>>");
 
-   // Recuperamos los tipos de datos:
+   // Retrieving data types:
    std::vector<dataType> column_types = table_ptr_input->metadata_ptr->column_types;
-   // Recuperamos el nombre de la columna:
+   // Retrieving column names:
    std::vector<std::string> column_names = table_ptr_input->metadata_ptr->column_names;
-   // Recuperamos el vector de vectores de los datos:
+   // Retrieving data's vector of vectors:
    std::map<std::string, std::vector<Values>>& vec_de_vec_vals = table_ptr_input->data_ptr->columns;
-   // Recuperamos el nombre de la table_ptr_input:
+   // Retrieving table_ptr_input's name:
    std::string table_name_str = table_ptr_input->metadata_ptr->name;
    Logger::log(LogLevel::DEBUG, "Table necessary values retrieved successfully");
 
-   // Antes de nada, creamos el directorio de la tabla:
+   // Creating table data directory beforehand:
    std::filesystem::path table_path = "data/" + table_name_str;
    std::filesystem::create_directories(table_path);
    Logger::log(LogLevel::DEBUG, "Table data directory has been created");
 
-   // Ahora, examinamos cuantas particiones hay:
+   // Quering data partitions:
    std::vector<std::string> partition_names_str;
    partition_names_str = disk_aux::obtain_files_in_path(table_path / column_names[0], column_types[0]);
    std::string last_partition = "";
    //////////////////////////////////////////////////////////////////////
-   // Obtenemos la última partición:
+   // Obtaining last partition:
    std::string last_partition_str = "0";
    int last_partition_int = 0;
 
 
+   // obtaining las partition number in string format:
    if(!partition_names_str.empty()){
       Logger::log(LogLevel::DEBUG, "Performing bubble sort algorithm");
       part_sort::bubble_sort(partition_names_str);
@@ -911,50 +900,48 @@ void disk_out::write_table_data(table* table_ptr_input){
 
    Logger::log(LogLevel::DEBUG, "Las partition has been found: ", false, true);
    Logger::log(LogLevel::DEBUG, last_partition_str, true, false);
-   // Ahora obtenemos el ultimo numero en forma de string y entero, para hacerlo sólo una vez:
 
 
-   // VARIABLES NECESARIAS ANTES DEL BUCLE:
+   // Necessary variuables before the writinng:
    uint32_t num_cols = table_ptr_input->metadata_ptr->n_cols;
-   int total_bytes_to_write = 0; // Cantidad que nos servirá poara ver cuánto tenemos que escribir:
+   int total_bytes_to_write = 0;
    int partition_entities = 3;
 
-   // Iteramos por cada elemento
+   // Iterating through each element/column:
    for(int i = 0; i<num_cols; i++){
-      // Iteramos por cada columna:
       dataType& data_type = column_types[i];
       std::string& column_name = column_names[i];
       std::vector<Values>* vec_var_ptr = &(vec_de_vec_vals.at(column_name));
-      // Creamos el directorio de cada varuiable de la tabla:
+      // Creating variable/column directory within the table file path:
       std::filesystem::path column_path = std::filesystem::path("data") / table_name_str / column_name;
       std::filesystem::create_directories(column_path);
       std::filesystem::path path_var = column_path / "part_";
 
       switch(data_type){
          case dataType::INT: {
-            total_bytes_to_write = vec_var_ptr->size() * 4; //  Tamaño total de lo que hay que escribir
+            total_bytes_to_write = vec_var_ptr->size() * 4; // Total bytes to write
 
             disk_out::writing_loop_int(vec_var_ptr, total_bytes_to_write, partition_entities, path_var, last_partition_str, last_partition_int);
             break;
          };
          case dataType::FLOAT: {
-            total_bytes_to_write = vec_var_ptr->size() * 4; //  Tamaño total de lo que hay que escribir
+            total_bytes_to_write = vec_var_ptr->size() * 4; // Total bytes to write
 
             disk_out::writing_loop_float(vec_var_ptr, total_bytes_to_write, partition_entities, path_var, last_partition_str, last_partition_int);
             break;
          };
          case dataType::BOOL: {
-            total_bytes_to_write = vec_var_ptr->size();
+            total_bytes_to_write = vec_var_ptr->size(); // Total bytes to write
             disk_out::writing_loop_bool(vec_var_ptr, total_bytes_to_write, partition_entities, path_var, last_partition_str, last_partition_int);
             break;
          };
          case dataType::STRING: {
-            total_bytes_to_write = vec_var_ptr->size() * 4;
+            total_bytes_to_write = vec_var_ptr->size() * 4; // Total bytes to write
             disk_out::writing_loop_tring(vec_var_ptr, total_bytes_to_write, partition_entities, path_var, last_partition_str, last_partition_int);
             break;
          };
          case dataType::UNKNOWN: {
-            total_bytes_to_write = vec_var_ptr->size() * 4;
+            total_bytes_to_write = vec_var_ptr->size() * 4; // Total bytes to write
             disk_out::writing_loop_unknown(vec_var_ptr, total_bytes_to_write, partition_entities, path_var, last_partition_str, last_partition_int);
             break;
          };

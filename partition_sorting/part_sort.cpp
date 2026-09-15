@@ -15,6 +15,7 @@ std::string part_sort::erase_file_extension(std::string& input){
     return output;
 };
 
+
 std::string part_sort::obtain_number(std::string input) {
 
     uint32_t input_size = input.size();
@@ -57,8 +58,6 @@ std::string part_sort::erase_zeroes(std::string input){
 };
 
 
-
-
 int part_sort::process_partition_number(std::string input) {
     std::string number_str = part_sort::obtain_number(input);
     
@@ -67,7 +66,10 @@ int part_sort::process_partition_number(std::string input) {
     try {
         return std::stoi(number_str);
     } catch (...) {
-        // Si hay basura en el nombre del archivo, devolvemos 0 para no crashear
+        /*
+        If argument does not meet integer conversion criteria,
+        the number 0 will be returned in order not to crash the program
+        */
         return 0;
     }
 }
@@ -88,18 +90,20 @@ std::string part_sort::process_partition_number_as_string(std::string input){
 bool part_sort::compare_partition_values(std::string string_1, std::string string_2) {
     int num_1 = part_sort::process_partition_number(string_1);
     int num_2 = part_sort::process_partition_number(string_2);
-    return num_1 > num_2; // Devuelve true si el primero es mayor (para el swap del bubble)
-}
+    return num_1 > num_2; // Value comparison for bubble sort swap
+};
 
 
-// 2. Intercambio de strings
 void part_sort::swap_string_vals(std::string* p1, std::string* p2){
+
+    // String swap/interchange
+
     std::string aux = *p1;
     *p1 = *p2;
     *p2 = aux;
 };
 
-// 3. Bubble Sort con aritmética de punteros correcta
+
 void part_sort::bubble_sort(std::vector<std::string>& vec){
     if (vec.empty()) return;
 
@@ -113,7 +117,6 @@ void part_sort::bubble_sort(std::vector<std::string>& vec){
         std::string* p2 = ptr_ini;
 
         while (p2 < tmp_ptr) {
-            //if (*p2 > *(p2 + 1)) {
             if(part_sort::compare_partition_values(*p2, *(p2 + 1))){
                 part_sort::swap_string_vals(p2, p2 + 1);
                 swaped = true;
@@ -128,7 +131,6 @@ void part_sort::bubble_sort(std::vector<std::string>& vec){
 
 void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::string>& vec){
 
-
     // Base case:
     if(beg >= end){
         return;
@@ -138,7 +140,7 @@ void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::
     int32_t mid_index = beg + arr_len / 2;
     int32_t pivot_var = part_sort::process_partition_number(vec[mid_index]);
     std::string tmp_ptr;
-    // We initialize the new pointers
+    // Initialazing new pointers:
     int32_t i = beg - 1;
     int32_t tmp_i_val = 0;
     int32_t j = end + 1;
@@ -155,7 +157,7 @@ void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::
             j--;
             tmp_j_val = part_sort::process_partition_number(vec[j]);
         } while(tmp_j_val > pivot_var);
-        //Switch phase:
+        // Switch phase:
         if(i < j){
             tmp_ptr = vec[i];
             vec[i] = vec[j];
@@ -163,7 +165,7 @@ void part_sort::quick_sort_recursive(int32_t beg, int32_t end, std::vector<std::
         };
     };
 
-    // out of the loop we call te recursive
+    // Out of the loop, Calling recursive helper functions:
     part_sort::quick_sort_recursive(beg, j, vec);
     part_sort::quick_sort_recursive(j+1, end, vec);
 };
@@ -174,6 +176,7 @@ void part_sort::quick_sort(std::vector<std::string>& vec){
     /*
     Implementation of the Quick Sort algortihm using hoare partitions
     */
+
     if (vec.empty()) return;
 
     std::string* ptr_ini = vec.data();
@@ -182,7 +185,7 @@ void part_sort::quick_sort(std::vector<std::string>& vec){
     int32_t i = 0;
     int32_t j = arr_len;
 
-    // We initialize the recursion:
+    // Initializing recursive part:
     part_sort::quick_sort_recursive(i, j, vec);
 
 };

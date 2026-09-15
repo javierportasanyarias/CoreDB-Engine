@@ -1,10 +1,11 @@
 #include "logging.h"
 #include <iostream>
 
-// Definición del miembro estático
+
+// Static member definition:
 LogLevel Logger::level = LogLevel::INFO;
 
-// Sobrecarga string
+// String overload:
 void Logger::log(LogLevel msgLevel,
                  const std::string& msg,
                  bool flush_bool,
@@ -26,7 +27,7 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 }
 
-// Sobrecarga int
+// Int overload:
 void Logger::log(LogLevel msgLevel,
                  int msg,
                  bool flush_bool,

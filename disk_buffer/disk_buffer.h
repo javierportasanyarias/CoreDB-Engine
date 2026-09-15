@@ -2,7 +2,7 @@
 
 #include "disk_in.h"
 
-// Foward declarations:
+// Forward declarations:
 namespace disk_in {
 class read_table_iterator;
 };
@@ -16,17 +16,17 @@ namespace disk_buffer {
    //====================================================
    class tableRowIterator_only_ram {
       /*
-      Muy similar a la clase 'tableRowIterator', pero sólo itera por los datos añadidos
-      en la misma sesión (RAM viva).
-      Posee los siguientes atributos:
-         -> counter: para trackear la fila por la que se está iterando/recuperando
-         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
-         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
-            * Si es true: se ha llegado al final y no hay más filas que devolver
-            * Si es false: todavía queda una fila o más por iterar
-      Al crearse la clase automáticamente:
-         -> Se cuentan los datos en RAM viva.
-         -> Se calcula el valor inicial de la variable eof.
+      Similar to the 'tableRowIterator' class, but only iterates over the data added
+      in the same session (live RAM).
+      It has the following attributes:
+         -> counter: to track the row being iterated/retrieved
+         -> table_ptr: pointer to the table from which rows are to be obtained
+         -> eof: condition indicating if there are no more rows to iterate:
+            * If true: the end has been reached and there are no more rows to return
+            * If false: there are still one or more rows to iterate
+      Upon creation of the class:
+         -> The data in live RAM is counted.
+         -> The initial value of the eof variable is calculated.
       */
       public:
          uint32_t counter;
@@ -36,10 +36,10 @@ namespace disk_buffer {
 
       tableRowIterator_only_ram(const std::string& table_name_str);
 
-      // Para consultar eof:
+      // To check eof:
       bool is_eof() const;
 
-      // == PARA OBTENER LA PROXIMA FILA de la ram viva:
+      // == TO GET THE NEXT ROW FROM live RAM:
       std::map<std::string, Values> get_next_row_ram();
    };
 
@@ -54,13 +54,13 @@ namespace disk_buffer {
          table* table_ptr;
          bool eof;
 
-         // Metodo constructor:
+         // Constructor method:
          tableRowIterator_only_disk_part(const std::string& table_name_str);
 
-         // Para consultar eof:
+         // To check eof:
          bool is_eof() const;
 
-         // == PARA OBTENER LA PROXIMA FILA del disco:
+         // == TO GET THE NEXT ROW FROM disk:
          std::map<std::string, Values> get_next_row_only_disk_part(disk_in::read_table_iterator* table_reader_obj);
 
    };
@@ -72,36 +72,36 @@ namespace disk_buffer {
 
    class tableRowIterator {
       /*
-      Clase para iterar y retornar filas, venidas del disco o de la propia sesión.
-      Esta clase engloba lo que es una máquina de estados finitos, manejando así
-      la lectrua de filas tanto de la RAM como de las particiones en disco.
-      Posee los siguientes atributos:
-         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
-         -> first_execution: booleano que trackea si ha sido la primera ejecución o no
-         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
-            * Si es true: se ha llegado al final y no hay más filas que devolver
-            * Si es false: todavía queda una fila o más por iterar
-            Se incluyen tanto filas definidas en la propia sesión o leídas del disco.
-            Es verdadera si eof_ram y eof_disk son verdaderas las dos.
-         -> eof_ram: condicional para medir si se ha llegado al final de las filas
-               efinidas en la sesión.
-         -> eof_partition: condicional para medir si se ha terminado de leer una partición.
-         -> eof_ram: condicional para medir si se ha llegado al final de las filas
-            definidas provenientes de los datos en disco.
-         ->fsm_state: Es el estado de la máquina de estados finitos, sus estados son los siguientes:
+      Class to iterate and return rows, coming from disk or the current session.
+      This class encapsulates a finite state machine, managing thus
+      the reading of rows from both RAM and disk partitions.
+      It has the following attributes:
+         -> table_ptr: pointer to the table from which rows are to be obtained
+         -> first_execution: boolean to track if it is the first execution or not
+         -> eof: condition indicating if there are no more rows to iterate:
+            * If true: the end has been reached and there are no more rows to return
+            * If false: there are still one or more rows to iterate
+            It includes rows defined in the current session or read from disk.
+            It is true if both eof_ram and eof_disk are true.
+         -> eof_ram: condition to measure if the end of rows
+               defined in the session has been reached.
+         -> eof_partition: condition to measure if a partition has been fully read.
+         -> eof_disk: condition to measure if the end of rows
+            defined in disk data has been reached.
+         ->fsm_state: This is the state of the finite state machine, its states are as follows:
             * 1:
             * 2:
             * 3:
             * 4:
             * 255:
-            Este estado se guarda en un entero sin signo de 1 byte, con fin de ahorrar memoria
-         -> table_name: nombre de la tabla
-         -> Iteradores: Estos son objetos que nos permitirán obtener las filas de la sesión o del disco:
-            * iterator_ram: iterador únicamente preparado para retornar las filas definidas en esa 
-              misma sesión.
-            * table_reader_obj: objeto que lee y carga temporalmente en memoria de la tabla los datos
-              de cada partición. Va recuperando y cargando dicha información partición a partición.
-            * disk_iterator: iterador que devuelve las filas exclusivamente recupoerdas al leer del disco.
+            This state is stored in an unsigned 1-byte integer, to save memory.
+         -> table_name: name of the table
+         -> Iterators: These are objects that will allow us to obtain rows from the session or disk:
+            * iterator_ram: iterator exclusively prepared to return rows defined in that 
+              same session.
+            * table_reader_obj: object that reads and temporarily loads into memory the table data
+              from each partition. It retrieves and loads this information partition by partition.
+            * disk_iterator: iterator that returns rows exclusively retrieved by reading from disk.
       */
       public:
          //uint32_t counter;
@@ -109,26 +109,26 @@ namespace disk_buffer {
          bool first_execution;
          bool eof;
          bool eof_ram;
-         bool eof_partition; // Si se ha terminado o no de leer una particion
+         bool eof_partition; // If a partition has been fully read
          bool eof_disk;
          uint8_t fsm_state;
          std::string table_name;
          
-         // Iteradores auxiliares:
+         // Auxiliary iterators:
          tableRowIterator_only_ram* iterator_ram;
          disk_in::read_table_iterator* table_reader_obj;
          tableRowIterator_only_disk_part* disk_iterator;
 
-         // Metodo constructor
+         // Constructor method
          tableRowIterator(const std::string& table_name_str);
 
-         // Para consultar eof:
+         // To check eof:
          bool is_eof() const;
 
-         // Unidad de control:
+         // Control unit:
          std::map<std::string, Values> control_unit();
 
-         // Para devolver la prox fila:
+         // To return the next row:
          std::map<std::string, Values> get_next_row();
    };
 
@@ -138,23 +138,23 @@ namespace disk_buffer {
    
    class tableRowIterator_only_ram_for_wal_inverse_order {
       /*
-      Muy similar a la clase 'tableRowIterator', pero sólo itera por los datos añadidos
-      en una sola operación de inserción de datos.
-      Retornará las últimas N filas insertadas en una operación de inserción
-      Posee los siguientes atributos:
-         -> counter: para trackear la fila por la que se está iterando/recuperando.
-            en este caso, empezará a contar desde el final hacia el principio, para
-            recuperar las N últimas filas.
-         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
-         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
-            * Si es true: se han recuperado las N filas añadidas en la operación de inserción de datos en RAM viva.
-            * Si es false: todavía queda una fila o más por iterar
-      Al crearse la clase automáticamente:
-         -> Se cuentan los datos en RAM viva.
-         -> Se calcula el valor inicial de la variable eof.
+      Similar to the 'tableRowIterator' class, but only iterates over the data added
+      in a single data insertion operation.
+      It will return the last N rows inserted in a data insertion operation
+      It has the following attributes:
+         -> counter: to track the row being iterated/retrieved.
+            In this case, it will start counting from the end to the beginning, to
+            retrieve the last N rows.
+         -> table_ptr: pointer to the table from which rows are to be obtained
+         -> eof: condition indicating if there are no more rows to iterate:
+            * If true: the last N rows added in the data insertion operation in live RAM have been retrieved.
+            * If false: there are still one or more rows to iterate
+      Upon creation of the class automatically:
+         -> The data in live RAM is counted.
+         -> The initial value of the eof variable is calculated.
       */
       public:
-         int32_t counter; // Caso especial, este puede tomar el valor de negativos
+         int32_t counter; // Special case, this can take negative values
          uint32_t n_rows_inserted;
          uint32_t n_rows_total;
          uint32_t lower_limit;
@@ -163,13 +163,13 @@ namespace disk_buffer {
 
       tableRowIterator_only_ram_for_wal_inverse_order(const std::string& table_name_str, const int num_rows_to_insert);
 
-      // Para consultar eof:
+      // To check eof:
       bool is_eof() const;
 
-      // == PARA OBTENER LA PROXIMA FILA de la ram viva:
+      // == TO GET THE NEXT ROW FROM live RAM:
       std::map<std::string, Values> get_next_row_ram();
    };
-
+   
 
 
    //====================================================
@@ -179,20 +179,20 @@ namespace disk_buffer {
 
    class tableRowIterator_only_ram_for_wal {
       /*
-      Muy similar a la clase 'tableRowIterator', pero sólo itera por los datos añadidos
-      en una sola operación de inserción de datos.
-      Retornará las últimas N filas insertadas en una operación de inserción
-      Posee los siguientes atributos:
-         -> counter: para trackear la fila por la que se está iterando/recuperando.
-            en este caso, empezará a contar desde el final hacia el principio, para
-            recuperar las N últimas filas.
-         -> table_ptr: puntero a la tabla por la que se quiere obtener las filas
-         -> eof: condicional que indica si ya no qudan más filas por las que iterar:
-            * Si es true: se han recuperado las N filas añadidas en la operación de inserción de datos en RAM viva.
-            * Si es false: todavía queda una fila o más por iterar
-      Al crearse la clase automáticamente:
-         -> Se cuentan los datos en RAM viva.
-         -> Se calcula el valor inicial de la variable eof.
+      Similar to the 'tableRowIterator' class, but only iterates over the data added
+      in a single data insertion operation.
+      It will return the last N rows inserted in a data insertion operation
+      It has the following attributes:
+         -> counter: to track the row being iterated/retrieved.
+            In this case, it will start counting from the end to the beginning, to
+            retrieve the last N rows.
+         -> table_ptr: pointer to the table from which rows are to be obtained
+         -> eof: condition indicating if there are no more rows to iterate:
+            * If true: the last N rows added in the data insertion operation in live RAM have been retrieved.
+            * If false: there are still one or more rows to iterate
+      Upon creation of the class automatically:
+         -> The data in live RAM is counted.
+         -> The initial value of the eof variable is calculated.
       */
       public:
          uint32_t counter;
@@ -203,11 +203,11 @@ namespace disk_buffer {
 
       tableRowIterator_only_ram_for_wal(const std::string& table_name_str, const int num_rows_to_insert);
 
-      // Para consultar eof:
+      // To check eof:
       bool is_eof() const;
 
-      // == PARA OBTENER LA PROXIMA FILA de la ram viva:
+      // == TO GET THE NEXT ROW FROM live RAM:
       std::map<std::string, Values> get_next_row_ram();
    };
 
-}; // Cierre del namespace 'disk_buffer'
+}; // End of namespace 'disk_buffer'

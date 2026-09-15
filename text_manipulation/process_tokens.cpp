@@ -9,7 +9,7 @@ struct table;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Auxiliar class for keeping track of the tables created o already present:
+// Auxiliar class (tableCatalog) for keeping track of the tables created o already present:
 
 
 void tableCatalog::register_table(std::string name){
@@ -21,7 +21,7 @@ bool tableCatalog::ckeck_table(std::string name){
 };
 
 void tableCatalog::delete_table(std::string name){
-    // Only if the table exists we erase it:
+    // Only if the table exists, we erase it:
     if(tableCatalog::ckeck_table(name)){
         table_catalog.erase(name);
     };
@@ -49,7 +49,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n){
     node->filed_name = c_l_n->val;
     c_l_n = c_l_n->nxt_node;
 
-    // Safeguard:
+    // Safeguard for no frther nodes in token list:
     if(!c_l_n) return node;
 
     Logger::log(LogLevel::DEBUG, "Field's type value: ", false, true);
@@ -58,7 +58,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n){
     node->type = c_l_n->val;
     c_l_n = c_l_n->nxt_node;
 
-    // Safeguard:
+    // Safeguard for no frther nodes in token list:
     if(!c_l_n) return node;
 
     if(c_l_n->val == "PRIMARY KEY"){
@@ -72,7 +72,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n){
 };
 
 
-// FUNCIONES PARA DEFINIR EL ESQUEMA:
+// FUNCTIONS FOR SCHEMA DEFINITION:
 void create_children_by_parent(textUtils::NodeList1*& c_l_n, NodeType1* node_ptr, execPlan::Queue* excec_queue){
 
     /*
@@ -83,7 +83,7 @@ void create_children_by_parent(textUtils::NodeList1*& c_l_n, NodeType1* node_ptr
     if(c_l_n->val != "("){
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node_ptr;
@@ -97,13 +97,13 @@ void create_children_by_parent(textUtils::NodeList1*& c_l_n, NodeType1* node_ptr
     NodeType2* child_node = aux_ddl_tree_2(c_l_n);
     (node_ptr->children).push_back(std::move(child_node));
     c_l_n = c_l_n->nxt_node; 
-    // We skip the to the coma
+    // We skip to the coma:
     Logger::log(LogLevel::DEBUG, "ADD 0 :", false, true);
     Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 
     while(c_l_n->val != "EOS" && c_l_n->val == ","){
         c_l_n = c_l_n->nxt_node; 
-        // We skip to the value
+        // We skip to the value:
         Logger::log(LogLevel::DEBUG, "ADD 1 :", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 
@@ -120,14 +120,14 @@ void create_children_by_parent(textUtils::NodeList1*& c_l_n, NodeType1* node_ptr
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node_ptr;
         node_ptr = nullptr;
         throw std::runtime_error("ERROR: Schema columns definition was never closed with ')'");
     };
-    // In case of ecountering ')', we skip it in order to advance to the next sentence
+    // In case of ecountering ')', we skip it in order to advance to the next sentence:
     c_l_n = c_l_n->nxt_node;
   
 };
@@ -146,7 +146,7 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue, textUtils::Node
         Logger::log(LogLevel::DEBUG, "There is no 'CREATE TABLE' clause");
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // There are no objects left to delete
         throw std::runtime_error("'TABLE' was expected after 'CREATE' clause");
@@ -165,7 +165,7 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue, textUtils::Node
         Logger::log(LogLevel::DEBUG, "Fail!, table already exists");
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // There are no objects left to delete
         std::string table_name_tmp = node->table_name;
@@ -173,14 +173,14 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue, textUtils::Node
     };
 
     Logger::log(LogLevel::DEBUG, "Defined table has not yet been defined");
-
-    // Avanzamos al siguiente node:
+ 
+    // Advancing to the next node:
     c_l_n = c_l_n->nxt_node;
 
-    // Ahora vemos si está el alias o pasa a definir los valores:
+    // Declaring node alias, if such a value has been declared by the user:
     if(c_l_n->val != "("){
         node->alias = c_l_n->val;
-        // En este caso debemos avanzar un node adicinonal:
+        // An additional node must be skipped in this case:
         c_l_n = c_l_n->nxt_node;
     };
 
@@ -190,7 +190,7 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue, textUtils::Node
     if(c_l_n->val != ";"){
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node;
@@ -208,7 +208,7 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue, textUtils::Node
     // We add the task to the queue:
     excec_queue->add_node_to_queue(excec_queue_node);
 
-    // Register the table's name in the table registry:
+    // Registering the table's name in the table registry:
     tableCatalog::register_table(node->table_name);
     return;
 
@@ -242,7 +242,6 @@ void aux_iterative_value_filler(textUtils::NodeList1*& c_l_n, std::vector<std::s
 
     while(c_l_n->val == "," && c_l_n->val != "EOS"){
 
-        // New code:
         c_l_n = c_l_n->nxt_node; // We skip to the value
         Logger::log(LogLevel::DEBUG, "Added value: ", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
@@ -256,7 +255,7 @@ void aux_iterative_value_filler(textUtils::NodeList1*& c_l_n, std::vector<std::s
 
 void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n, execPlan::Queue* excec_queue){
 
-    // Reerving rows inn node->rows to evade eraly memmory relocations of the array due to insuficient contiguous directions:
+    // Reserving rows inn node->rows to evade early memmory relocations of the array due to insuficient contiguous addresses:
     node_ptr->rows.reserve(128);
 
     // First iteration out of the loop:
@@ -265,7 +264,7 @@ void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node_ptr;
@@ -289,14 +288,15 @@ void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n
     if(c_l_n->val != ")"){
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node_ptr;
         node_ptr = nullptr;
         throw std::runtime_error("ERROR: Parenthesis was never closed in row addition");
     };
-    // Avanzamos en el bucle:
+
+    // Advancing to the next node:
     c_l_n = c_l_n->nxt_node; // We skip ')'
 
     while(c_l_n->val != ";" && c_l_n->val != "EOS"){
@@ -308,7 +308,7 @@ void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n
             Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
             // First, we delete the whole task queue:
             execPlan::delete_whole_task_queue(excec_queue);
-            // We delete all tehe tables from the global table dict:
+            // We delete all the tables from the global table dict:
             delete_all_tables_dict_only_mem();
             // Then, the other, defined, or half defined objects:
             delete node_ptr;
@@ -333,23 +333,23 @@ void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n
         if(c_l_n->val != ")"){
             // First, we delete the whole task queue:
             execPlan::delete_whole_task_queue(excec_queue);
-            // We delete all tehe tables from the global table dict:
+            // We delete all the tables from the global table dict:
             delete_all_tables_dict_only_mem();
             // Then, the other, defined, or half defined objects:
             delete node_ptr;
             node_ptr = nullptr;
             throw std::runtime_error("ERROR: Parenthesis was never closed in row addition");
         };
-        // Avanzamos en el bucle:
+        // Advancing to the next node:
         c_l_n = c_l_n->nxt_node; // We skip ')'
         Logger::log(LogLevel::DEBUG, "VAL 2 :", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
     };
-    // Ot of the loop, we finish consuming the instruction whole
+    // Ot of the loop, we finish consuming the whole instruction:
     if(c_l_n->val != ";"){
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node_ptr;
@@ -363,13 +363,13 @@ void insert_row_values_in_node(NodeType3* node_ptr, textUtils::NodeList1*& c_l_n
     Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
 };
 
-// FUNCIONES PARA INSERTAR VALORES:
+// FUNCTIONS FOR VALUE INSERTION:
 void process_list_to_insert_values(execPlan::Queue* excec_queue, textUtils::NodeList1*& c_l_n){
 
     if(c_l_n->val != "INSERT INTO"){
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // There are no objects left to delete
         throw std::runtime_error("'INTO' was expected after 'INSERT' clause");
@@ -391,7 +391,7 @@ void process_list_to_insert_values(execPlan::Queue* excec_queue, textUtils::Node
         if(c_l_n->val != ")"){
             // First, we delete the whole task queue:
             execPlan::delete_whole_task_queue(excec_queue);
-            // We delete all tehe tables from the global table dict:
+            // We delete all the tables from the global table dict:
             delete_all_tables_dict_only_mem();
             // Then, the other, defined, or half defined objects:
             delete node;
@@ -401,17 +401,17 @@ void process_list_to_insert_values(execPlan::Queue* excec_queue, textUtils::Node
         c_l_n = c_l_n->nxt_node;
     };
 
-     // Column values adition:
+     // Column values addition:
     if(c_l_n->val == "VALUES"){
         Logger::log(LogLevel::DEBUG, "VALUES DETECTED");
         c_l_n = c_l_n->nxt_node;
     } else{
         Logger::log(LogLevel::DEBUG, "Node value that originated the error: ", false, true);
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-        // node deletion in order to evade memory leaks:
+        // Node deletion in order to evade memory leaks:
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // We delete all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete node;
@@ -427,7 +427,7 @@ void process_list_to_insert_values(execPlan::Queue* excec_queue, textUtils::Node
     execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
     excec_queue_node->nodePtr = node;
 
-    // We add the task to the queue:
+    // Adding task to the queue:
     excec_queue->add_node_to_queue(excec_queue_node);
     
     return;
@@ -443,7 +443,7 @@ void aux_col_query(QueryNode*& query_node, textUtils::NodeList1*& c_l_n){
    node_item.name = c_l_n->val;
    (select_node->items).push_back(std::move(node_item));
     c_l_n = c_l_n->nxt_node; // We skip to the coma
-    // While loop base on the fact that the last element won't hace a coma following it
+    // While loop based on the fact that the last element won't hace a coma following it:
     while(c_l_n->val == "," && c_l_n->val != "EOS"){
         c_l_n = c_l_n->nxt_node; // We skip to the value
         ItemNode node_item;
@@ -482,10 +482,10 @@ void process_list_for_selection(execPlan::Queue*& excec_queue, textUtils::NodeLi
         if(global_table_dict.find(c_l_n->val) == global_table_dict.end()){
             if(!tableCatalog::ckeck_table(c_l_n->val)){
                 Logger::log(LogLevel::DEBUG, "NO entry with that name was found within the global table registry");
-                // Table dos not exist
+                // Table does not exist
                 // First, we delete the whole task queue:
                 execPlan::delete_whole_task_queue(excec_queue);
-                // We delete all tehe tables from the global table dict:
+                // Deleting all the tables from the global table dict:
                 delete_all_tables_dict_only_mem();
                 // Then, the other, defined, or half defined objects:
                 delete query_node_ptr;
@@ -501,7 +501,7 @@ void process_list_for_selection(execPlan::Queue*& excec_queue, textUtils::NodeLi
     }else{
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // Deleting all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete from_node_ptr;
@@ -516,7 +516,7 @@ void process_list_for_selection(execPlan::Queue*& excec_queue, textUtils::NodeLi
         Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all tehe tables from the global table dict:
+        // Deleting all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // Then, the other, defined, or half defined objects:
         delete from_node_ptr;
@@ -533,7 +533,7 @@ void process_list_for_selection(execPlan::Queue*& excec_queue, textUtils::NodeLi
     execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
     excec_queue_node->nodePtr = query_node_ptr;
 
-    // We add the task to the queue:
+    // Adding the task to the queue:
     excec_queue->add_node_to_queue(excec_queue_node);
 
     Logger::log(LogLevel::DEBUG, "Query has been added to the task queue");
@@ -573,7 +573,7 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
     if(c_l_n->val != ";"){
         // First, we delete the whole task queue:
         execPlan::delete_whole_task_queue(excec_queue);
-        // We delete all the tables from the global table dict:
+        // Deleting all the tables from the global table dict:
         delete_all_tables_dict_only_mem();
         // There are no objects left to delete
         throw std::runtime_error("ERROR: Sentence closure ';' for table deletion operation was not found");
@@ -581,7 +581,7 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
         // In case of ecountering ';' we skip it in order to advance to the next sentence
         c_l_n = c_l_n->nxt_node;
     };
-    // En caso de existir la clave procedemos a crear un node de elimonacion de tabla:
+    // Proceeding to table deletion:
     DropTableNode* drop_node = new DropTableNode;
     drop_node->table_name = table_name;
 
@@ -589,10 +589,10 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue, textUtils::Node
     execPlan::queueNode1* excec_queue_node = new execPlan::queueNode1;
     excec_queue_node->nodePtr = drop_node;
 
-    // We add the task to the queue:                               
+    // Adding the task to the queue:                               
     excec_queue->add_node_to_queue(excec_queue_node);
 
-    // We delete the table from the table catalog:
+    // Deleting table from the table catalog:
     tableCatalog::delete_table(table_name);
 
 };

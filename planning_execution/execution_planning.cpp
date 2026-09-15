@@ -86,7 +86,7 @@ void execPlan::Queue::printNodeTypes() const{
 void aux_delete_queue_node_content(QueryNode* node){
 
     /*
-    This node is a special case, as each child is held wtithin a particular variable.
+    This node is a special case, as each child is held within a particular variable.
     Those variables are:
         * select_node
         * from_node
@@ -134,8 +134,11 @@ void aux_delete_queue_node_content(NodeType1* node){
 };
 
 ////////////////////////////////////////////////////////////////////////
-// Función auxiliar para elimimnar nodos de la cola:
+
 void execPlan::Queue::delete_current_queue_node(queueNode1* queue_node_to_del) {
+    /*
+    Auxiliar function for deleting a queue's node:
+    */
 
     if (!queue_node_to_del) return;
     std::visit(
@@ -150,6 +153,9 @@ void execPlan::Queue::delete_current_queue_node(queueNode1* queue_node_to_del) {
 
 
 void execPlan::delete_queue_node(queueNode1* queue_node_to_del) {
+    /*
+    Auxiliar function for deleting a queue's node:
+    */
 
     if (!queue_node_to_del) return;
     std::visit(
@@ -165,7 +171,7 @@ void execPlan::delete_queue_node(queueNode1* queue_node_to_del) {
 
 void execPlan::delete_task_queue(execPlan::Queue* queue){
 
-    //Function that deletes the queue object and its attributes.
+    // Function that deletes the queue object and its attributes.
     queue->first_ptr = nullptr;
     queue->last_ptr = nullptr;
     delete queue;
@@ -175,7 +181,7 @@ void execPlan::delete_task_queue(execPlan::Queue* queue){
 
 void execPlan::delete_whole_task_queue(execPlan::Queue* queue){
     /*
-    Function that deletes the task gueue whole, not
+    Function that deletes the task queue whole, not
     just it's pointers, but the underlying data structures it
     holds for CRUD operations.
     */
@@ -189,12 +195,12 @@ void execPlan::delete_whole_task_queue(execPlan::Queue* queue){
 };
 
 
-// Funcion para ejecutar la cola:
-//
 void execPlan::Queue::execute_queue_tasks(){
 
+    /// Function that executes the queue's tasks
+
     int index = 0;
-    execPlan::queueNode1* c_q_n = first_ptr; // Sin crear nada con new
+    execPlan::queueNode1* c_q_n = first_ptr;
 
     Logger::log(LogLevel::DEBUG, "Node ", false, true);
     Logger::log(LogLevel::DEBUG, index, false, false);

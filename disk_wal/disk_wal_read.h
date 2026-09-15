@@ -3,20 +3,15 @@
 
 namespace disk_wal_read {
 
-
-    // Funcions relativas a la lectura del WAl de metadatos:
     char* recover_meta_wal_table_buffer(std::ifstream& in, const std::string& table_name_str_input);
-
 
     std::string recover_meta_wal_table_name(std::ifstream& in);
 
     void aux_read_single_table_wal_metadata(std::ifstream& in, const std::string& table_name_str_input);
 
-
     bool is_eof_read(std::ifstream& in);
 
     void read_wal();
-
 
     class walDataReader {
 
@@ -115,5 +110,4 @@ namespace disk_wal_read {
 
     };
 
-
-}; // Cerrar el namespace 'disk_wal_read'
+}; // Closing 'disk_wal_read' namespace

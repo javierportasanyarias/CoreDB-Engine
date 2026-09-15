@@ -4,7 +4,7 @@
 
 
 ////////////////////////////////////////////////////////////////////
-// LECTURA DE DATOS ////////////////////////////////////////////////
+// DATA READING ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
 void disk_in::read_fixed_len_int_columns(std::filesystem::path path_var, std::string partition_current, std::vector<Values>& vec_vals){
@@ -25,12 +25,12 @@ void disk_in::read_fixed_len_int_columns(std::filesystem::path path_var, std::st
       Logger::log(LogLevel::DEBUG, "File opened for reading");
    };
 
-   // Hallamos el tamaño en bytes del archivo/partición:
+   // Quering partition file size:
    uint32_t file_size = disk_aux::return_file_size_bytes(in);
    uint32_t bytes_pointer = 0;
    uint32_t bytes_to_read = 0;
-   
-   // Reserbvamos el buffer:
+  
+   // Reserving bytes within the buffer:
    char* buffer = nullptr;
    try {
       buffer = new char[size_buffer_bytes];
@@ -44,23 +44,22 @@ void disk_in::read_fixed_len_int_columns(std::filesystem::path path_var, std::st
          while(bytes_pointer < file_size){
             Logger::log(LogLevel::DEBUG, "Buffer loop iteration");
             Logger::log(LogLevel::DEBUG, "Calculating bytes to read");
-            // Primero calculamos los bytes a leer:
+            // Calculating bytes to read first:
             if(bytes_pointer + size_buffer_bytes >= file_size){
                bytes_to_read = size_buffer_bytes;
             }else{
                bytes_to_read = file_size - bytes_pointer;
             };
             Logger::log(LogLevel::DEBUG, "Reserving those bytes within the buffer");
-            // Ya sabemos los bytes a leer, por lo que los reservamos:
-            // Realizamos la lectura:
+            // Bytes to read is already known, proceeding to read them from disk:
             Logger::log(LogLevel::DEBUG, "Loading data on to buffer");
             in.read(buffer, bytes_to_read);
             Logger::log(LogLevel::DEBUG, "Buffer loades successfully");
             Logger::log(LogLevel::DEBUG, "Proceeding to fill table:");
-            // Ahora los insertamos en el vector:
+            // Inserting bytes into the vector:
             disk_aux::fill_vector_int(bytes_to_read / sizeof(int), buffer, vec_vals);
             Logger::log(LogLevel::DEBUG, "Values added to the table successfully");
-            // Actualizamos el puntero con los bytes leídos:
+            // Updating read bytes pointer: 
             bytes_pointer += bytes_to_read;
          };
       }else{
@@ -94,12 +93,12 @@ void disk_in::read_fixed_len_float_columns(std::filesystem::path path_var, std::
       Logger::log(LogLevel::DEBUG, "File opened for reading");
    };
 
-   // Hallamos el tamaño en bytes del archivo/partición:
+   // Quering partition file size:
    uint32_t file_size = disk_aux::return_file_size_bytes(in);
    uint32_t bytes_pointer = 0;
    uint32_t bytes_to_read = 0;
    
-   // Reserbvamos el buffer:
+   // Reserving bytes within the buffer:
    char* buffer = nullptr;
    try {
       buffer = new char[size_buffer_bytes];
@@ -112,23 +111,22 @@ void disk_in::read_fixed_len_float_columns(std::filesystem::path path_var, std::
          while(bytes_pointer < file_size){
             Logger::log(LogLevel::DEBUG, "Buffer loop iteration");
             Logger::log(LogLevel::DEBUG, "Calculating bytes to read");
-            // Primero calculamos los bytes a leer:
+            // Calculating bytes to read first:
             if(bytes_pointer + size_buffer_bytes >= file_size){
                bytes_to_read = size_buffer_bytes;
             }else{
                bytes_to_read = file_size - bytes_pointer;
             };
             Logger::log(LogLevel::DEBUG, "Reserving those bytes within the buffer");
-            // Ya sabemos los bytes a leer, por lo que los reservamos:
-            // Realizamos la lectura:
+            // Bytes to read is already known, proceeding to read them from disk:
             Logger::log(LogLevel::DEBUG, "Loading data into buffer");
             in.read(buffer, bytes_to_read);
             Logger::log(LogLevel::DEBUG, "Buffer loades successfully");
             Logger::log(LogLevel::DEBUG, "Proceeding to fill table:");
-            // Ahora los insertamos en el vector:
+            // Inserting bytes into the vector:
             disk_aux::fill_vector_float(bytes_to_read / sizeof(float), buffer, vec_vals);
             Logger::log(LogLevel::DEBUG, "Values added to the table successfully");
-            // Actualizamos el puntero con los bytes leídos:
+            // Updating read bytes pointer: 
             bytes_pointer += bytes_to_read;
          };
       }else{
@@ -162,12 +160,12 @@ void disk_in::read_fixed_len_bool_columns(std::filesystem::path path_var, std::s
       Logger::log(LogLevel::DEBUG, "File opened for reading");
    };
 
-   // Hallamos el tamaño en bytes del archivo/partición:
+   // Quering partition file size:
    uint32_t file_size = disk_aux::return_file_size_bytes(in);
    uint32_t bytes_pointer = 0;
    uint32_t bytes_to_read = 0;
    
-   // Reserbvamos el buffer:
+   // Reserving bytes within the buffer:
    char* buffer = nullptr;
    try {
       buffer = new char[size_buffer_bytes];
@@ -180,23 +178,22 @@ void disk_in::read_fixed_len_bool_columns(std::filesystem::path path_var, std::s
          while(bytes_pointer < file_size){
             Logger::log(LogLevel::DEBUG, "Buffer loop iteration");
             Logger::log(LogLevel::DEBUG, "Calculating bytes to read");
-            // Primero calculamos los bytes a leer:
+            // Calculating bytes to read first:
             if(bytes_pointer + size_buffer_bytes >= file_size){
                bytes_to_read = size_buffer_bytes;
             }else{
                bytes_to_read = file_size - bytes_pointer;
             };
             Logger::log(LogLevel::DEBUG, "Reserving those bytes within the buffer");
-            // Ya sabemos los bytes a leer, por lo que los reservamos:
-            // Realizamos la lectura:
+            // Bytes to read is already known, proceeding to read them from disk:
             Logger::log(LogLevel::DEBUG, "Loading data into buffer");
             in.read(buffer, bytes_to_read);
             Logger::log(LogLevel::DEBUG, "Buffer loades successfully");
             Logger::log(LogLevel::DEBUG, "Proceeding to fill table:");
-            // Ahora los insertamos en el vector:
+            // Inserting bytes into the vector:
             disk_aux::fill_vector_bool(bytes_to_read / sizeof(uint8_t), buffer, vec_vals);
             Logger::log(LogLevel::DEBUG, "Values added to the table successfully");
-            // Actualizamos el puntero con los bytes leídos:
+            // Updating read bytes pointer: 
             bytes_pointer += bytes_to_read;
          };
       }else{
@@ -237,20 +234,20 @@ void disk_in::read_fixed_len_bool_columns(std::filesystem::path path_var, std::s
 
 class stringReader_v2{
    /*
-   Clase que nos abstraerá por completo de la lectura de strings.
+   This class will allow total abstraction from string reading,
+   Easing string or character vector reading from disk.
    */
    std::vector<Values>& vec_vals;
    public:
       // Variable auxiliar para ver si es una std::string o un vector de caracteres:
+      // Auxiliary variable. Fo9r knowing if input is a string or character vector.
       bool is_unknown_type = false;
-      // Variables como input y de control:
+      // input and control variables:
       std::filesystem::path path_var;
       std::string partition_current;
       uint8_t state = 0;
 
-      // Valores predefindos:
-
-      // Contadores de archivo:
+      // File counters:
       uint32_t file_idx_ptr = 0;
       uint32_t file_buffer_idx_size = 0;
       uint32_t file_idx_size = 0;
@@ -259,24 +256,24 @@ class stringReader_v2{
       uint32_t file_buffer_str_size = 0;
       uint32_t file_str_size = 0;
 
-      // Contadores de buffer:
+      // Buffer counters
       char* buffer_idx_ptr_ini;
       char* buffer_idx_ptr_fin;
-      uint32_t buffer_idx_bytes_to_read_each_time = 4; // Siempre se leera de 4 en 4 bytes
+      uint32_t buffer_idx_bytes_to_read_each_time = 4; // Always reading 4 bytes at a time
       uint32_t buffer_idx_read_bytes_tmp = 0;
       uint32_t buffer_idx_read_bytes_total = 0;
 
       char* buffer_str_ptr_ini;
       char* buffer_str_ptr_fin;
-      uint32_t buffer_str_read_bytes_tmp = 0; // Esta valor dependera del tamano de la string o lo que quede por leer del buffer. Lo que sea más pequeño de las dos
+      uint32_t buffer_str_read_bytes_tmp = 0; // Whichever is smaller: the string length or the remaining buffer capacity.
       uint32_t buffer_str_read_bytes_total = 0;
 
-      // Contadores de la lectura de strings:
+      // String reading counters:
       uint32_t size_string_tmp = 0;
       bool offset = false;
 
 
-      // Lectura:
+      // Reading files inputs:
       std::ifstream in_str;
       std::ifstream in_idx;
 
@@ -330,7 +327,7 @@ class stringReader_v2{
          return this->buffer_idx_read_bytes_tmp >= this->file_buffer_idx_size;
       };
 
-      // Funciones auxiliares de calculo del tamño del buffer:
+      // Auxiliary functions fro calculating buffer size:
       void calculate_buffer_size_str(){
          this->file_buffer_str_size = size_buffer_bytes;
          if(this->file_str_ptr + size_buffer_bytes > this->file_str_size){
@@ -345,42 +342,41 @@ class stringReader_v2{
          };
       };
 
-      // Funciones axuliares de lectra de datos del disco al buffer:
+      // Auxiliary functions for reading:
       void read_str_buffer(){
-         // Limpiamos la memoria:
 
-         // Calculamos el tamano del buffer:
+         // Claculating buffer size:
          this->calculate_buffer_size_str();
 
-         // Leemos las strings:
+         // Reading strings:
          this->in_str.read(this->buffer_str, this->file_buffer_str_size);
 
-         // Actualizamos el puntero de lectura:
+         // Updating reading pointer:
          this->file_str_ptr += this->file_buffer_str_size;
 
-         // Reinicamos contadores:
+         // Restarting buffer reading counter:
          this->buffer_str_read_bytes_tmp = 0;
    
-         // Fijamos los punteros:
+         // Setting buffer pointers:
          this->buffer_str_ptr_ini = this->buffer_str;
          this->buffer_str_ptr_fin = buffer_str_ptr_ini + this->file_buffer_str_size;
       };
 
       void read_idx_buffer(){
 
-         // Calculamos el tamano del buffer:
+         // Claculating buffer size:
          this->calculate_buffer_size_idx();
 
-         // Leemos las strings:
+         // Reading string indices:
          this->in_idx.read(this->buffer_idx, this->file_buffer_idx_size);
 
-         // Actualizamos el puntero de lectura:
+         // Updating reading pointer:
          this->file_idx_ptr += this->file_buffer_idx_size;
 
-         // Reiniciamos contadores:
+         // Restarting buffer reading counter:
          this->buffer_idx_read_bytes_tmp = 0;
 
-         // Fijamos los punteros:
+         // Setting buffer pointers:
          this->buffer_idx_ptr_ini = this->buffer_idx;
          this->buffer_idx_ptr_fin = buffer_idx_ptr_ini + this->file_buffer_idx_size;
       };
@@ -388,8 +384,7 @@ class stringReader_v2{
 
       void control_unit(){
          /*
-         Unidad de control para la lectura y
-         cargado de los datos en la tabla
+         Control unit for reading and loading table data
          */
 
          switch(this->state){
@@ -413,7 +408,7 @@ class stringReader_v2{
 
                Logger::log(LogLevel::DEBUG, "Files read successfully");
 
-               // Recuperamos el tamano de los archivos:
+               // Retrieving file sizes:
                this->file_str_size = disk_aux::return_file_size_bytes(in_str);
                this->file_idx_size = disk_aux::return_file_size_bytes(in_idx);
                Logger::log(LogLevel::DEBUG, "  Strings file's size: ", false, true);
@@ -431,11 +426,12 @@ class stringReader_v2{
 
             case 1:{
                Logger::log(LogLevel::DEBUG, "State 1 stringReader_v2");
-               // Leemos el buffer de strings:
+               // Reading string buffer:
                this->read_str_buffer();
                // Leemos el buffer de idx:
+               // Reading indices buffer:
                this->read_idx_buffer();
-               this->state = 4; // Saltamos a ver el tamano de la string
+               this->state = 4; // Skipping to quering string size
                break;
             };
 
@@ -475,51 +471,51 @@ class stringReader_v2{
                Logger::flush(LogLevel::DEBUG);
                Logger::log(LogLevel::DEBUG, "<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
-               // Ahora realizamos la lectura de los indices:
+               // indices reading:
                if(this->condition_eof_idx_partition()){
                   eof_file_idx = true;
                   if(this->condition_eof_buffer_idx()){
                      eof_buffer_idx = true;
                   };
                }else{
-                  // Solo si  hemos agotado el buffer leemos:
+                  // Only if buffer is depleted we do read it:
                   if(this->condition_eof_buffer_idx()){
                      eof_buffer_idx = true;
                      this->read_idx_buffer();
                   };
                };
 
-               // Ahora realizamos la lectura de las cadenas de texto
+               // Content (strings or character vectors) reading:
                if(this->condition_eof_str_partition()){
                   eof_file_str = true;
                   if(this->condition_eof_buffer_str()){
                      eof_buffer_str = true;
                   };
                }else{
-                  // Solo si  hemos agotado el buffer leemos:
+                  // Only if buffer is depleted we do read it:
                   if(this->condition_eof_buffer_str()){
                      eof_buffer_str = true;
                      this->read_str_buffer();
                   };
                };
 
-               // Ahora en función de los condicionales decidimos a dónde ir:
+               // Depending on the following conditionals, the next state will be set:
                if(eof_file_idx && eof_buffer_idx && eof_file_str && eof_buffer_str){
                   this->state = 255;
                   break;
                };
-               // Si no hemos llegado al final, podemos seguir leyendo:
+               // If the end has not yet been reached, we can keep reading:
                this->state = 3; // Offset checker
                break;
             };
             case 3: {
                Logger::log(LogLevel::DEBUG, "State 3 stringReader_v2");
                if(this->offset){
-                  // La string la arrastramos de antes
+                  // We are in the middle of a string reading
                   this->state = 5;
                   break;
                }else{
-                  // La string es nueva
+                  // New string to read
                   this->state = 4;
                   break;
                };
@@ -527,15 +523,15 @@ class stringReader_v2{
             case 4:{
                Logger::log(LogLevel::DEBUG, "Sate 4 stringReader_v2");
 
-               // Leemos el tamano de la string:
+               // Reading string size:
                std::memcpy(&this->size_string_tmp,
                   this->buffer_idx_ptr_ini + this->buffer_idx_read_bytes_tmp,
                   this->buffer_idx_bytes_to_read_each_time
                );
-               // Avanzamos el puntero al la siguiente fila:
+               // Advanzing pointer to the next row:
                this->buffer_idx_read_bytes_total += this->buffer_idx_bytes_to_read_each_time;
                this->buffer_idx_read_bytes_tmp += this->buffer_idx_bytes_to_read_each_time;
-               this->state = 5; // Saltamos a leer la string
+               this->state = 5; // Skipping to string reading
                break;
             };
 
@@ -556,7 +552,7 @@ class stringReader_v2{
                      origin_bytes,
                      origin_bytes + this->bytes_to_read);
                   }else{
-                     // No es una string nueva
+                     // Is not a new string
                      std::string& tmp_str = std::get<std::string>(vec_vals.back());
                      tmp_str.append(
                         origin_bytes,
@@ -578,24 +574,24 @@ class stringReader_v2{
                   };
                };
 
-               // Actualizamos los bytes leidos:
+               // Updating read bytes:
                this->buffer_str_read_bytes_tmp += this->bytes_to_read; 
  
                this->buffer_str_read_bytes_total += this->bytes_to_read;
   
-               // Actualizamos el tamano de la string que queda por leer:
+               // Updating current string bytes left to read:
                this->size_string_tmp -= this->bytes_to_read;
  
-               // Ahroa vemos si ay offset o no:
+               // Asserting offset:
                if(this->size_string_tmp > 0){
-                  // No se ha leido entera:
+                  // String/character vector has not been fully read:
                   this->offset = true;
                }else{
-                  // Se ha leido entera:
+                  // String/character vector has been fully read:
                   this->offset = false;
                };  
-               
-               // Siempre vamos a la lectura inteligente:
+
+               // Next stage will always be string/character vector reading:
                this->state = 2;
                break;
             };
@@ -610,7 +606,7 @@ class stringReader_v2{
 
 
          }; // Switch for control unit ends
-      }; // Termina la CU de la FSM
+      }; // CU for FSM definition ends
 
       void execute_fsm(){
          Logger::log(LogLevel::DEBUG, "Inside STRING reading");
@@ -625,40 +621,36 @@ class stringReader_v2{
 };
 
 
-
-
-
-
 disk_in::read_table_iterator::read_table_iterator(table* table_ptr_input){
    /*
-   Método constructor en el cual:
-   Leemos y registramos lo necesario para realizar las sucesivas lecturas
+   Constructor method for:
+      * Initializing table pointers.
+      * Quering total partitions number.
+
    */
    Logger::log(LogLevel::DEBUG, "Initializing data reading");
 
    this->table_ptr = table_ptr_input;
-   // Recuperamos el nombre:
+   // Retrieving table's name:
    this->table_name = this->table_ptr->metadata_ptr->name;
-   // El nombre de las columnas:
+   // Retrieving coloumns' names:
    this->column_names = this->table_ptr->metadata_ptr->column_names;
    this->num_cols = this->table_ptr->metadata_ptr->n_cols;
-   // Recuperamos el tipo de las columnas:
+   // Retrieving coloumns' types:
    this->column_types = this->table_ptr->metadata_ptr->column_types;
-   // Inicializamos la variable por la cual añadiremos los datos venidos del disco:
+   // Initializing data within session object, if it has not yet been defined: 
    if(this->table_ptr->data_buffer_ptr == nullptr){
       this->table_ptr->data_buffer_ptr = new table_data_buffer();
-   }
-   // Ahora apuntamos nuestro puntero interno al que ya tiene (o acaba de recibir) la tabla
+   };
+   // Associanting internal data pointer with the table's data pointer:
    this->disk_data_ptr = this->table_ptr->data_buffer_ptr;
    Logger::log(LogLevel::DEBUG, "Retrieving table_ptr values and initializing it's attribute for data originated from the disk");
 
-   // Ahora vemos que particiones hay:
+   // Now quering total partitions number:
    this->partition_counter = 0;
    this->total_partitions = 0;
    Logger::log(LogLevel::DEBUG, "Obtaining partitions present within the data path:");
    Logger::log(LogLevel::DEBUG, "data/" + this->table_name + "/" + this->column_names[0]);
-   // Ahora vemos si la columa primera o con indice 0 es de tamaño fijo o variable:
-
    this->partition_names = disk_aux::obtain_files_in_path("data/" + this->table_name + "/" + this->column_names[0], this->column_types[0]);
    Logger::log(LogLevel::DEBUG, "Partition names retrieved successfully");
 
@@ -672,14 +664,9 @@ disk_in::read_table_iterator::read_table_iterator(table* table_ptr_input){
       Logger::log(LogLevel::DEBUG, "Number of partitions found: ", false, true);
       Logger::log(LogLevel::DEBUG, this->total_partitions, true, false);
    };
-
-
-   ////////////////////////////////////////////////////////////////////
-
-   ////////////////////////////////////////////////////////////////////
    Logger::log(LogLevel::DEBUG, "Everything ready. Proceeding to enter column loop:");
-
 };
+
 
 bool disk_in::read_table_iterator::obtain_int_partition_rows(bool aux_bool, std::filesystem::path path_var, std::string partition_current){
    
@@ -788,9 +775,9 @@ bool disk_in::read_table_iterator::read_table(){
       bool aux_bool = true;
 
 
-      // Se puede hacer fuera del bucle:
+      // Can be performed outside the reading loop:
       std::string partition_current = this->partition_names[this->partition_counter];
-      // Le quitamos la extension al nombre:
+      // Erasing extension flag from partition name:
       partition_current = part_sort::erase_file_extension(partition_current);
       Logger::log(LogLevel::DEBUG, partition_current, true, false);
    
@@ -813,7 +800,7 @@ bool disk_in::read_table_iterator::read_table(){
                aux_bool = this->obtain_int_partition_rows(aux_bool, path_var, partition_current);
                Logger::log(LogLevel::DEBUG, "Proceeding current INT partition:");
                disk_in::read_fixed_len_int_columns(path_var, partition_current, vec_vals);
-               // Adicionamos estos datos a la tabla, en la region de datos del disco:
+               // Adding data to the table (section for data defined within current program session/execution):
                Logger::log(LogLevel::DEBUG, "Proceeding to add INT vector to the table");
                buffer_ram_disk[column_name] = std::move(vec_vals);
                Logger::log(LogLevel::DEBUG, "Vector added to the table successfully");
@@ -825,7 +812,7 @@ bool disk_in::read_table_iterator::read_table(){
                Logger::log(LogLevel::DEBUG, "FLOAT case");
                Logger::log(LogLevel::DEBUG, "Proceeding to add FLOAT vector to the table");
                disk_in::read_fixed_len_float_columns(path_var, partition_current, vec_vals);
-               // Adicionamos estos datos a la tabla, en la region de datos del disco:
+               // Adding data to the table (section for data defined within current program session/execution):
                buffer_ram_disk[column_name] = std::move(vec_vals);
                Logger::log(LogLevel::DEBUG, "Vector added to the table successfully");
                break;
@@ -833,9 +820,9 @@ bool disk_in::read_table_iterator::read_table(){
             case dataType::BOOL: {
                Logger::log(LogLevel::DEBUG, "++++++ SWITCH BOOL CASE ++++++");
                aux_bool = this->obtain_bool_partition_rows(aux_bool, path_var, partition_current);
-
                Logger::log(LogLevel::DEBUG, "Proceeding to add BOOL vector to the table");
                disk_in::read_fixed_len_bool_columns(path_var, partition_current, vec_vals);
+               // Adding data to the table (section for data defined within current program session/execution):
                buffer_ram_disk[column_name] = std::move(vec_vals);
                Logger::log(LogLevel::DEBUG, "Vector added to the table successfully");
                break;
@@ -844,20 +831,21 @@ bool disk_in::read_table_iterator::read_table(){
                Logger::log(LogLevel::DEBUG, "++++++ SWITCH STRING CASE ++++++");
                aux_bool = this->obtain_string_partition_rows(aux_bool, path_var, partition_current);
                Logger::log(LogLevel::DEBUG, "Proceeding to add STRING vector to the table");
-               // Creamos el objeto:
+
+               // Creating string/character array object:
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
                stringReader_v2 string_reader = stringReader_v2(vec_vals, path_var, partition_current, false);
-               // Realizamos la lectura de la partición:
+               // Executing FSM partition reading:
                string_reader.execute_fsm();
 
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
-
+               // Adding data to the table (section for data defined within current program session/execution):
                buffer_ram_disk[column_name] = std::move(vec_vals);
                Logger::log(LogLevel::DEBUG, "Vector added to the table successfully");
                break;
@@ -867,20 +855,20 @@ bool disk_in::read_table_iterator::read_table(){
                aux_bool = this->obtain_string_partition_rows(aux_bool, path_var, partition_current);
                Logger::log(LogLevel::DEBUG, "Proceeding to add UNKNOWN vector to the table");
 
-               // Creamos el objeto:
+               // Creating string/character array object:
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
                stringReader_v2 string_reader = stringReader_v2(vec_vals, path_var, partition_current, true);
-               // Realizamos la lectura de la partición:
+               // Executing FSM partition reading:
                string_reader.execute_fsm();
 
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::flush(LogLevel::DEBUG);
                Logger::log(LogLevel::DEBUG, "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
-
+               // Adding data to the table (section for data defined within current program session/execution):
                buffer_ram_disk[column_name] = std::move(vec_vals);
                Logger::log(LogLevel::DEBUG, "Vector added to the table successfully");
                break;
@@ -892,9 +880,8 @@ bool disk_in::read_table_iterator::read_table(){
       return false;
    };
    Logger::log(LogLevel::DEBUG, "There are no partitions left to read");
-   // En el caso de ya haberse quedado sin particiones que leer, limpiamos la region de la tabla para datos leidos del disco:
+   // Erasing table's data section assciated with disk retrievals, as there are no more partitions left to read:
    std::map<std::string, std::vector<Values>>& buffer_ram_disk = this->disk_data_ptr->columns;
    buffer_ram_disk.clear();
-   return true; // En caso de no haber leído naada, porque ya no hay datos
-   // Ya habríamos aacabado la lectura, avanzamos en uno la partición:
+   return true; // Reading is finished
 };

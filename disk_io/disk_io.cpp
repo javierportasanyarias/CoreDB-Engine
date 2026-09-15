@@ -3,42 +3,41 @@
 #include "disk_out.h"
 #include "disk_io.h"
 
-
 ////////////////////////////////////////////////////////////////////
-// WRITE DUMP //////////////////////////////////////////////////////
+// WRITE DUMP ///////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
-// Fución que itera sobre las tablas en las que escribir:
+// Function that iterates over the tables to be written:
 void disk_io::write_dump(){
 
-   // Primero vemos si el diccionario esta vacio o no:
+   // First, check if the dictionary is empty:
    if(global_table_dict.empty()){
-      // El diccionario esta vacio, salimos
+      // The dictionary is empty, exit
       Logger::log(LogLevel::DEBUG, "TABLE HASH MAP DOES NOT EXIST. PROGRAM TERMINATION");
       return;
    }else{
-      //El diccionario tiene contenido:
+      // The dictionary contains content:
       for (const auto& [table_name, table_ptr] : global_table_dict){
          int32_t n_rows;
-         // Solo enviamos a escribir si la tabla existe:
+         // Only send to write if the table exists:
          if (table_ptr != nullptr){
-            // Sólo permitimos la escritura si el dat_ptr (no confundir con el buffer del disco) NO está vacío:
+            // Only allow writing if the data_ptr (not to be confused with the disk buffer) is NOT empty:
             if(table_ptr->data_ptr){
                if(!table_ptr->data_ptr->columns.empty()){
 
-                  // Primero escribimos los metadatos:
+                  // First, write the metadata:
                   uint32_t n_rows = 0;
 
                   n_rows = disk_metadata::write_table_metadata(table_ptr);
                   disk_out::write_table_data(table_ptr);
 
-                  // Actualizamos los metadatos de la tabla para mostar el numero de filas escritas en disco:
+                  // Update the table metadata to show the number of rows written to disk:
                   table_ptr->metadata_ptr->n_rows_disk = n_rows;
                } else {
-                  Logger::log(LogLevel::DEBUG, "Table dies EXIST within th hash map, but there is no data in the volatile memory. WRITE OPERATION CANCELED");
+                  Logger::log(LogLevel::DEBUG, "Table EXISTS within the hash map, but there is no data in volatile memory. WRITE OPERATION CANCELED");
                };
             } else {
-               Logger::log(LogLevel::DEBUG, "Table dies EXIST within th hash map. There is no data entry. WRITE OPERATION CANCELED");
+               Logger::log(LogLevel::DEBUG, "Table EXISTS within the hash map. There is no data entry. WRITE OPERATION CANCELED");
             };
          }else{
             Logger::log(LogLevel::DEBUG, "ERROR: Table entry does not exist in global table dictionary. Table name is: " + table_name);
@@ -46,11 +45,10 @@ void disk_io::write_dump(){
       };
    };
 
-   // Justo Antes de concluir la escritura, eliminamos el archivo WAL:
+   // Just before concluding the write, delete the WAL file:
    Logger::log(LogLevel::DEBUG, "WAL BACKUP FILE DELETION");
    disk_wal_utils::delete_wal_bin_file();
 };
-
 
 void disk_io::debug_print_mem_metadata() {
    Logger::log(LogLevel::DEBUG, "======= METADATA IN MEMORY DEBUG =======");
@@ -61,7 +59,7 @@ void disk_io::debug_print_mem_metadata() {
     };
 
    for (auto const& [name_tmp, table_ptr] : global_table_dict) {
-      Logger::log(LogLevel::DEBUG, "TABLE (Dicc): " + name_tmp);
+      Logger::log(LogLevel::DEBUG, "TABLE (Dict): " + name_tmp);
       
       if (!table_ptr || !table_ptr->metadata_ptr) {
          Logger::log(LogLevel::ERROR, "  [!] Error: Table or metadata pointers are NULL");
@@ -82,7 +80,7 @@ void disk_io::debug_print_mem_metadata() {
       Logger::log(LogLevel::DEBUG, "    - PKs:     " + std::to_string(n_pks));
 
       Logger::log(LogLevel::DEBUG, "  COLUMNS DETAIL:");
-      // Iteramos sobre el máximo encontrado para detectar desajustes
+      // Iterate over the maximum found to detect mismatches
       size_t max_idx = std::max({n_cols, n_types, n_pks});
       
       for (size_t i = 0; i < max_idx; i++) {

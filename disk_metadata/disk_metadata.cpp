@@ -2,70 +2,68 @@
 #include "disk_aux.h"
 #include "disk_metadata.h"
 
-
 ////////////////////////////////////////////////////////////////////
-// METADATOS ///////////////////////////////////////////////////////
+// METADATA /////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
-void disk_metadata::read_table_metadata(std::filesystem::path path_table_input, std::string table_name_str){
+void disk_metadata::read_table_metadata(std::filesystem::path path_table_input, std::string table_name_str) {
 
    table_metadata*& metadata_pointer = global_table_dict.at(table_name_str)->metadata_ptr;
 
-   // COMIENZA LA LECTURA:
+   // BEGIN READING:
    std::ifstream in(path_table_input, std::ios::binary);
 
    // We obtain the metadata file size in bytes:
    uint32_t file_size_bytes = 0;
    file_size_bytes = disk_aux::return_file_size_bytes(in);
    // We only proceed if there is information to be read:
-   if(file_size_bytes == 0){
+   if (file_size_bytes == 0) {
       in.close();
       return;
    };
 
-   // We create a character buffer for keeping all the readen information:
+   // We create a character buffer to hold all the read data:
    char* buffer_meta = nullptr;
    try {
       buffer_meta = new char[file_size_bytes];
-      // We proceed to execute the read operation of the whole file
+      // We proceed to read the entire file
       in.read(buffer_meta, file_size_bytes);
       in.close();
       const char* ptr_curr = buffer_meta;
       const char* ptr_end = ptr_curr + file_size_bytes;
 
-      // Once read, we iterate over the buffer in order to extract the values that we need
-      // Leemos el tamaño del nombre:
+      // Once read, we iterate over the buffer to extract the necessary values
+      // Read the name size:
       uint32_t size_name = 0;
       std::memcpy(&size_name, ptr_curr, sizeof(uint32_t));
       ptr_curr += sizeof(uint32_t);
 
-      // Leemos el nombre:
+      // Read the name:
       std::string table_name(size_name, '\0');
       std::memcpy(table_name.data(), ptr_curr, size_name);
       ptr_curr += size_name;
       metadata_pointer->name = table_name;
 
-      // Leemos el numero de columnas:
+      // Read the number of columns:
       uint32_t num_cols_reading = 0;
       std::memcpy(&num_cols_reading, ptr_curr, sizeof(uint32_t));
       metadata_pointer->n_cols = num_cols_reading;
       ptr_curr += sizeof(uint32_t);
-      // Este vslor no se escribe, lo usaremos para iterar por cada columna
+      // We will use this value to iterate over each column
 
-      // Leemos el numero de filas en disco:
+      // Read the number of rows on disk:
       uint32_t disk_reading_rows_number = 0;
       std::memcpy(&disk_reading_rows_number, ptr_curr, sizeof(uint32_t));
       metadata_pointer->n_rows_disk = disk_reading_rows_number;
       ptr_curr += sizeof(uint32_t);
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-      Logger::log(LogLevel::DEBUG, "Number of rows within the 'RAM': ", false, true);
+      Logger::log(LogLevel::DEBUG, "Number of rows in 'RAM': ", false, true);
       Logger::log(LogLevel::DEBUG, disk_reading_rows_number, true, false);
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 
-
-      // Ahora iteramos poe cada columna, añadiendo metadatos de cada una:
-      for(uint32_t i=0; i<num_cols_reading; i++){
-         // Leemos el nombre de la columna:
+      // Now we iterate over each column, adding metadata for each one:
+      for (uint32_t i = 0; i < num_cols_reading; i++) {
+         // Read the column name:
          uint32_t size_column_name;
          std::memcpy(&size_column_name, ptr_curr, sizeof(uint32_t));
          ptr_curr += sizeof(uint32_t);
@@ -74,53 +72,52 @@ void disk_metadata::read_table_metadata(std::filesystem::path path_table_input, 
          ptr_curr += size_column_name;
          metadata_pointer->column_names.push_back(column_name_read);
 
-         // Leemos el tipo de dato:
+         // Read the data type:
          uint32_t col_type_int;
          std::memcpy(&col_type_int, ptr_curr, sizeof(uint32_t));
          ptr_curr += sizeof(uint32_t);
          dataType col_type = static_cast<dataType>(col_type_int);
          metadata_pointer->column_types.push_back(col_type);
 
-         // Recuperamos si esclave primaria:
+         // Retrieve if it is a primary key:
          uint8_t column_is_key_num;
          bool column_is_key;
          std::memcpy(&column_is_key_num, ptr_curr, sizeof(uint8_t));
          ptr_curr += sizeof(uint8_t);
-         if(column_is_key_num == 1){
+         if (column_is_key_num == 1) {
             column_is_key = true;
          } else {
             column_is_key = false;
          };
          metadata_pointer->primary_list.push_back(column_is_key);
 
-         // Nos saltsmos el num cols de size uint32_t
-         // En realidad no necesitamos leer nafa mas
+         // We skip the number of columns of size uint32_t
+         // In reality, we don't need to read anything more
 
       };
       Logger::log(LogLevel::DEBUG, "Metadata read successfully");
-      if(Logger::level == LogLevel::DEBUG){
+      if (Logger::level == LogLevel::DEBUG) {
          Logger::flush(LogLevel::DEBUG);
-      }else{
+      } else {
          Logger::flush(LogLevel::DEBUG, false);
       };
-   } catch(...) {
-      // Here we first delete the character buffer in the heap an then we throw the error:
+   } catch (...) {
+      // Here we first delete the character buffer in the heap and then throw the error:
       delete[] buffer_meta;
       throw;
    };
-   // In case no program errro was detected, we proceed to delete the buffer:
+   // In case no program error was detected, we proceed to delete the buffer:
    delete[] buffer_meta;
 
 };
 
-
-uint32_t disk_metadata::calculate_metadata_byte_size(table_metadata* metadata_ptr){
+uint32_t disk_metadata::calculate_metadata_byte_size(table_metadata* metadata_ptr) {
    /*
-   Function destined to calculate the total byte size
+   Function designed to calculate the total byte size
    of the data stored within the table's metadata
    */
    uint32_t meta_byte_size = 0;
-   if(!metadata_ptr){
+   if (!metadata_ptr) {
       return meta_byte_size;
    };
 
@@ -130,12 +127,12 @@ uint32_t disk_metadata::calculate_metadata_byte_size(table_metadata* metadata_pt
    uint32_t num_cols = metadata_ptr->n_cols;
 
    // We add up the size of: n_cols, n_rows_disk and n_rows_ram:
-   // En realidad sólo escribimos las n_cols en el disco:
+   // In reality, we only write n_cols to disk:
    meta_byte_size += sizeof(uint32_t) * 1;
 
-   // We add up the size of each element contained in: column_names, column_types and primary_list (as 8 bit integer)
+   // We add up the size of each element contained in: column_names, column_types and primary_list (as 8-bit integer)
    const std::vector<std::string>& col_name_list = metadata_ptr->column_names;
-   for(uint32_t i = 0; i < num_cols; i++){
+   for (uint32_t i = 0; i < num_cols; i++) {
       meta_byte_size += sizeof(uint32_t);
       meta_byte_size += col_name_list[i].size();
 
@@ -146,30 +143,28 @@ uint32_t disk_metadata::calculate_metadata_byte_size(table_metadata* metadata_pt
    return meta_byte_size;
 };
 
-
-
-uint32_t disk_metadata::calculate_metadata_byte_size_wal(table_metadata* metadata_ptr){
+uint32_t disk_metadata::calculate_metadata_byte_size_wal(table_metadata* metadata_ptr) {
    /*
-   Function destined to calculate the total byte size
+   Function designed to calculate the total byte size
    of the data stored within the table's metadata
    */
 
    uint32_t meta_byte_size = 0;
 
-   if(!metadata_ptr){
+   if (!metadata_ptr) {
       return meta_byte_size;
    };
 
    uint32_t num_cols = metadata_ptr->n_cols;
 
    // We add up the size of: n_cols, n_rows_disk and n_rows_ram:
-   // En realidad sólo escribimos las n_cols en el disco:
+   // In reality, we only write n_cols to disk:
    meta_byte_size += sizeof(uint32_t) * 1;
 
-   // We add up the size of each element contained in: column_names, column_types and primary_list (as 8 bit integer)
+   // We add up the size of each element contained in: column_names, column_types and primary_list (as 8-bit integer)
    const std::vector<std::string>& col_name_list = metadata_ptr->column_names;
-   for(uint32_t i = 0; i < num_cols; i++){
-      
+   for (uint32_t i = 0; i < num_cols; i++) {
+
       meta_byte_size += sizeof(uint32_t);
       meta_byte_size += col_name_list[i].size();
 
@@ -180,20 +175,17 @@ uint32_t disk_metadata::calculate_metadata_byte_size_wal(table_metadata* metadat
    return meta_byte_size;
 };
 
-
-
-
-uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
+uint32_t disk_metadata::write_table_metadata(table* table_ptr_input) {
    /*
-   Función que escribe los metadatos en disco.
+   Function to write metadata to disk.
    */
    if (!table_ptr_input) return 0;
-   // We do not make metadata pointer an alias as we do not need to modify any value
+   // We do not make metadata pointer an alias as we do not need to modify any values
    table_metadata* metadata_pointer = table_ptr_input->metadata_ptr;
 
-   // First we calculathe the metadata's size in bytes:
+   // First we calculate the metadata's size in bytes:
    uint32_t meta_byte_size = disk_metadata::calculate_metadata_byte_size(metadata_pointer);
-   if(meta_byte_size == 0){
+   if (meta_byte_size == 0) {
       return 0;
    };
 
@@ -202,12 +194,12 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
    path_table /= table_name;
    path_table += "_meta.bin";
 
-   // Abrimos la escritura:
+   // Open for writing:
    std::ofstream out(path_table, std::ios::binary | std::ios::out);
 
    /*
-   Usamos un vector de punteros de caracteres para así no 
-   realizar tantas llamadas a la escritura
+   We use a vector of character pointers to avoid
+   making too many write calls
    */
 
    char* buffer = nullptr;
@@ -218,20 +210,19 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
 
       char* tmp_char_ptr = nullptr;
 
-      // == Escribimos los metadatos: ===============================
+      // == Write metadata: ===============================
 
-      // -- Escribimos el nombre -----------------------------------------
+      // -- Write name -----------------------------------------
       uint32_t size_name = table_name.size();
       tmp_char_ptr = reinterpret_cast<char*>(&size_name);
       std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
       ptr_curr += sizeof(uint32_t);
 
-
       tmp_char_ptr = table_name.data();
       std::memcpy(ptr_curr, tmp_char_ptr, size_name);
       ptr_curr += size_name;
 
-      // -- Escribimos el número de columnas -----------------------------
+      // -- Write number of columns -----------------------------
       uint32_t num_cols = metadata_pointer->n_cols;
       tmp_char_ptr = reinterpret_cast<char*>(&num_cols);
       std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
@@ -244,7 +235,7 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
       uint32_t num_rows_disk = metadata_pointer->n_rows_disk;
       uint32_t n_rows_total = num_rows_mem + num_rows_disk;
       Logger::log(LogLevel::DEBUG, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-      Logger::log(LogLevel::DEBUG, "Metada writing");
+      Logger::log(LogLevel::DEBUG, "Metadata writing");
       Logger::log(LogLevel::DEBUG, "Rows in-memory: ", false, true);
       Logger::log(LogLevel::DEBUG, num_rows_mem, true, false);
       Logger::log(LogLevel::DEBUG, "Disk rows: ", false, true);
@@ -256,10 +247,10 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
       std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
       ptr_curr += sizeof(uint32_t);
 
-      for(uint32_t i=0; i<num_cols; i++){
-         // -- Escribimos los datos de cada columna ---------------------
+      for (uint32_t i = 0; i < num_cols; i++) {
+         // -- Write column data ---------------------
 
-         // -- Escribimos el nombre:
+         // -- Write name:
          std::string column_name = (metadata_pointer->column_names)[i];
          uint32_t size_column_name = column_name.size();
          tmp_char_ptr = reinterpret_cast<char*>(&size_column_name);
@@ -270,14 +261,14 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
          std::memcpy(ptr_curr, tmp_char_ptr, size_column_name);
          ptr_curr += size_column_name;
 
-         // -- Escribimos el tipo de dato:
+         // -- Write data type:
          dataType col_type = (metadata_pointer->column_types)[i];
          uint32_t col_type_disk = static_cast<uint32_t>(col_type);
          tmp_char_ptr = reinterpret_cast<char*>(&col_type_disk);
          std::memcpy(ptr_curr, tmp_char_ptr, sizeof(uint32_t));
          ptr_curr += sizeof(uint32_t);
 
-         // -- Escribimos si es clave primaria:
+         // -- Write if primary key:
          bool column_is_key = (metadata_pointer->primary_list)[i];
          uint8_t key_val = column_is_key ? 1 : 0;
          tmp_char_ptr = reinterpret_cast<char*>(&key_val);
@@ -285,8 +276,8 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
          ptr_curr += sizeof(uint8_t);
 
       };
-      // Ahora es cuando recorremos los vectores y hacemos la escritura como tal
-      disk_aux::aux_vector_buffer_write_disk(buffer, 
+      // Now we iterate over the vectors and perform the actual write
+      disk_aux::aux_vector_buffer_write_disk(buffer,
                                              meta_byte_size,
                                              out
                                              );
@@ -294,7 +285,7 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
       out.close();
       delete[] buffer;
       return num_rows_mem;
-   } catch(...){
+   } catch (...) {
       out.close();
       delete[] buffer;
       throw;
@@ -302,22 +293,21 @@ uint32_t disk_metadata::write_table_metadata(table* table_ptr_input){
 };
 
 ////////////////////////////////////////////////////////////////////
-// LECTURA DE TODOS LOS METADATOS //////////////////////////////////
+// READ ALL METADATA //////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
+void disk_metadata::read_all_tables_metadata() {
 
-void disk_metadata::read_all_tables_metadata(){
-   
    std::vector<std::filesystem::path> tables_arr;
    tables_arr = disk_aux::scan_tables();
-   for(int i = 0; i<tables_arr.size(); i++){
-      // Creamos el objeto de la table y su entrada en el diccionario global:
-      // Inicializamos el diccionsrio global y sus elementos:
+   for (int i = 0; i < tables_arr.size(); i++) {
+      // Create the table object and its entry in the global dictionary:
+      // Initialize the global dictionary and its elements:
       table* table_ptr;
-      // REGISTRAMOS EL NOMBRE DE LA TABLA SIN ESE '_meta':
+      // REGISTER TABLE NAME WITHOUT THE '_meta' SUFFIX:
       std::string table_name_str = tables_arr[i].stem().string();
-      if(table_name_str.ends_with("_meta")){
-         table_name_str.erase(table_name_str.size() -5);
+      if (table_name_str.ends_with("_meta")) {
+         table_name_str.erase(table_name_str.size() - 5);
       };
       global_table_dict[table_name_str] = new table;
       table_ptr = global_table_dict.at(table_name_str);

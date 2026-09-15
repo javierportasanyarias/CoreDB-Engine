@@ -5,12 +5,13 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <string>
-// De la veedion V2 del testeo:
+
+// From V2 testing edtition:
 #include "data_structs.h"                                                   
 #include "bateria_tests.h"
 #include "logging.h"
 
-// Vsriables globales:
+// Global variables:
 volatile sig_atomic_t global_pid = -1;
 struct sigaction sa;
 
@@ -55,9 +56,9 @@ void sigaction_child_manager(int msg){
 void sigaction_parent_manager(int msg){
    const char* input = "\nAntes de morir, esperare a que mi hijo muera\n";
    write(STDOUT_FILENO, input, 46);
-   // Matamos al hijo:
+   // Killing the child:
    kill(global_pid, SIGTERM);
-   // Esperamos a que el hijo muera:
+   // Waiting for child to die:
    int status;
    waitpid(global_pid, &status, 0);
    const char* input2 = "\nEl hijo ya ha muerto. Puedo morir ahora\n";
@@ -66,7 +67,7 @@ void sigaction_parent_manager(int msg){
 };
 
 // ==========================================
-// == PROCESO HIJO ==========================
+// == CHILD PROCESS =========================
 // ==========================================
 
 void execute_child_process(int (&pipe1)[2], int (&pipe2)[2]){
@@ -86,12 +87,12 @@ void execute_child_process(int (&pipe1)[2], int (&pipe2)[2]){
    _exit(1);
 };
 
-//== PROCESO PADRE ============
+//== PARENT PROCESS ===========
 void execute_father_process(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*& fifo_obj){
-   // == El padre: ======================
+   //== PARENT ===================
    FifoNode* c_n_ptr = fifo_obj->head;
                                                                               
-   // Definimos ma funcion de sigaction:
+   // Defining sigaction handler function:
    sa.sa_handler = sigaction_parent_manager;
    if(sigaction(SIGINT, &sa, NULL) == -1){
       perror("Error al configurar el sigaction del hijo");
@@ -106,13 +107,13 @@ void execute_father_process(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*&
    int status;
    pid_t resultado = 0;
    global_pid = pid;
-   // Bucle principal de interaccion:
+   // Processes interaction main loop
    while(espera_hijo){
       resultado = waitpid(pid, &status, WNOHANG);
       if(resultado == 0){
 	      Logger::log(LogLevel::OUTPUT, "El hijo sigue vivo", true, false);
-         // Aqui escribimos y leemos y enviamos el handshake:
-         // Recuperamos el input:
+         // Here we write, read and send the handshake.
+         // Retrieving the input:
 	      input = c_n_ptr->comando;
 	      input = input + "\n";
          Logger::log(LogLevel::OUTPUT, "Comando: ", false, false);
@@ -120,21 +121,21 @@ void execute_father_process(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*&
          Logger::log(LogLevel::OUTPUT, "Input desde el padre:", true, false);
 	      Logger::log(LogLevel::OUTPUT, input, true, false);
          Logger::flush();
-         // Leemos el output:
+         // Reding output:
 	      write(pipe1[1], input.c_str(), input.length());
          Logger::flush();
-	      usleep(500000); // Esperamos 0.5 s
+	      usleep(500000); // Waiting for 0.5s
 	      if(input != "exit" && input != "exit\n"){
-	      //Escribimos el handshake:
+	      // Writing/sending handshake:
 	      write(pipe1[1], handshake.c_str(), handshake.length());
-            usleep(500000); // Esperamos 0.5 s
+            usleep(500000); // Waiting for 0.5s
 	      };
          output = read_until_marker_4(pipe2);
 	      Logger::log(LogLevel::OUTPUT, "Este es el output: ", true, false);
          Logger::log(LogLevel::OUTPUT, output, true, false);
-         usleep(500000); // Esperamos 0.5 s
+         usleep(500000); // Waiting for 0.5s
          Logger::flush();
-	      // Avanzamos de comando:
+         // Advancing to the next test SQL command:
          c_n_ptr = c_n_ptr->nxt_node;	
       }else if(resultado == pid){
          std::cout<<"El hijo ha muerto"<<std::endl;
@@ -144,24 +145,23 @@ void execute_father_process(int (&pipe1)[2], int (&pipe2)[2], pid_t& pid, FIFO*&
          espera_hijo = false;
       };
       Logger::flush();
-      //usleep(5000000); // Esperamos 5 s
+      //usleep(5000000); // Waiting for 5s
       counter += 1;
    };
    close(pipe1[1]);
    close(pipe2[0]);
 };
 
-// == TESTEO PROCESOS: ===============
 
+//== PROCESSES TESTS ==========
 int run_test_subprocess(FIFO*& fifo_obj){
-   int pipe1[2]; // Padre-> hijo
-   int pipe2[2]; // Hijo -> padre
+   int pipe1[2]; // Parent-> Child
+   int pipe2[2]; // Child -> Parent
    if (pipe(pipe1) ==-1 || pipe(pipe2) == -1){                                    
       perror("Error al crear los pipes");                                         
       return 1;
    };                                                                          
-   // Definimos parte de sigaction:
-   //struct sigaction sa; // Ya definida como global
+
    sigemptyset(&sa.sa_mask);                                                   
    sa.sa_flags = SA_RESTART;                                                
    pid_t pid = fork();                                                                                                                                     
@@ -171,18 +171,18 @@ int run_test_subprocess(FIFO*& fifo_obj){
    perror("Error del proceso");
       _exit(1);
    case 0:                                                                        
-   // == El hijo: ==========================
-      // Denimos la funcion de sigaction:
+   // == Child: ============================
+      // Defining sigaction handler function:
       execute_child_process(pipe1, pipe2);
    default:                                                                       
-   // == El padre: =======================
+   // == Parent: =========================
       execute_father_process(pipe1, pipe2, pid, fifo_obj);                            
    };
 
    return 0;
 };
 
-// == BUCLE PRINCIPAL ==========
+// == MAIN LOOP ================
 int main(){
 
    Logger::level = LogLevel::OUTPUT;
@@ -190,8 +190,8 @@ int main(){
    Logger::log(LogLevel::OUTPUT, "Que test quieres realizar? : ", false, false);                                                                           
    Logger::flush(false);                                                                                                                                   
    std::string input = "";                                                 
-   std::getline(std::cin, input);                                                                                                                          
-   // Obtenemos la cola del test:
+   std::getline(std::cin, input);
+   // Obtaining test FIFO queue object:
    FIFO* fifo_obj = new FIFO;                                                  
    if(input == "test1"){                                                          
       fifo_obj = define_test_1();                                              

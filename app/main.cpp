@@ -8,13 +8,21 @@
 int main(){
 
    /////////////////////////////////////////////////////////////////
-   // BUCLE DE EJECUCION:
+   // EXECUTION LOOP:
 
    std::string input = "";
    std::string handshake = "";
 
-   // Fijamos el nivel de logs a debug:
+   // Setting logging level:
    Logger::level = LogLevel::OUTPUT;
+   /*
+   All log levels:
+      * DEBUG: Messages for debugging purposes and code analysis.
+      * INFO: General information.
+      * WARN: Messages for non-fatal issues or deprecated instructions or processes.
+      * ERROR: Error messages, giving further information about program termination or failure to deliver certain tasks.
+      * OUTPUT: Output messages. Such as tables or queries visualization.
+   */
    
    // Reding all table's metadata within disk beforehand:
    disk_metadata::read_all_tables_metadata();
@@ -25,7 +33,7 @@ int main(){
 
    while(true){
 
-      // Mian program loop
+      // Main program loop
 
       Logger::log(LogLevel::OUTPUT, "\n> ", false, false);
       Logger::login(input);
@@ -44,7 +52,7 @@ int main(){
          token_list->add_node(tmp_str);
       };
 
-      // Constructiong execution queue;                                                                           
+      // Constructing execution queue;                                                                           
       execPlan::Queue* excec_queue = new execPlan::Queue;                   
       excec_queue = process_token_list(token_list);
       // We no longer will be needing the token list, thus we erase it:
@@ -65,17 +73,18 @@ int main(){
          Logger::login(handshake);
       };
       Logger::flush(LogLevel::DEBUG);
-      // only printing '__END__' if DEBUG mode is active
+      // Only printing '__END__' if DEBUG logging mode is active
       Logger::log(LogLevel::DEBUG, "__END__", true, false);
 
 
-   };  // Main loop end
+   }; // Main loop end
+
    // Outside the main loop, program will be soon be terminated
 
    // Writing all table data defined within session:
    disk_io::write_dump();
-   // only printing '__END__' if DEBUG mode is active
+   // Only printing '__END__' if DEBUG logging mode is active
    Logger::log(LogLevel::DEBUG, "__END__", true, false);
 
    return 0;
-}; // Aquí acaba el main
+}; // Main program end

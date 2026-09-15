@@ -12,17 +12,16 @@ class QueryNode;
 
 ///////////////////////////////////////////////////////////////////////
 
-// Tipos de datos admitidos en el esquema:
 dataType transform_str_to_datatype(const std::string& input);
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// PARA RELLENAR LAS TABLAS:
+/// FOR FILLING TABLE DATA:
 
 
 void fill_table_with_values_v4(NodeType3* node_ptr_input);
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// PARA RELLENAR METADATOS:
+/// FOR FILLING TABLE METADATA:
 
 void recursive_metadata_fill_lv2(NodeType2* node_ptr_input, table* tb_created);
 
@@ -30,12 +29,13 @@ void recursive_metadata_fill_lv1(NodeType1* node_ptr_input);
 
 
 ///////////////////////////////////////////////////////////////
-// MOSTRAR TABLA:
+// SHOW TABLE:
 
 void show_table_query(QueryNode* root_node_input);
 
 ////////////////////////////////////////////////////////////////
-// ELIMINACIÓN:
+// DELETION:
+
 void table_deletion(table*& tb);
 
 void table_deletion_only_memory(table*& tb);

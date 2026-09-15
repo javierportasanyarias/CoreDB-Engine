@@ -13,4 +13,4 @@ namespace disk_metadata {
     uint32_t write_table_metadata(table* table_ptr_input);
     void read_all_tables_metadata();
 
-}; // Cerrar el namespace 'disk_metadata'
+}; // Closing 'disk_metadata' namespace

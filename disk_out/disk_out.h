@@ -26,4 +26,4 @@ namespace disk_out {
 
     void write_table_data(table* table_ptr_input);
 
-}; // Cerrar el namespace 'disk_io'
+}; // Closing 'disk_io' namespace

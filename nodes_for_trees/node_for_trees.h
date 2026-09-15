@@ -1,31 +1,30 @@
 #pragma once
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-Todos estos elementos sirven para dotar al programa de una forma más sencilla de entender
-las instrucciones que debe realizar. Si pusiéramos los 'tokens' directamente venidos de
-procesar el input sería demasiado complicado y confuso ejecutar las instrucciones que ahí
-se exponen. Para ello totammos otro enfoque: cada elemento de la cola de ejecución tendrá
-en su contenido los nodos recogidos en este documento. Estos aportan una forma mucho más
-clara para poder ser ejecutados. Con mirar sus atributos o recorrerlos en caso de los
-árboles, podemos saber perfectamente como definir los metadatos de la tabla y cómo rellenarla.
+All these elements serve to provide the program with a simpler way to understand
+the instructions it must execute. If we were to use the 'tokens' directly obtained
+from processing the input, it would be too complicated and confusing to execute
+the instructions there. For this, we adopt another approach: each element in the
+execution queue will contain the nodes collected in this document. These provide a
+much clearer way to be executed. By looking at their attributes or traversing them
+in the case of trees, we can perfectly define the table metadata and how to fill it.
 */
 
 
-// Nodos de los árboles:
+// Tree nodes:
 class NodeType2{
    /*
-   Nodo que registra los metadatos de una columna concreta.
-   Posee los siguientes atributos:
-      -> filed_name: nombre de la columna.
-      -> type: type de datos al que pertenece la columna.
-      -> is_primary: booleano indiciador de si la columna es clave primaria (true) o no (false).
-      -> children: Aunque esta clae podría tener "children" de su mismo type, en la práctica no se usa.
-         (atributo candidato a ser eliminado?)
+   Node that records the metadata of a specific column.
+   It has the following attributes:
+      -> field_name: column name.
+      -> type: data type of the column.
+      -> is_primary: boolean indicating whether the column is a primary key (true) or not (false).
+      -> children: Although this class could have "children" of the same type, it is not used in practice.
+         (candidate attribute to be removed?)
    */
    public:
-      std::string filed_name;
+      std::string field_name;
       std::string type;
       bool is_primary;
       std::vector<NodeType2*> children;
@@ -36,14 +35,14 @@ class NodeType2{
 
 class NodeType1{
    /*
-   Nodo que alamacena los metadatos básicos de un tabla.
-   Estos atributos son:
-      -> table_name: nombre de la tabla.
-      -> alias: alias de la tabla
-         (actualmente en uso, será sustituido por otor sistema de alias?).
-      -> children: Enlaza con nodos de la clase 'NodeType2'. Estos corresponden
-         a cada una de las columnas e la tabla.
-      -> tb_struct: la tabla en sí.
+   Node that stores the basic metadata of a table.
+   These attributes are:
+      -> table_name: table name.
+      -> alias: table alias
+         (currently in use, will be replaced by another alias system?).
+      -> children: Links to nodes of the class 'NodeType2'. These correspond
+         to each of the table's columns.
+      -> tb_struct: the table itself.
    */
    public:
       std::string table_name;
@@ -57,28 +56,28 @@ class NodeType1{
 
 class NodeType3 {
    /*
-   Nodo reservado para la inserción de datos.
-   Este posee los siguientes atributos:
-      -> table_name: nombre de la tabla sobre la que se desea insertar los valores.
-      -> columns: columns sobre las cuales realizar la inserción.
-      -> Un vector de los valores a insertar. Es una lista de listas realmente, donde el
-         número de "sublistas" es igual al número de filas a insertar.
-   Esta clae permite insertar una o más filas en la misma instrucción.
+   Node reserved for data insertion.
+   It has the following attributes:
+      -> table_name: name of the table on which values are to be inserted.
+      -> columns: columns on which to perform the insertion.
+      -> A vector of values to insert. It is actually a list of lists, where the
+         number of "sublists" is equal to the number of rows to insert.
+   This class allows inserting one or more rows in a single statement.
    */
    public:
-      std::string table_name;              // Ej: "clientes"
-      std::vector<std::string> columns;     // Ej: ["id", "nombre", "edad"]
-      std::vector<std::vector<std::string>> rows;  // Ej: [[1, "Alice", 20], [2, "Bob", 30]]
+      std::string table_name;              // Ex: "customers"
+      std::vector<std::string> columns;     // Ex: ["id", "name", "age"]
+      std::vector<std::vector<std::string>> rows;  // Ex: [["1", "Alice", "20"], ["2", "Bob", "30"]]
 };
 ////////////////////////////////////
-/// NODOS PARA CONSULTAS:
+/// QUERY NODES:
 
 //class WhereNode {
 //};
 
 class FromNode{
    /*
-   Clase que hace referencia al nombre de la tabla a la que apunta la instrucción 'SELECT'.
+   Class that refers to the table name pointed to by the 'SELECT' instruction.
    */
    public:
       std::string name;
@@ -90,7 +89,7 @@ class FromNode{
 
 class ItemNode {
    /*
-   Clase que almacena cada campo seleccionado y su alias.
+   Class that stores each selected field and its alias.
    */
    public:
       std::string name;
@@ -101,7 +100,7 @@ class ItemNode {
 
 class SelectNode {
    /*
-   Clase que guarda los campos seleccionados, cada uno de estos como un objeto de la clase 'ItemNode'.
+   Class that holds the selected fields, each as an object of the class 'ItemNode'.
    */
    public:
       std::vector<ItemNode> items;
@@ -110,9 +109,9 @@ class SelectNode {
 
 class QueryNode {
    /*
-   Clase que engloba todo lo necesario para la consulta.
-   En concreto, alberga un árbol de consulta, osea un árbol que
-   posteriormente se recorrerá para ejecutar la consulta.
+   Class that encompasses everything needed for the query.
+   Specifically, it holds a query tree, i.e., a tree that
+   will be traversed later to execute the query.
    */
    public:
       SelectNode* select_node;
@@ -121,11 +120,11 @@ class QueryNode {
 };
 
 ////////////////////////////////////
-/// NODOS PARA ELIMINAR TABLAS:
+/// TABLE DELETION NODES:
 
 class DropTableNode {
    /*
-   Clase destinada a ser el contenido de una tarea que elimine la tabla en cuestión.
+   Class intended to be the content of a task that deletes the specified table.
    */
    public:
       std::string table_name;
@@ -134,10 +133,10 @@ class DropTableNode {
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Métodos de los árboles:
+// Tree methods:
 
 /////////////////////////////////////////
-// Metodos para visualizar árboles:
+// Methods for visualizing trees:
 void recursive_tree_print(const NodeType2* nodo_ptr);
 
 void recursive_tree_print(const NodeType1* nodo_ptr);

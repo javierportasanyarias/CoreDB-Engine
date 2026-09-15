@@ -1,7 +1,7 @@
 #include "bateria_tests.h"
 
 
-// -- FUNCION AUXILIAR PARA DEFINIR TEST:
+// -- AUXILIAR FUNCTION FOR TEST DEFINITION:
 FIFO* define_test_1(){
                                                                               
    FIFO* fifo_obj = new FIFO;                                                  

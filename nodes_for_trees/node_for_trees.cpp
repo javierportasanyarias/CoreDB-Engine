@@ -2,29 +2,25 @@
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Nodos de los árboles:
+// Tree nodes:
+
 NodeType2::NodeType2(): is_primary(false){};
 
 NodeType1::NodeType1(): alias(""){};
 
-////////////////////////////////////
-/// NODOS PARA CONSULTAS:
-
 FromNode::FromNode(): name(""), alias(""){};
 
-
 ItemNode::ItemNode(): name(""), alias(""){};
-
 
 QueryNode::QueryNode(): select_node(nullptr), from_node(nullptr){};
 
 DropTableNode::DropTableNode(): table_name(""){};
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Métodos de los árboles:
+// Tree methods:
 
 /////////////////////////////////////////
-// Metodos para visualizar árboles:
+// Methods for tree visualization:
 void recursive_tree_print(const NodeType2* node_ptr){
    if(!node_ptr){
       return;
@@ -60,7 +56,8 @@ void recursive_tree_print(const NodeType1* node_ptr){
    };
 };
 
-// Funciones auxiliares a la impresión de columnas:
+// Auxiliary functions for column printing:
+
 void print_columns(const NodeType3*& node_ptr){
 	if((node_ptr->columns).size() != 0){
       Logger::log(LogLevel::DEBUG, "Columns to insert: ", false, false);
@@ -89,16 +86,22 @@ void print_values(const NodeType3*& node_ptr){
 	};
 };
 
-// Esta función es puramente auxiliar:
 void insert_data_node_print(const NodeType3* node_ptr){
+   /*
+   Purely auxiliary function.
+   Helps debug value insertion, as it prints:
+      * Target table.
+      * Columns to be filled with new values.
+      * Column's new values.
+   */
 
    Logger::log(LogLevel::DEBUG, "Table name where it has been inserted: ", false, false);
    Logger::log(LogLevel::DEBUG, node_ptr->table_name, true, false);
 
-	// Imprimimos las columnas:
+   // For printing column names:
 	print_columns(node_ptr);
 
-	// Imprimimos los valores:
+   // For printing column values:
 	print_values(node_ptr);
 };
 

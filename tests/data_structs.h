@@ -22,5 +22,5 @@ class FIFO {
 
 };
 
-// Para eliminar toda la fifo:
+// For deleting FIFO queue:
 void delete_fifo(FIFO*& fifo_obj);
