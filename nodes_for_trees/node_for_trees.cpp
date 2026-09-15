@@ -26,12 +26,12 @@ void recursive_tree_print(const NodeType2* node_ptr){
       return;
    };
    if(node_ptr->is_primary){
-      Logger::log(LogLevel::DEBUG, (node_ptr->filed_name), false, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->field_name), false, false);
       Logger::log(LogLevel::DEBUG, " ", false, false);
       Logger::log(LogLevel::DEBUG, (node_ptr->type), false, false);
       Logger::log(LogLevel::DEBUG, " PRIMARY KEY", true, false);
    }else {
-      Logger::log(LogLevel::DEBUG, (node_ptr->filed_name), false, false);
+      Logger::log(LogLevel::DEBUG, (node_ptr->field_name), false, false);
       Logger::log(LogLevel::DEBUG, " ", false, false);
       Logger::log(LogLevel::DEBUG, (node_ptr->type), true, false);
    };

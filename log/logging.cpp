@@ -60,7 +60,7 @@ void Logger::log(LogLevel msgLevel,
     if (flush_bool) std::cout << std::endl;
 };
 
-cc
+
 void Logger::log(LogLevel msgLevel,                                                          
                  const std::variant<int, float, bool, std::string, std::vector<char>>  msg,
                  bool flush_bool,

@@ -356,7 +356,7 @@ disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::tableRowIterator_o
    Constructor of the 'tableRowIterator_only_ram_for_wal_inverse_order' class
    */
    this->n_rows_inserted = num_rows_to_insert;
-   //counter = 0;
+
    table_ptr = global_table_dict.at(table_name_str);
    /*
    Do not count rows in live RAM because we will only retrieve
@@ -445,8 +445,8 @@ disk_buffer::tableRowIterator_only_ram_for_wal::tableRowIterator_only_ram_for_wa
    /*
    Constructor of the 'tableRowIterator_only_ram_for_wal' class
    */
-   this->n_rows_inserted = num_rows_to_insert
-   //counter = 0;
+   this->n_rows_inserted = num_rows_to_insert;
+
    table_ptr = global_table_dict.at(table_name_str);
    /*
    Do not count rows in live RAM because we will only retrieve

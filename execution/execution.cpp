@@ -149,7 +149,7 @@ void recursive_metadata_fill_lv2(NodeType2* node_ptr_input, table* tb_created){
    };
    // Filed data fill:
    auto& metadata = *tb_created->metadata_ptr;
-   (metadata.column_names).push_back(std::move(node_ptr_input->filed_name));
+   (metadata.column_names).push_back(std::move(node_ptr_input->field_name));
    (metadata.column_types).push_back(transform_str_to_datatype(node_ptr_input->type));
    // Node push, wether it is a primary key or not:
    (metadata.primary_list).push_back(node_ptr_input->is_primary);

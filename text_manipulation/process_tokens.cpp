@@ -46,7 +46,7 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n){
     // Adding the value:
     Logger::log(LogLevel::DEBUG, "Field's name value: ", false, true);
     Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
-    node->filed_name = c_l_n->val;
+    node->field_name = c_l_n->val;
     c_l_n = c_l_n->nxt_node;
 
     // Safeguard for no frther nodes in token list:
