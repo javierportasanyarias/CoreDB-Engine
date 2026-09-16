@@ -44,3 +44,5 @@ void sanitize_global_dict();
 void delete_all_tables_dict();
 
 void delete_all_tables_dict_only_mem();
+
+void clear_global_table_dict();

@@ -1,6 +1,6 @@
 #pragma once
 
-enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
+enum class LogLevel { DEBUG, INFO, WARN, OUTPUT, ERROR };
 
 class Logger {
  public:
@@ -30,4 +30,6 @@ class Logger {
   static void flush(LogLevel msgLevel = LogLevel::DEBUG, bool endl = true);
 
   static void login(std::string& input);
+
+  static void flush_input(LogLevel msgLevel, bool endl);
 };

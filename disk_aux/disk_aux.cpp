@@ -289,9 +289,11 @@ void disk_aux::write_aux_val_buffer_with_size_check(
 
       Logger::log(LogLevel::DEBUG,
                   "[WRITE_STRING] >>> Auxiliary function additional entry <<<");
-      Logger::log(
-          LogLevel::DEBUG,
-          std::string("[WRITE_STRING] Text content: ") + char_vec_val.data());
+      Logger::log(LogLevel::DEBUG,
+                  // std::string("[WRITE_STRING] Text content: ") +
+                  // char_vec_val.data());
+                  std::string("[WRITE_STRING] Text content: ") +
+                      std::string(char_vec_val.data(), char_vec_val.size()));
       Logger::log(LogLevel::DEBUG, "[WRITE_STRING] unk_size: ", false, true);
       Logger::log(LogLevel::DEBUG, unk_size, true, false);
       Logger::log(LogLevel::DEBUG,

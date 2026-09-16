@@ -482,3 +482,14 @@ void delete_all_tables_dict_only_mem() {
   // Erasing keys from dictionary:
   global_table_dict.clear();
 };
+
+void clear_global_table_dict() {
+  /*
+  Global table deleltion. Must only be performed when execution end or crashes.
+  */
+
+  for (auto& [name, table_ptr] : global_table_dict) {
+    delete table_ptr;
+  }
+  global_table_dict.clear();
+};

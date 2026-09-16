@@ -130,9 +130,9 @@ uint32_t disk_metadata::calculate_metadata_byte_size(
 
   uint32_t num_cols = metadata_ptr->n_cols;
 
-  // We add up the size of: n_cols, n_rows_disk and n_rows_ram:
-  // In reality, we only write n_cols to disk:
-  meta_byte_size += sizeof(uint32_t) * 1;
+  // 2. n_cols (4 bytes) and  n_rows_total (4 bytes)
+  meta_byte_size += sizeof(uint32_t);
+  meta_byte_size += sizeof(uint32_t);
 
   // We add up the size of each element contained in: column_names, column_types
   // and primary_list (as 8-bit integer)

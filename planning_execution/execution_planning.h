@@ -56,7 +56,7 @@ void delete_queue_node(queueNode1*& queue_node_to_del);
 void delete_task_queue(Queue*& queue);
 
 // Method for deleting not only the object, but all it contains:
-void delete_whole_task_queue(Queue* queue);
+void delete_whole_task_queue(Queue*& queue);
 
 // Node deletion functions:
 void aux_delete_queue_node_content(QueryNode*& node);

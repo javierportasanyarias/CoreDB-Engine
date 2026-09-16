@@ -43,38 +43,70 @@ int main() {
       break;
     };
 
-    // Input text processing (token list construction):
-    textUtils::simpleLinkedList* token_list =
-        textUtils::process_text_pipeline(input);
-    Logger::flush(LogLevel::DEBUG);
-    {
-      std::string tmp_str = "EOS";
-      token_list->add_node(tmp_str);
-    };
+    textUtils::simpleLinkedList* token_list = nullptr;
+    execPlan::Queue* excec_queue = nullptr;
 
-    // Constructing execution queue;
-    execPlan::Queue* excec_queue = new execPlan::Queue;
-    excec_queue = process_token_list(token_list);
-    // We no longer will be needing the token list, thus we erase it:
-    delete token_list;
-    token_list = nullptr;
+    try {
+      // Input text processing (token list construction):
+      token_list = textUtils::process_text_pipeline(input);
+      Logger::flush(LogLevel::DEBUG);
+      {
+        std::string tmp_str = "EOS";
+        token_list->add_node(tmp_str);
+      };
 
-    if (Logger::level == LogLevel::DEBUG) {
-      excec_queue->printNodeTypes();
-    };
+      // Constructing execution queue;
+      excec_queue = process_token_list(token_list);
+      // We no longer will be needing the token list, thus we erase it:
+      delete token_list;
+      token_list = nullptr;
 
-    // Carrying execution queue;
-    excec_queue->execute_queue_tasks();
-    // Deleting execution queue;
-    execPlan::delete_task_queue(excec_queue);
-    excec_queue = nullptr;
-    if (Logger::level == LogLevel::DEBUG) {
-      Logger::log(LogLevel::DEBUG, "handshake: ", false, true);
-      Logger::login(handshake);
+      if (Logger::level == LogLevel::DEBUG) {
+        excec_queue->printNodeTypes();
+      };
+
+      // Carrying execution queue;
+      excec_queue->execute_queue_tasks();
+      // Deleting execution queue;
+      execPlan::delete_task_queue(excec_queue);
+
+      if (Logger::level == LogLevel::DEBUG) {
+        Logger::log(LogLevel::DEBUG, "handshake: ", false, true);
+        Logger::login(handshake);
+      };
+      Logger::flush(LogLevel::DEBUG);
+      // Only printing '__END__' if DEBUG logging mode is active
+      Logger::log(LogLevel::DEBUG, "__END__", true, false);
+
+    } catch (const std::exception& e) {
+      Logger::log(LogLevel::ERROR, "Captured exception: ", false, true);
+      Logger::log(LogLevel::ERROR, e.what(), true, false);
+      Logger::log(LogLevel::ERROR, "ERROR: Program shutdown due to error", true,
+                  false);
+
+      if (token_list != nullptr) {
+        delete token_list;
+        token_list = nullptr;
+      };
+
+      if (excec_queue != nullptr) {
+        execPlan::delete_task_queue(excec_queue);
+        excec_queue = nullptr;
+      };
+
+      // Global table dictionary cleanup:
+      clear_global_table_dict();
+
+      // Flushing output buffer:
+      Logger::flush(LogLevel::ERROR, true);
+
+      // Flushing inputs (ignoring all pending input characters):
+      Logger::flush_input(LogLevel::ERROR, true);
+
+      // std::abort();
+      return 0;  // Normal exist, not a program abortion in order to enable
+                 // better memory managment
     };
-    Logger::flush(LogLevel::DEBUG);
-    // Only printing '__END__' if DEBUG logging mode is active
-    Logger::log(LogLevel::DEBUG, "__END__", true, false);
 
   };  // Main loop end
 
@@ -84,6 +116,9 @@ int main() {
   disk_io::write_dump();
   // Only printing '__END__' if DEBUG logging mode is active
   Logger::log(LogLevel::DEBUG, "__END__", true, false);
+
+  // Global table dictionary cleanup:
+  clear_global_table_dict();
 
   return 0;
 };  // Main program end

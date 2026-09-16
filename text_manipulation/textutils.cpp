@@ -68,17 +68,17 @@ void textUtils::simpleLinkedList::print_list() {
   */
 
   if (!head) {
-    Logger::log(LogLevel::DEBUG, "(empty list)");
+    Logger::log(LogLevel::OUTPUT, "(empty list)");
     return;
   };
 
   textUtils::NodeList1* current_node = head;
-  Logger::log(LogLevel::DEBUG, current_node->val);
+  Logger::log(LogLevel::OUTPUT, current_node->val);
 
   while (current_node->nxt_node) {
     current_node = current_node->nxt_node;
-    Logger::log(LogLevel::DEBUG, "->", false, false);
-    Logger::log(LogLevel::DEBUG, current_node->val, false, false);
+    Logger::log(LogLevel::OUTPUT, "->", false, false);
+    Logger::log(LogLevel::OUTPUT, current_node->val, false, false);
   };
 };
 

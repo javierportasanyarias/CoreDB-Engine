@@ -47,9 +47,9 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n);
 // FUNCTIONS FOR SCHEMA DEFINITION:
 void create_children_by_parent(textUtils::NodeList1*& c_l_n,
                                NodeType1*& node_ptr,
-                               execPlan::Queue* excec_queue);
+                               execPlan::Queue*& excec_queue);
 
-void process_list_to_define_schema(execPlan::Queue* excec_queue,
+void process_list_to_define_schema(execPlan::Queue*& excec_queue,
                                    textUtils::NodeList1*& c_l_n);
 
 void insert_values_add_columns_to_node(NodeType3* node_ptr,
@@ -60,10 +60,10 @@ void aux_iterative_value_filler(textUtils::NodeList1*& c_l_n,
 
 void insert_row_values_in_node(NodeType3*& node_ptr,
                                textUtils::NodeList1*& c_l_n,
-                               execPlan::Queue* excec_queue);
+                               execPlan::Queue*& excec_queue);
 
 // FUNCTIONS FOR VALUE INSERTION:
-void process_list_to_insert_values(execPlan::Queue* excec_queue,
+void process_list_to_insert_values(execPlan::Queue*& excec_queue,
                                    textUtils::NodeList1*& c_l_n);
 
 void aux_col_query(QueryNode*& query_node, textUtils::NodeList1*& c_l_n);

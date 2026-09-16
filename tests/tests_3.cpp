@@ -201,6 +201,12 @@ int main() {
     fifo_obj = define_test_3();
   } else if (input == "test4") {
     fifo_obj = define_test_4();
+  } else if (input == "test5") {
+    fifo_obj = define_test_5();
+  } else if (input == "test6") {
+    fifo_obj = define_test_6();
+  } else if (input == "test7") {
+    fifo_obj = define_test_7();
   };
 
   run_test_subprocess(fifo_obj);

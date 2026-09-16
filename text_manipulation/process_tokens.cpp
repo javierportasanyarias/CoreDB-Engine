@@ -71,21 +71,25 @@ NodeType2* aux_ddl_tree_2(textUtils::NodeList1*& c_l_n) {
 // FUNCTIONS FOR SCHEMA DEFINITION:
 void create_children_by_parent(textUtils::NodeList1*& c_l_n,
                                NodeType1*& node_ptr,
-                               execPlan::Queue* excec_queue) {
+                               execPlan::Queue*& excec_queue) {
   /*
   Function destined to create the input 'NodeType1' child nodes.
   Each child node 'NodeType2' corresponds to a table's field/column.
   */
 
   if (c_l_n->val != "(") {
+    execPlan::aux_delete_queue_node_content(node_ptr);
+
     // First, we delete the whole task queue:
     execPlan::delete_whole_task_queue(excec_queue);
     // We delete all the tables from the global table dict:
     delete_all_tables_dict_only_mem();
     // Then, the other, defined, or half defined objects:
-    execPlan::aux_delete_queue_node_content(node_ptr);
+
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Schema columns definition was never oppened with '('");
+        "SINTAX ERROR 1: Schema columns definition was never oppened with '('");
   };
   c_l_n = c_l_n->nxt_node;
   node_ptr->children.reserve(128);
@@ -120,15 +124,17 @@ void create_children_by_parent(textUtils::NodeList1*& c_l_n,
     delete_all_tables_dict_only_mem();
     // Then, the other, defined, or half defined objects:
     execPlan::aux_delete_queue_node_content(node_ptr);
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Schema columns definition was never closed with ')'");
+        "SINTAX ERROR 2: Schema columns definition was never closed with ')'");
   };
   // In case of ecountering ')', we skip it in order to advance to the next
   // sentence:
   c_l_n = c_l_n->nxt_node;
 };
 
-void process_list_to_define_schema(execPlan::Queue* excec_queue,
+void process_list_to_define_schema(execPlan::Queue*& excec_queue,
                                    textUtils::NodeList1*& c_l_n) {
   /*
   Function specialized in trannslating table definition instructions into a
@@ -144,7 +150,10 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue,
     // We delete all the tables from the global table dict:
     delete_all_tables_dict_only_mem();
     // There are no objects left to delete
-    throw std::runtime_error("'TABLE' was expected after 'CREATE' clause");
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
+    throw std::runtime_error(
+        "SINTAX ERROR 3: 'TABLE' was expected after 'CREATE' clause");
   };
   Logger::log(LogLevel::DEBUG, "There IS 'CREATE TABLE' clause");
   NodeType1* node = new NodeType1;
@@ -164,9 +173,14 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue,
     execPlan::delete_whole_task_queue(excec_queue);
     // We delete all the tables from the global table dict:
     delete_all_tables_dict_only_mem();
-    // There are no objects left to delete
+
     std::string table_name_tmp = node->table_name;
-    throw std::runtime_error("Error: Table: " + table_name_tmp +
+
+    execPlan::aux_delete_queue_node_content(node);
+
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
+    throw std::runtime_error("SINTAX ERROR 4: Error: Table: " + table_name_tmp +
                              " already exists, can not be defined again");
   };
 
@@ -192,10 +206,13 @@ void process_list_to_define_schema(execPlan::Queue* excec_queue,
     // We delete all the tables from the global table dict:
     delete_all_tables_dict_only_mem();
     // Then, the other, defined, or half defined objects:
-    delete node;
+    execPlan::aux_delete_queue_node_content(node);
     node = nullptr;
+
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Sentence closure ';' for schema definition not found");
+        "SINTAX ERROR 5: Sentence closure ';' for schema definition not found");
   } else {
     // In case of ecountering ';' we skip it in order to advance to the next
     // sentence
@@ -251,7 +268,7 @@ void aux_iterative_value_filler(textUtils::NodeList1*& c_l_n,
 
 void insert_row_values_in_node(NodeType3*& node_ptr,
                                textUtils::NodeList1*& c_l_n,
-                               execPlan::Queue* excec_queue) {
+                               execPlan::Queue*& excec_queue) {
   // Reserving rows inn node->rows to evade early memmory relocations of the
   // array due to insuficient contiguous addresses:
   node_ptr->rows.reserve(128);
@@ -266,8 +283,14 @@ void insert_row_values_in_node(NodeType3*& node_ptr,
     delete_all_tables_dict_only_mem();
     // Then, the other, defined, or half defined objects:
     execPlan::aux_delete_queue_node_content(node_ptr);
+
+    // Deleting task queue:
+    execPlan::delete_task_queue(excec_queue);
+
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Parenthesis was never oppened in row addition");
+        "SINTAX ERROR 6: Parenthesis was never oppened in row addition");
   };
   c_l_n = c_l_n->nxt_node;  // We skip '('
   Logger::log(LogLevel::DEBUG, "VAL 1 :", false, true);
@@ -291,8 +314,10 @@ void insert_row_values_in_node(NodeType3*& node_ptr,
     delete_all_tables_dict_only_mem();
     // Then, the other, defined, or half defined objects:
     execPlan::aux_delete_queue_node_content(node_ptr);
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Parenthesis was never closed in row addition");
+        "SINTAX ERROR 7: Parenthesis was never closed in row addition");
   };
 
   // Advancing to the next node:
@@ -311,8 +336,10 @@ void insert_row_values_in_node(NodeType3*& node_ptr,
       delete_all_tables_dict_only_mem();
       // Then, the other, defined, or half defined objects:
       execPlan::aux_delete_queue_node_content(node_ptr);
+      // Global table dictionary cleanup:
+      clear_global_table_dict();
       throw std::runtime_error(
-          "ERROR: Parenthesis was never oppened in row addition");
+          "SINTAX ERROR 8: Parenthesis was never oppened in row addition");
     };
 
     c_l_n = c_l_n->nxt_node;  // We skip '('
@@ -337,8 +364,10 @@ void insert_row_values_in_node(NodeType3*& node_ptr,
       delete_all_tables_dict_only_mem();
       // Then, the other, defined, or half defined objects:
       execPlan::aux_delete_queue_node_content(node_ptr);
+      // Global table dictionary cleanup:
+      clear_global_table_dict();
       throw std::runtime_error(
-          "ERROR: Parenthesis was never closed in row addition");
+          "SINTAX ERROR 9: Parenthesis was never closed in row addition");
     };
     // Advancing to the next node:
     c_l_n = c_l_n->nxt_node;  // We skip ')'
@@ -353,8 +382,10 @@ void insert_row_values_in_node(NodeType3*& node_ptr,
     delete_all_tables_dict_only_mem();
     // Then, the other, defined, or half defined objects:
     execPlan::aux_delete_queue_node_content(node_ptr);
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Sentence closure ';' for row addition was not found");
+        "SINTAX ERROR 10: Sentence closure ';' for row addition was not found");
   } else {
     // In case of ecountering ';' we skip it in order to advance to the next
     // sentence
@@ -368,7 +399,7 @@ void insert_row_values_in_node(NodeType3*& node_ptr,
 };
 
 // FUNCTIONS FOR VALUE INSERTION:
-void process_list_to_insert_values(execPlan::Queue* excec_queue,
+void process_list_to_insert_values(execPlan::Queue*& excec_queue,
                                    textUtils::NodeList1*& c_l_n) {
   if (c_l_n->val != "INSERT INTO") {
     // First, we delete the whole task queue:
@@ -376,7 +407,10 @@ void process_list_to_insert_values(execPlan::Queue* excec_queue,
     // We delete all the tables from the global table dict:
     delete_all_tables_dict_only_mem();
     // There are no objects left to delete
-    throw std::runtime_error("'INTO' was expected after 'INSERT' clause");
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
+    throw std::runtime_error(
+        "SINTAX ERROR 11: 'INTO' was expected after 'INSERT' clause");
     return;
   };
 
@@ -400,8 +434,11 @@ void process_list_to_insert_values(execPlan::Queue* excec_queue,
       // Then, the other, defined, or half defined objects:
       delete node;
       node = nullptr;
+      // Global table dictionary cleanup:
+      clear_global_table_dict();
       throw std::runtime_error(
-          "ERROR: Column definition for row addition was never closed with "
+          "SINTAX ERROR 12: Column definition for row addition was never "
+          "closed with "
           "')'");
     };
     c_l_n = c_l_n->nxt_node;
@@ -423,8 +460,11 @@ void process_list_to_insert_values(execPlan::Queue* excec_queue,
     // Then, the other, defined, or half defined objects:
     delete node;
     node = nullptr;
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "'VALUES' was expected after column name/s definition");
+        "'SINTAX ERROR 13: VALUES' was expected after column name/s "
+        "definition");
   };
 
   // Value insertion:
@@ -501,8 +541,10 @@ void process_list_for_selection(execPlan::Queue*& excec_queue,
         query_node_ptr = nullptr;
         delete from_node_ptr;
         from_node_ptr = nullptr;
-        throw std::runtime_error("ERROR: Query error. Table: " + c_l_n->val +
-                                 " does not exist");
+        // Global table dictionary cleanup:
+        clear_global_table_dict();
+        throw std::runtime_error("SINTAX ERROR 14: Query error. Table: " +
+                                 c_l_n->val + " does not exist");
       };
     };
     Logger::log(LogLevel::DEBUG,
@@ -519,7 +561,10 @@ void process_list_for_selection(execPlan::Queue*& excec_queue,
     from_node_ptr = nullptr;
     delete query_node_ptr;
     query_node_ptr = nullptr;
-    throw std::runtime_error("ERROR: 'FROM' missing from table query");
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
+    throw std::runtime_error(
+        "SINTAX ERROR 15: 'FROM' missing from table query");
   };
   c_l_n = c_l_n->nxt_node;
   if (c_l_n->val != ";") {
@@ -534,8 +579,11 @@ void process_list_for_selection(execPlan::Queue*& excec_queue,
     from_node_ptr = nullptr;
     delete query_node_ptr;
     query_node_ptr = nullptr;
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Sentence closure ';' for table query operation was not found");
+        "SINTAX ERROR 16: Sentence closure ';' for table query operation was "
+        "not found");
   } else {
     // In case of ecountering ';' we skip it in order to advance to the next
     // sentence
@@ -578,8 +626,10 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue,
       Logger::log(LogLevel::ERROR,
                   " .Can not be deleted. It does not exist yet, hit has not "
                   "been defined as of this moment");
-      throw std::runtime_error("DROP TABLE ERROR: Table '" + table_name +
-                               "' does not exist.");
+      // Global table dictionary cleanup:
+      clear_global_table_dict();
+      throw std::runtime_error("SINTAX ERROR 17: DROP TABLE ERROR: Table '" +
+                               table_name + "' does not exist.");
     };
   };
 
@@ -592,8 +642,11 @@ void add_drop_table_node_to_queue(execPlan::Queue*& excec_queue,
     // Deleting all the tables from the global table dict:
     delete_all_tables_dict_only_mem();
     // There are no objects left to delete
+    // Global table dictionary cleanup:
+    clear_global_table_dict();
     throw std::runtime_error(
-        "ERROR: Sentence closure ';' for table deletion operation was not "
+        "SINTAX ERROR 18: Sentence closure ';' for table deletion operation "
+        "was not "
         "found");
   } else {
     // In case of ecountering ';' we skip it in order to advance to the next
@@ -624,33 +677,42 @@ execPlan::Queue* process_token_list(textUtils::simpleLinkedList*& list_ptr) {
   */
 
   textUtils::NodeList1* c_l_n = list_ptr->head;
-  execPlan::Queue* excec_queue = new execPlan::Queue;
+  execPlan::Queue* excec_queue = nullptr;
 
-  while (c_l_n->val != "EOS") {
-    Logger::log(LogLevel::DEBUG, "Token value: ", false, true);
-    Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+  try {
+    excec_queue = new execPlan::Queue;
 
-    if (c_l_n->val == "CREATE TABLE") {
-      Logger::log(LogLevel::DEBUG, "Schema definition:");
-      process_list_to_define_schema(excec_queue, c_l_n);
-    } else if (c_l_n->val == "INSERT INTO") {
-      Logger::log(LogLevel::DEBUG, "Value insertion::");
-      process_list_to_insert_values(excec_queue, c_l_n);
-    } else if (c_l_n->val == "SELECT") {
-      process_list_for_selection(excec_queue, c_l_n);
-    } else if (c_l_n->val == "DROP TABLE") {
-      Logger::log(LogLevel::DEBUG,
-                  "<<<<< TABLE DELETION >>>>>>: " + c_l_n->nxt_node->val);
-      add_drop_table_node_to_queue(
-          excec_queue, c_l_n);  // WARINING: Not the actual table deletion.
-      Logger::log(LogLevel::DEBUG,
-                  "<<<<< TABLE SCHEDULED FOR DELETION >>>>>>: ");
-    } else {
-      // Skip to the next node:
-      Logger::log(LogLevel::ERROR,
-                  "ERROR: Command not recognized: " + c_l_n->val);
-      c_l_n = c_l_n->nxt_node;
+    while (c_l_n->val != "EOS") {
+      Logger::log(LogLevel::DEBUG, "Token value: ", false, true);
+      Logger::log(LogLevel::DEBUG, c_l_n->val, true, false);
+
+      if (c_l_n->val.starts_with("CREATE")) {
+        Logger::log(LogLevel::DEBUG, "Schema definition:");
+        process_list_to_define_schema(excec_queue, c_l_n);
+      } else if (c_l_n->val.starts_with("INSERT")) {
+        Logger::log(LogLevel::DEBUG, "Value insertion::");
+        process_list_to_insert_values(excec_queue, c_l_n);
+      } else if (c_l_n->val == "SELECT") {
+        process_list_for_selection(excec_queue, c_l_n);
+      } else if (c_l_n->val == "DROP TABLE") {
+        Logger::log(LogLevel::DEBUG,
+                    "<<<<< TABLE DELETION >>>>>>: " + c_l_n->nxt_node->val);
+        add_drop_table_node_to_queue(
+            excec_queue, c_l_n);  // WARINING: Not the actual table deletion.
+        Logger::log(LogLevel::DEBUG,
+                    "<<<<< TABLE SCHEDULED FOR DELETION >>>>>>: ");
+      } else {
+        // Skip to the next node:
+        Logger::log(LogLevel::ERROR,
+                    "ERROR: Command not recognized: " + c_l_n->val);
+        c_l_n = c_l_n->nxt_node;
+      };
     };
-  };
+  } catch (...) {
+    // Generic catch for capturing memory leaks:
+    execPlan::delete_task_queue(excec_queue);
+    excec_queue = nullptr;
+    throw;
+  }
   return excec_queue;
 };

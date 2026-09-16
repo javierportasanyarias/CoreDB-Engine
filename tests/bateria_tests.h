@@ -13,3 +13,5 @@ FIFO* define_test_4();
 FIFO* define_test_5();
 
 FIFO* define_test_6();
+
+FIFO* define_test_7();

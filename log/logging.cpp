@@ -220,3 +220,17 @@ void Logger::login(std::string& input) {
   input = "";
   std::getline(std::cin, input);
 };
+
+void Logger::flush_input(LogLevel msgLevel, bool endl) {
+  if (msgLevel < level) return;
+
+  // Discard all pending characters in the buffer up to the newline:
+  if (std::cin.rdbuf()->in_avail() > 0) {
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  };
+
+  // Printing a newline to the console if requested
+  if (endl) {
+    std::cout << std::endl;
+  };
+};

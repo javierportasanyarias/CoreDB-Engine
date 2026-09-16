@@ -108,7 +108,10 @@ void execPlan::aux_delete_queue_node_content(NodeType3*& node) {
 };
 
 void execPlan::aux_delete_queue_node_content(NodeType2*& node) {
-  // This node does not bear any children.
+  // Rcursive node deletion across it's children:
+  for (auto& node_child_ptr : node->children) {
+    execPlan::aux_delete_queue_node_content(node_child_ptr);
+  };
   delete node;
   node = nullptr;
 };
@@ -153,14 +156,30 @@ void execPlan::delete_queue_node(queueNode1*& queue_node_to_del) {
 };
 
 void execPlan::delete_task_queue(execPlan::Queue*& queue) {
-  // Function that deletes the queue object and its attributes.
+  // Safeguard:
+  if (!queue) return;
+
+  ////////////////
+  queueNode1* current_node = queue->first_ptr;
+  while (current_node != nullptr) {
+    queueNode1* next_node = current_node->nxt_node_queue;
+
+    // Deleting also node content:
+    execPlan::delete_queue_node(current_node);
+
+    delete current_node;
+    current_node = next_node;
+  };
+
   queue->first_ptr = nullptr;
   queue->last_ptr = nullptr;
+
+  // Finally, we proceed to queue object deletion:
   delete queue;
   queue = nullptr;
 };
 
-void execPlan::delete_whole_task_queue(execPlan::Queue* queue) {
+void execPlan::delete_whole_task_queue(execPlan::Queue*& queue) {
   /*
   Function that deletes the task queue whole, not
   just it's pointers, but the underlying data structures it
@@ -168,9 +187,10 @@ void execPlan::delete_whole_task_queue(execPlan::Queue* queue) {
   */
   execPlan::queueNode1* c_q_n = queue->first_ptr;
 
-  while (c_q_n) {
-    execPlan::delete_queue_node(c_q_n);
-  };
+  // while (c_q_n) {
+  // execPlan::delete_queue_node(c_q_n);
+  //};
+
   // Once deleted all the items, we can delete it whole:
   execPlan::delete_task_queue(queue);
 };
@@ -246,6 +266,10 @@ void execPlan::Queue::execute_queue_tasks() {
     c_q_n = next_queue_node;
   };
   if (index == 0) {
-    Logger::log(LogLevel::DEBUG, "(Queue is empty)\n", true, true);
+    Logger::log(LogLevel::DEBUG, "(Queue is empty)", true, true);
   };
+
+  // Before existing, we update first and last node pointers to null:
+  first_ptr = nullptr;
+  last_ptr = nullptr;
 };

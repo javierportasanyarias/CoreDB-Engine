@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 clang++ -std=c++20 \
+  -gdwarf-4 -O0 \
   -include-pch pch_app.h.pch \
   -Iexecution \
   -Iplanning_execution \

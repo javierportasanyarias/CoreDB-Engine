@@ -87,4 +87,10 @@ struct table {
 
   table()
       : metadata_ptr(nullptr), data_ptr(nullptr), data_buffer_ptr(nullptr){};
+
+  ~table() {
+    delete metadata_ptr;
+    delete data_ptr;
+    delete data_buffer_ptr;
+  }
 };
