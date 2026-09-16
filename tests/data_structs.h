@@ -1,30 +1,21 @@
-#ifndef DATA_STRUCTS_H
-#define DATA_STRUCTS_H
-
-#include<iostream>
+#pragma once
 
 class FifoNode {
+ public:
+  std::string comando;
+  FifoNode* nxt_node;
 
-   public:
-   std::string comando;
-   FifoNode* nxt_node;
-
-   FifoNode();
-
+  FifoNode();
 };
 
 class FIFO {
+ public:
+  FifoNode* head;
 
-   public:
-      FifoNode* head;
+  FIFO();
 
-      FIFO();
-
-      void delete_fifo_content(FifoNode*& head);
-
+  void delete_fifo_content(FifoNode*& head);
 };
 
-// Para eliminar toda la fifo:
+// For deleting FIFO queue:
 void delete_fifo(FIFO*& fifo_obj);
-
-#endif

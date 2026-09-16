@@ -1,11 +1,9 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#pragma once
 
-#include <unordered_map>
-#include <string>
-// #include "data_structure/data_struct.h"
 #include "data_struct.h"
 
-extern std::unordered_map<std::string, table*> global_table_dict;
+struct table;
 
-#endif
+inline std::unordered_map<std::string, table*> global_table_dict;
+
+inline uint32_t size_buffer_bytes = 8;

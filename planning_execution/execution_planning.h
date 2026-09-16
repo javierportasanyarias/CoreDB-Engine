@@ -1,58 +1,68 @@
-#ifndef EXECUTION_PLANNING_H
-#define EXECUTION_PLANNING_H
+#pragma once
 
-#include <iostream>
-#include <variant>
-// #include "nodes_for_trees/node_for_trees.h"
-#include "node_for_trees.h"
-// #include "globals/globals.h"
-#include "globals.h"
-// #include "execution/execution.h"
 #include "execution.h"
+#include "node_for_trees.h"
+
+// Forward declarations:
+class DropTableNode;
+class NodeType1;
+class NodeType2;
+class NodeType3;
+class QueryNode;
 
 namespace execPlan {
-    ///////////////////////////////////////////////////////////
-    // Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
-    using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*, DropTableNode*>;
-    class queueNode1 {
-        public:
-            NodeVariant nodePtr;
-            // Proximo nodo de la cola:
-            queueNode1* nxt_node_queue;
-            queueNode1* prv_node_queue;
-            queueNode1();
+///////////////////////////////////////////////////////////
+//  FIFO execution queue: it will determine the order of execution tasks.
 
-    };
+// Variant type of variable holding all the task's nodes:
+using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*,
+                                 DropTableNode*>;
 
-    // en el header
-    class Queue {
-        public:
-            queueNode1* first_ptr;
-            queueNode1* last_ptr;
-
-            Queue();
-
-            void add_node_to_queue(queueNode1* node_queue_to_add);
-
-            // saca del frente y devuelve el nodo (no lo borra)
-            queueNode1* pop_front_node();
-
-            // Función para imprimir todos los nodos de la cola y su tipo:
-            void printNodeTypes() const;
-
-
-            // Funcion para ejecutar la cola:
-            void execute_queue_tasks();
-
-            // Función para eliminar nodos de la cola:
-            void delete_current_queue_node(queueNode1* nodo_cola_a_eliminar);
-
-
-    };
-
-    // Método a parte de la cola para eliminarla:
-    void delete_task_queue(Queue* cola);
+class queueNode1 {
+ public:
+  NodeVariant nodePtr;
+  queueNode1* nxt_node_queue;
+  queueNode1* prv_node_queue;
+  queueNode1();
 };
 
+class Queue {
+  /*
+  FIFO queue determines the execution tasks's order
+  */
+ public:
+  queueNode1* first_ptr;
+  queueNode1* last_ptr;
 
-# endif
+  Queue();
+
+  void add_node_to_queue(queueNode1* node_queue_to_add);
+
+  // Method for reasigning the last queue node (It does not delete it):
+  queueNode1* pop_front_node();
+
+  // Method for printing all the queue node and types:
+  void printNodeTypes() const;
+
+  // Task execution method:
+  void execute_queue_tasks();
+
+  // Method for deleting a queue's node.
+  void delete_current_queue_node(queueNode1*& queue_node_to_del);
+};
+
+void delete_queue_node(queueNode1*& queue_node_to_del);
+
+void delete_task_queue(Queue*& queue);
+
+// Method for deleting not only the object, but all it contains:
+void delete_whole_task_queue(Queue*& queue);
+
+// Node deletion functions:
+void aux_delete_queue_node_content(QueryNode*& node);
+void aux_delete_queue_node_content(DropTableNode*& node);
+void aux_delete_queue_node_content(NodeType3*& node);
+void aux_delete_queue_node_content(NodeType2*& node);
+void aux_delete_queue_node_content(NodeType1*& node);
+
+};  // namespace execPlan

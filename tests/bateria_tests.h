@@ -1,6 +1,6 @@
-#include <string>
-#include "data_structs.h"
+#pragma once
 
+#include "data_structs.h"
 
 FIFO* define_test_1();
 
@@ -13,3 +13,5 @@ FIFO* define_test_4();
 FIFO* define_test_5();
 
 FIFO* define_test_6();
+
+FIFO* define_test_7();

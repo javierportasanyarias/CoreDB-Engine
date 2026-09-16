@@ -1,234 +1,234 @@
 #include "text_utils.h"
-#include <iostream>
-#include <string>
-#include <vector>
-#include <cctype>  // para std::isspace
-#include "logging.h"
 
-std::string textUtils::espaciar_texto(const std::string& input){
+std::string textUtils::space_text(const std::string& input) {
+  /*
+  Adds extra space after there spcific characters:
+  -> Parenthesis
+  -> Dot
+  -> Semicolon
+  */
 
-   //std::string buffer = "";
-   std::string result = "";
+  std::string result = "";
+  uint32_t input_size = input.size();
+  const char* ptr_current = input.data();
+  const char* ptr_end = ptr_current + input_size;
+  result.reserve(input_size * 2);
 
-   for(int i = 0; i<input.size(); i++){
-
-      //buffer += input[i];
-      switch(input[i]){
-
+  while (ptr_current < ptr_end) {
+    char c = *ptr_current;
+    switch (c) {
       case ')':
-         result = result + " " + input[i] + " ";
-         break;
       case '(':
-         result = result + " " + input[i] + " ";
-         break;
       case ';':
-         result = result + " " + input[i]+ " ";
-         break;
       case ',':
-         result = result + " " + input[i] + " ";
-         break;
+        result += ' ';
+        result += c;
+        result += ' ';
+        break;
       default:
-         result += input[i];
-      };
-   };
-
-   result += " ";
-   return  result;
+        result += c;
+        break;
+    };
+    ++ptr_current;
+  };
+  result += " ";
+  return result;
 };
 
+void textUtils::simpleLinkedList::add_node(const std::string& value) {
+  /*
+  Adds a node to the end of it's simple linked list
+  */
 
-void textUtils::simpleLinkedList::add_node(std::string valor){
-   textUtils::NodeLista1* nuevo = new textUtils::NodeLista1();
-   nuevo->val = valor;
-   Logger::log(LogLevel::DEBUG, "Dentro de add_node: ", false, true);
-   Logger::log(LogLevel::DEBUG, nuevo->val, true, false);
-   nuevo->nxt_node = nullptr; 
+  textUtils::NodeList1* new_node = new textUtils::NodeList1();
+  new_node->val = value;
+  Logger::log(LogLevel::DEBUG, "Inside the add_node method: ", false, true);
+  Logger::log(LogLevel::DEBUG, new_node->val, true, false);
+  new_node->nxt_node = nullptr;
 
-   if(!head){
-      Logger::log(LogLevel::DEBUG, "Se ha entrado a modificar head y tail");   
-      head = nuevo;
-      tail = nuevo;
-   } else {
-      // EN LUGAR DE RECORRER DESDE EL PRINCIPIO (que puede tener ciclos)
-      // USAMOS EL PUNTERO DIRECTO AL FINAL
-      tail->nxt_node = nuevo; 
-      tail = nuevo;
-      if (head->val != "CREATE TABLE"){
-         Logger::log(LogLevel::DEBUG, "ERROR: SE HA MODIFICADO EL VALOR DEL HEAD. Se ha cambiado por el valor: ", false, true);
-	 Logger::log(LogLevel::DEBUG, head->val, true, false);
-
-      };
-   };
+  if (!head) {
+    Logger::log(
+        LogLevel::DEBUG,
+        "Head node has not been yet been defined, Adding the first node");
+    head = new_node;
+    tail = new_node;
+  } else {
+    Logger::log(
+        LogLevel::DEBUG,
+        "Head node has already been defined, adding the lastes node to list");
+    tail->nxt_node = new_node;
+    tail = new_node;
+  };
 };
-
-
-
 
 void textUtils::simpleLinkedList::print_list() {
-   if (!head) {
-      // std::cout << "(empty list)" << std::endl;
-      Logger::log(LogLevel::DEBUG, "(empty list)");
-      return;
-   };
+  /*
+  Method for printing the token list.
+  Solely used for debugging purposes
+  */
 
-   textUtils::NodeLista1* current_node = head;
-   // std::cout << current_node->val;  // imprime el primer nodo
-   Logger::log(LogLevel::DEBUG, current_node->val);
+  if (!head) {
+    Logger::log(LogLevel::OUTPUT, "(empty list)");
+    return;
+  };
 
-   // Recorre e imprime el resto con el separador ->
-   while (current_node->nxt_node) {
-      current_node = current_node->nxt_node;
-      // std::cout << "->" << current_node->val;
-      Logger::log(LogLevel::DEBUG, "->", false, false);
-      Logger::log(LogLevel::DEBUG, current_node->val, false, false);
-   };
+  textUtils::NodeList1* current_node = head;
+  Logger::log(LogLevel::OUTPUT, current_node->val);
 
-   // std::cout << std::endl;
-   Logger::flush();
+  while (current_node->nxt_node) {
+    current_node = current_node->nxt_node;
+    Logger::log(LogLevel::OUTPUT, "->", false, false);
+    Logger::log(LogLevel::OUTPUT, current_node->val, false, false);
+  };
 };
 
-// Metodo para borrar la lista de tokens:
 void textUtils::simpleLinkedList::clear() {
-    NodeLista1* current = head;
-    while (current != nullptr) {
-        NodeLista1* next = current->nxt_node; // Guardamos el puntero al siguiente
-        delete current;                       // Borramos el nodo actual
-        current = next;                       // Saltamos al siguiente
-    }
-    head = nullptr;
-    tail = nullptr;
+  /*
+  Method for managing safe memory deletion of all the linked list nodes.
+  Should only be invoked once the execution tree has been constructed.
+  */
+
+  NodeList1* current = head;
+  while (current != nullptr) {
+    NodeList1* next = current->nxt_node;
+    delete current;
+    current = next;
+  };
+  head = nullptr;
 };
 
+std::string textUtils::normalize_spaces(const std::string& input) {
+  /*
+  This function erases repeated whitespaces, leaving only one between SQL tokens
+  */
 
-std::string textUtils::borrar_espacios_repetidos(const std::string& input){
+  bool allow_space = false;
+  std::string result = "";
+  uint32_t input_size = input.size();
+  const char* ptr_current = input.data();
+  const char* ptr_end = ptr_current + input_size;
+  result.reserve(input_size);
 
-   //std::string* result = new std::string("");
-   std::string result = "";
-   bool auxbool = true;
+  while (ptr_current < ptr_end && *ptr_current == ' ') {
+    ++ptr_current;
+  };
 
-   for(int i = 0; i<input.size(); i++){
+  while (ptr_current < ptr_end) {
+    char current_char = *ptr_current;
 
-      //*buffer += input[i];
-
-      if(input[i] == ' '){
-         if(auxbool){
-            //*result += input[i];
-	    result += input[i];
-            auxbool = false;
-         };
-
-      }else{
-         //*result += input[i];
-	 result += input[i];
-         auxbool = true;
+    if (current_char == ' ') {
+      if (allow_space) {
+        result += current_char;
+        allow_space = false;
       };
-
-   };
-   //*result += " ";
-   result += " ";
-   //return *result;
-   return result;
-};
-
-std::string textUtils::borrar_espacios_principio(const std::string& input){
-
-   //std::string* result = new std::string("");
-   std::string result = "";
-   //std::string* buffer = new std::string("");
-
-   bool auxbool = false;
-    for(int i = 0; i<input.size(); i++){
-       if(input[i] != ' '){
-          auxbool = true;
-       };
-       if(auxbool){
-          //*result += input[i];
-	  result += input[i];
-       };
+    } else {
+      result += current_char;
+      allow_space = true;
     };
+    ptr_current++;
+  };
 
-    //return *result;
-    return result;
+  if (!result.empty() && result.back() == ' ') {
+    result.pop_back();
+  };
+
+  return result;
 };
 
-void textUtils::borrar_espacios_final(std::string& input) {
-    if (input.empty()) return;
+textUtils::simpleLinkedList* textUtils::create_token_list(
+    const std::string& input) {
+  /*
+  Given a clean/processed SQL code, it is tokenized into a simple linked list,
+  used later for instruction interpetation and execution trees construction.
+  Each token corresponds to a SQL one.
+  */
 
-    int i = static_cast<int>(input.size()) - 1; // índice del último carácter
+  std::string buffer;
+  buffer.reserve(64);
+  uint32_t input_size = input.size();
+  const char* ptr_current = input.data();
+  const char* ptr_end = ptr_current + input_size;
 
-    // Retrocede mientras haya espacios al final
-    while (i >= 0 && std::isspace(static_cast<unsigned char>(input[i]))) {
-        i--;
-    };
+  textUtils::simpleLinkedList* list = new textUtils::simpleLinkedList();
 
-    // Devuelve la subcadena sin los espacios del final
-    input = input.substr(0, i + 1);
-};
+  while (ptr_current < ptr_end) {
+    char c = *ptr_current;
 
-textUtils::simpleLinkedList* textUtils::crear_lista_tokens(const std::string& input){
-   std::string buffer = "";
-   textUtils::simpleLinkedList* lista = new textUtils::simpleLinkedList();
-
-   for(int i = 0; i < input.size(); i++){
-      if(input[i] == ' '){
-         // Solo entramos aquí si hay algo que procesar
-         if(!buffer.empty()){
-            if(buffer == "CREATE" || buffer == "PRIMARY" || buffer == "INSERT" || buffer == "DROP"){
-               buffer += input[i];
-            } else {
-               Logger::log(LogLevel::DEBUG, "Add to lista: ", false, true);
-	       Logger::log(LogLevel::DEBUG, buffer, true, false);
-               lista->add_node(buffer);
-               buffer = "";
-            };
-         };
-      } else {
-         buffer += input[i];
+    if (c == ' ') {
+      if (!buffer.empty()) {
+        if (buffer == "CREATE" || buffer == "PRIMARY" || buffer == "INSERT" ||
+            buffer == "DROP") {
+          buffer += c;
+        } else {
+          Logger::log(LogLevel::DEBUG, "Added to list: ", false, true);
+          Logger::log(LogLevel::DEBUG, buffer, true, false);
+          list->add_node(buffer);
+          buffer.clear();
+        };
       };
-   };
-   // Añadir el último token si quedó algo
-   if(!buffer.empty()) {
-      lista->add_node(buffer);
-   };
-   return lista;
+    } else {
+      buffer += c;
+    };
+    ++ptr_current;
+  };
+  // Just in case some elements from the buffer were left unadded, we append
+  // them here at the end:
+  if (!buffer.empty()) {
+    list->add_node(buffer);
+  };
+  return list;
 };
 
+std::string clean_input_start(std::string& input) {
+  /*
+  Function destined for deleting 'garbage' characters. Thus raising input
+  stability
+  */
 
-std::string limpiar_comienzo_input(std::string& input){
-    size_t start = input.find_first_of(" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-       if (start != std::string::npos) {
-          input = input.substr(start);
-       };
-    return input;
+  size_t start = input.find_first_of(
+      " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+  if (start != std::string::npos) {
+    input = input.substr(start);
+  };
+  return input;
 };
 
-textUtils::simpleLinkedList* textUtils::procesar_texto_pipeline(std::string& input){
+textUtils::simpleLinkedList* textUtils::process_text_pipeline(
+    std::string& input) {
+  /*
+  Method for encapsulating input processing and token list creation.
+  These are the inputs:
+  -> Input: raw SQL instructions
+  -> Output: simple linked list, each SQL tokeen as a single node.
 
-   Logger::log(LogLevel::DEBUG, "Vemos como llega el input de texto:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   // Ahora realizamos la limpieza:
-   //input = limpiar_comienzo_input(input);
-   //Logger::log(LogLevel::DEBUG, "Despues de limpiar el comienzo:", true, false);
-   //Logger::log(LogLevel::DEBUG, input, true, false);
-   input = espaciar_texto(input);
-   Logger::log(LogLevel::DEBUG, "Despues de espaciar texto:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   input = borrar_espacios_repetidos(input);
-   Logger::log(LogLevel::DEBUG, "Despues de borrar espacios repetidos:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   input = borrar_espacios_principio(input);
-   Logger::log(LogLevel::DEBUG, "Despues de borrar espacios al principio:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   borrar_espacios_final(input);
-   Logger::log(LogLevel::DEBUG, "Texto formateado:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   // Ahora realizamos la limpieza:
-   input = limpiar_comienzo_input(input);
-   Logger::log(LogLevel::DEBUG, "Despues de limpiar el comienzo:", true, false);
-   Logger::log(LogLevel::DEBUG, input, true, false);
-   textUtils::simpleLinkedList* lista_a_retornar;
-   lista_a_retornar = crear_lista_tokens(input);
-   Logger::log(LogLevel::DEBUG, "head de la lista:", true, false);
-   Logger::log(LogLevel::DEBUG, lista_a_retornar->head->val, true, false);
-   return lista_a_retornar;
+  For achieving this, the input folows the folloeing steps:
+  1º) space_text: adds a whitespace after the following charactes: '(', ')', ';'
+  and ','. 2º) normalize_spaces: ensures only one whitespace between SQl tokens.
+  3º) clean_input_start: cleans the beggining of the string input, leaving only
+  alphabetic characters at the start. 4º) create_token_list: Token list
+  creation.
+
+  The token list given as an output will be employed in the excetion trees
+  construction.
+  */
+
+  Logger::log(LogLevel::DEBUG, "Raw input text:", true, false);
+  Logger::log(LogLevel::DEBUG, input, true, false);
+  input = space_text(input);
+  Logger::log(LogLevel::DEBUG, "After text spacing:", true, false);
+  Logger::log(LogLevel::DEBUG, input, true, false);
+
+  input = textUtils::normalize_spaces(input);
+  Logger::log(LogLevel::DEBUG, "After normalizing whitespaces:", true, false);
+  Logger::log(LogLevel::DEBUG, input, true, false);
+
+  input = clean_input_start(input);
+  Logger::log(LogLevel::DEBUG, "After beginning cleanup:", true, false);
+  Logger::log(LogLevel::DEBUG, input, true, false);
+  textUtils::simpleLinkedList* list_to_return;
+  list_to_return = create_token_list(input);
+  Logger::log(LogLevel::DEBUG, "Token list:");
+  list_to_return->print_list();
+  Logger::flush(LogLevel::DEBUG);
+  return list_to_return;
 };

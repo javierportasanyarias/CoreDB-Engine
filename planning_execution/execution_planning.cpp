@@ -1,244 +1,275 @@
-#include <iostream>
-#include <variant>
-// #include "nodes_for_trees/node_for_trees.h"
-//#include "node_for_trees.h"
-// #include "globals/globals.h"
-#include "globals.h"
-// #include "execution/execution.h"
-#include "execution.h"
 #include "execution_planning.h"
-#include "logging.h"
 
-///////////////////////////////////////////////////////////
-// Cola de ejecución FIFO: determinará las tareas a ejecutar en cada consulta
-//using NodeVariant = std::variant<NodeType1*, NodeType2*, NodeType3*, QueryNode*, DropTableNode*>;
+#include "execution.h"
+#include "node_for_trees.h"
 
-execPlan::queueNode1::queueNode1(): nxt_node_queue(nullptr), prv_node_queue(nullptr){};
+execPlan::queueNode1::queueNode1()
+    : nxt_node_queue(nullptr), prv_node_queue(nullptr){};
 
-// en el header
-execPlan::Queue::Queue() : first_ptr(nullptr), last_ptr(nullptr) {};
+execPlan::Queue::Queue() : first_ptr(nullptr), last_ptr(nullptr){};
 
 void execPlan::Queue::add_node_to_queue(queueNode1* node_queue_to_add) {
-    if (!node_queue_to_add) return;
-    node_queue_to_add->nxt_node_queue = nullptr;
-    node_queue_to_add->prv_node_queue = nullptr;
+  if (!node_queue_to_add) return;
+  node_queue_to_add->nxt_node_queue = nullptr;
+  node_queue_to_add->prv_node_queue = nullptr;
 
-    if (!first_ptr) {
-        // cola vacía
-        first_ptr = last_ptr = node_queue_to_add;
-    } else {
-        // enlazar al final
-        last_ptr->nxt_node_queue = node_queue_to_add;
-        node_queue_to_add->prv_node_queue = last_ptr;
-        last_ptr = node_queue_to_add;
-    };
+  if (!first_ptr) {
+    // Empty queue:
+    first_ptr = last_ptr = node_queue_to_add;
+  } else {
+    // Queue not empty:
+    last_ptr->nxt_node_queue = node_queue_to_add;
+    node_queue_to_add->prv_node_queue = last_ptr;
+    last_ptr = node_queue_to_add;
+  };
 };
 
-// saca del frente y devuelve el nodo (no lo borra)
 execPlan::queueNode1* execPlan::Queue::pop_front_node() {
-    if (!first_ptr) return nullptr;
-    queueNode1* removed = first_ptr;
-    if (first_ptr == last_ptr) {
-        first_ptr = last_ptr = nullptr;
+  /*
+  Method that deletes the queue's first element.
+  */
+  if (!first_ptr) return nullptr;
+  queueNode1* removed = first_ptr;
+  if (first_ptr == last_ptr) {
+    first_ptr = last_ptr = nullptr;
+  } else {
+    first_ptr = first_ptr->nxt_node_queue;
+    first_ptr->prv_node_queue = nullptr;
+  };
+  removed->nxt_node_queue = removed->prv_node_queue = nullptr;
+  return removed;
+};
+
+void execPlan::Queue::printNodeTypes() const {
+  /*
+  For debug purposes only.
+  This method prompts all the queue's nodes in an orderly fashion.
+  */
+  queueNode1* current = first_ptr;
+  int index = 0;
+
+  while (current != nullptr) {
+    Logger::log(LogLevel::DEBUG, "Node ", false, true);
+    Logger::log(LogLevel::DEBUG, index, false, false);
+    Logger::log(LogLevel::DEBUG, ": ", false, false);
+
+    if (std::holds_alternative<NodeType1*>(current->nodePtr)) {
+      Logger::log(LogLevel::DEBUG, "NodeType1", true, false);
+      const NodeType1* node_pointer = std::get<NodeType1*>(current->nodePtr);
+      recursive_tree_print(node_pointer);
+    } else if (std::holds_alternative<NodeType2*>(current->nodePtr)) {
+      Logger::log(LogLevel::DEBUG, "NodeType2", true, false);
+    } else if (std::holds_alternative<NodeType3*>(current->nodePtr)) {
+      Logger::log(LogLevel::DEBUG, "NodeType3", true, false);
+      const NodeType3* node_pointer = std::get<NodeType3*>(current->nodePtr);
+      insert_data_node_print(node_pointer);
+    } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
+      Logger::log(LogLevel::DEBUG, "QueryNode", true, false);
+    } else if (std::holds_alternative<DropTableNode*>(current->nodePtr)) {
+      Logger::log(LogLevel::DEBUG, "DropTableNode", true, false);
     } else {
-        first_ptr = first_ptr->nxt_node_queue;
-        first_ptr->prv_node_queue = nullptr;
+      Logger::log(LogLevel::DEBUG, "Node unknown type", true, false);
     };
-    removed->nxt_node_queue = removed->prv_node_queue = nullptr;
-    return removed;
+    Logger::flush(LogLevel::DEBUG);
+    current = current->nxt_node_queue;
+    index++;
+  };
+  if (index == 0) {
+    Logger::log(LogLevel::DEBUG, "(Queue is empty)\n");
+  };
 };
 
-// Función para imprimir todos los nodos de la cola y su tipo:
-void execPlan::Queue::printNodeTypes() const{
-    queueNode1* current = first_ptr;
-    int index = 0;
+void execPlan::aux_delete_queue_node_content(QueryNode*& node) {
+  /*
+  This node is a special case, as each child is held within a particular
+  variable. Those variables are:
+      * select_node
+      * from_node
+  */
+  delete node->select_node;
+  node->select_node = nullptr;
+  delete node->from_node;
+  node->from_node = nullptr;
 
-    while (current != nullptr) {
-        // std::cout << "Nodo " << index << ": ";
-        Logger::log(LogLevel::DEBUG,  "Nodo ", false, true);
-        Logger::log(LogLevel::DEBUG,  index, false, false);
-        Logger::log(LogLevel::DEBUG,  ": ", false, false);
-
-        // Comprobamos qué tipo de puntero contiene el variant:
-        if (std::holds_alternative<NodeType1*>(current->nodePtr)) {
-            // std::cout << "NodeType1" << std::endl;
-            Logger::log(LogLevel::DEBUG,  "NodeType1", true, false);
-            const NodeType1* nodo_puntero = std::get<NodeType1*>(current->nodePtr);
-            recursive_tree_print(nodo_puntero);
-        } else if (std::holds_alternative<NodeType2*>(current->nodePtr)) {
-            // std::cout << "NodeType2";
-            Logger::log(LogLevel::DEBUG,  "NodeType2", true, false);
-        } else if (std::holds_alternative<NodeType3*>(current->nodePtr)) {
-            // std::cout << "NodeType3"<<std::endl;
-            Logger::log(LogLevel::DEBUG,  "NodeType3", true, false);
-            const NodeType3* nodo_puntero = std::get<NodeType3*>(current->nodePtr);
-            insert_data_node_print(nodo_puntero);
-        } else if (std::holds_alternative<QueryNode*>(current->nodePtr)) {
-            // std::cout << "QueryNode"<<std::endl;
-            Logger::log(LogLevel::DEBUG,  "QueryNode", true, false);
-        } else if (std::holds_alternative<DropTableNode*>(current->nodePtr)) {
-            Logger::log(LogLevel::DEBUG,  "DropTableNode", true, false);
-        } else {
-            // std::cout << "Tipo desconocido";
-            Logger::log(LogLevel::DEBUG,  "Tipo desconocido", true, false);
-        };
-
-        // std::cout << std::endl;
-        Logger::flush();
-        current = current->nxt_node_queue;
-        index++;
-    }
-
-    if (index == 0)
-        // std::cout << "(La cola está vacía)\n";
-        Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n");
+  delete node;
+  node = nullptr;
 };
 
-/////////////////////////////////////////////////////////////////////////
-
-// Función sobrecargada auxiliar para eliminar el contenido de los nodos de la cola de ejecución:
-
-
-void aux_delete_que_node_content(QueryNode* nodo){
-
-    // Este nodo es especial, porque en vez de tener hijos en un vector, cada "hijo" está en una variable concreta y con nombre
-    delete nodo->nodo_select;
-    nodo->nodo_select = nullptr;
-    delete nodo->nodo_from;
-    nodo->nodo_from = nullptr;
-
-    // Ya podemos eliminar el nodo:
-    delete nodo;
-    //nodo = nullptr;
+void execPlan::aux_delete_queue_node_content(DropTableNode*& node) {
+  // This node does not bear any children.
+  delete node;
+  node = nullptr;
 };
 
-
-void aux_delete_que_node_content(DropTableNode* nodo){                                                                                                                    // Este nodo es uno solo, no tiene hijos ni otros nodos enlazadas, tan sólo es una estructura de datos                                                        
-    // Ya podemos eliminar el nodo:
-    delete nodo;
-    //nodo = nullptr;
+void execPlan::aux_delete_queue_node_content(NodeType3*& node) {
+  // This node does not bear any children.
+  delete node;
+  node = nullptr;
 };
 
-
-void aux_delete_que_node_content(NodeType3* nodo){
-
-    // Este nodo es uno solo, no tiene hijos ni otros nodos enlazadas, tan sólo es una estructura de datos
-
-    // Ya podemos eliminar el nodo:
-    delete nodo;
-    //nodo = nullptr;
+void execPlan::aux_delete_queue_node_content(NodeType2*& node) {
+  // Rcursive node deletion across it's children:
+  for (auto& node_child_ptr : node->children) {
+    execPlan::aux_delete_queue_node_content(node_child_ptr);
+  };
+  delete node;
+  node = nullptr;
 };
 
-
-void aux_delete_que_node_content(NodeType2* nodo){
-
-    // Acción para recorrer sus hijos:
-    
-    // No hacemos nada porque suponemos que este tipo de nodos no tienen hijos
-
-    // Ya podemos eliminar el nodo:
-    delete nodo;
-    //nodo = nullptr;
-
-};
-
-
-void aux_delete_que_node_content(NodeType1* nodo){
-
-    // Acción para recorrer sus hijos:
-    for (auto& nodo_hijo_ptr : nodo->hijos) {
-        aux_delete_que_node_content(nodo_hijo_ptr);
-    };
-    // Ya podemos eliminar el nodo:
-    delete nodo;
-    nodo = nullptr;
+void execPlan::aux_delete_queue_node_content(NodeType1*& node) {
+  // Rcursive node deletion across it's children:
+  for (auto& node_child_ptr : node->children) {
+    execPlan::aux_delete_queue_node_content(node_child_ptr);
+  };
+  // Finally, node deletion:
+  delete node;
+  node = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////
-// Función auxiliar para elimimnar nodos de la cola:
-void execPlan::Queue::delete_current_queue_node(queueNode1* nodo_cola_a_eliminar) {
 
-    if (!nodo_cola_a_eliminar) return;
-    std::visit(
-        [](auto* nodo_ptr) {
-            aux_delete_que_node_content(nodo_ptr);
-            nodo_ptr = nullptr; 
-        },
-        nodo_cola_a_eliminar->nodePtr
-    );
-    delete nodo_cola_a_eliminar;
+void execPlan::Queue::delete_current_queue_node(
+    queueNode1*& queue_node_to_del) {
+  /*
+  Auxiliar function for deleting a queue's node:
+  */
+
+  if (!queue_node_to_del) return;
+  std::visit(
+      [](auto* node_ptr) { execPlan::aux_delete_queue_node_content(node_ptr); },
+      queue_node_to_del->nodePtr);
+  delete queue_node_to_del;
+  queue_node_to_del = nullptr;
 };
 
-////////////////////////////////////////////////////////////////////////
-//Función para eliminar la cola entera:
-void execPlan::delete_task_queue(execPlan::Queue* cola){
-    //delete cola->first_ptr;
-    cola->first_ptr = nullptr;
-    //delete cola->last_ptr;
-    cola->last_ptr = nullptr;
-    delete cola;
+void execPlan::delete_queue_node(queueNode1*& queue_node_to_del) {
+  /*
+  Auxiliar function for deleting a queue's node:
+  */
 
+  if (!queue_node_to_del) return;
+  std::visit(
+      [](auto* node_ptr) { execPlan::aux_delete_queue_node_content(node_ptr); },
+      queue_node_to_del->nodePtr);
+  delete queue_node_to_del;
+  queue_node_to_del = nullptr;
 };
 
+void execPlan::delete_task_queue(execPlan::Queue*& queue) {
+  // Safeguard:
+  if (!queue) return;
 
-// Funcion para ejecutar la cola:
-//
-void execPlan::Queue::execute_queue_tasks(){
+  ////////////////
+  queueNode1* current_node = queue->first_ptr;
+  while (current_node != nullptr) {
+    queueNode1* next_node = current_node->nxt_node_queue;
 
-    int index = 0;
-    execPlan::queueNode1* c_q_n = first_ptr; // Sin crear nada con new
+    // Deleting also node content:
+    execPlan::delete_queue_node(current_node);
 
-    Logger::log(LogLevel::DEBUG,  "Nodo ", false, true);
-    Logger::log(LogLevel::DEBUG,  index, false, false);
-    Logger::log(LogLevel::DEBUG,  ": ", false, false);
-    
-    while(c_q_n){
-        if (std::holds_alternative<NodeType1*>(c_q_n->nodePtr)) {
-            Logger::log(LogLevel::DEBUG,  "NodeType1: Ejecutamos creacion de tabla", true, false);
+    delete current_node;
+    current_node = next_node;
+  };
 
-            NodeType1* nodo = std::get<NodeType1*>(c_q_n->nodePtr);  // Directo desde el variant
-            recursive_metadata_fill_lv1(nodo);
+  queue->first_ptr = nullptr;
+  queue->last_ptr = nullptr;
 
-        } else if (std::holds_alternative<NodeType2*>(c_q_n->nodePtr)){
+  // Finally, we proceed to queue object deletion:
+  delete queue;
+  queue = nullptr;
+};
 
-            Logger::log(LogLevel::DEBUG,  "Nos encontramos al ejecutar un: NodeType2", false, false);
+void execPlan::delete_whole_task_queue(execPlan::Queue*& queue) {
+  /*
+  Function that deletes the task queue whole, not
+  just it's pointers, but the underlying data structures it
+  holds for CRUD operations.
+  */
+  execPlan::queueNode1* c_q_n = queue->first_ptr;
 
-        } else if (std::holds_alternative<NodeType3*>(c_q_n->nodePtr)) {
+  // while (c_q_n) {
+  // execPlan::delete_queue_node(c_q_n);
+  //};
 
-            Logger::log(LogLevel::DEBUG,  "NodeType3: Ejecutamos insercion de datos", true, false);
+  // Once deleted all the items, we can delete it whole:
+  execPlan::delete_task_queue(queue);
+};
 
-            NodeType3* nodo = std::get<NodeType3*>(c_q_n->nodePtr);  // Directo desde el variant
-            fill_table_with_values_v4(nodo);
+void execPlan::Queue::execute_queue_tasks() {
+  /// Function that executes the queue's tasks
 
-        } else if(std::holds_alternative<QueryNode*>(c_q_n->nodePtr)) {
-            Logger::log(LogLevel::DEBUG,  "Ejecutamos la consulta: ");
+  int index = 0;
+  execPlan::queueNode1* c_q_n = first_ptr;
 
-            QueryNode* nodo = std::get<QueryNode*>(c_q_n->nodePtr);  // Directo desde el variant
-            mostrar_tabla_query(nodo);
+  Logger::log(LogLevel::DEBUG, "Node ", false, true);
+  Logger::log(LogLevel::DEBUG, index, false, false);
+  Logger::log(LogLevel::DEBUG, ": ", false, false);
 
-	}  else if (std::holds_alternative<DropTableNode*>(c_q_n->nodePtr)) {
-	    DropTableNode* nodo = std::get<DropTableNode*>(c_q_n->nodePtr);
-	    drop_table_from_global_dict(nodo);
+  size_t node_type;
 
-            Logger::log(LogLevel::DEBUG,  "Tabla eliminada: " + nodo->nombre_tabla);
-	    // Por si acaso hubiera entradas corruptas, las eliminamos del diccionario global:
-	    sanitize_global_dict();
+  while (c_q_n) {
+    node_type = c_q_n->nodePtr.index();
+    switch (node_type) {
+      case 0: {
+        Logger::log(LogLevel::DEBUG, "NodeType1: Table creation execution",
+                    true, false);
 
-        } else {
-            Logger::log(LogLevel::DEBUG,  "Tipo desconocido de nodo para operar");
-        
-	};
+        NodeType1* node = std::get<NodeType1*>(c_q_n->nodePtr);
+        recursive_metadata_fill_lv1(node);
+        break;
+      };
+      case 1: {
+        Logger::log(LogLevel::DEBUG,
+                    "NodeType2 has been encountered while executing", false,
+                    false);
+        break;
+      };
+      case 2: {
+        Logger::log(LogLevel::DEBUG, "NodeType3: Data insertion execution",
+                    true, false);
 
-        Logger::log(LogLevel::DEBUG,  "Operacion terminada", false, true);
-        index++;
-        Logger::flush();
-	execPlan::queueNode1* proximo_nodo = c_q_n->nxt_node_queue;
-        // Ahora eliminamos el nodo que acabamos de ejecutar:
-        execPlan::Queue::delete_current_queue_node(c_q_n);
-        c_q_n = proximo_nodo;
-    };
-    if (index == 0){
-        Logger::log(LogLevel::DEBUG,  "(La cola está vacía)\n", true, true);
-    };
+        NodeType3* node = std::get<NodeType3*>(c_q_n->nodePtr);
 
+        Logger::log(LogLevel::DEBUG, "NodeType3 retrieved");
+        fill_table_with_values_v4(node);
+        break;
+      };
+      case 3: {
+        Logger::log(LogLevel::DEBUG, "Query execution: ");
+
+        QueryNode* node = std::get<QueryNode*>(c_q_n->nodePtr);
+        show_table_query(node);
+        break;
+      };
+      case 4: {
+        DropTableNode* node = std::get<DropTableNode*>(c_q_n->nodePtr);
+        drop_table_from_global_dict(node);
+
+        Logger::log(LogLevel::DEBUG,
+                    "Table successfully deleted: " + node->table_name);
+        // Just in case of any global dict corrupt entry, the map is sanitized:
+        sanitize_global_dict();
+        break;
+      };
+      default:
+        Logger::log(LogLevel::DEBUG,
+                    "Unknown execution node: Unable to execute");
+        break;
+    };  // Switch statement ends
+
+    Logger::log(LogLevel::DEBUG, "Finished operation", false, true);
+    index++;
+    Logger::flush(LogLevel::DEBUG);
+    execPlan::queueNode1* next_queue_node = c_q_n->nxt_node_queue;
+    // Node deletion, once it has been executed:
+    execPlan::Queue::delete_current_queue_node(c_q_n);
+    c_q_n = next_queue_node;
+  };
+  if (index == 0) {
+    Logger::log(LogLevel::DEBUG, "(Queue is empty)", true, true);
+  };
+
+  // Before existing, we update first and last node pointers to null:
+  first_ptr = nullptr;
+  last_ptr = nullptr;
 };

@@ -1,246 +1,549 @@
-#include "globals.h"
-#include "disk_io.h"
-#include "logging.h"
 #include "disk_buffer.h"
 
-// namespace disk_buffer {
+#include "disk_in.h"
 
-   // ==========================================
-   // == FUNCIONES AUXILIARES: CONTEO FILAS ====
-   // ==========================================
+//====================================================
+//========= tableRowIterator only disk ===============
+//====================================================
 
-void disk_buffer::contar_datos_ram_una_tabla(std::string& nombre_tabla) {
-   table* table_ptr = global_table_dict.at(nombre_tabla);
-   
-   // 1. Verificamos que data_ptr exista y que el mapa de columnas no esté vacío
-   if (table_ptr->data_ptr && !table_ptr->data_ptr->columns.empty()) {
-      
-         // 2. Tomamos la PRIMERA columna que encontremos
-         auto it = table_ptr->data_ptr->columns.begin();
-      
-         // 3. El número de FILAS es el tamaño del vector de esa columna
-         uint32_t n_rows = static_cast<uint32_t>(it->second.size());
-      
-      table_ptr->metadata_ptr->n_filas_ram = n_rows;
-      
-         Logger::log(LogLevel::DEBUG, "Filas contadas en RAM para " + nombre_tabla + ": " + std::to_string(n_rows));
-   } else {
-         table_ptr->metadata_ptr->n_filas_ram = 0;
-   }
-   Logger::flush();
+// == Constructor method =============================
+disk_buffer::tableRowIterator_only_disk_part::tableRowIterator_only_disk_part(
+    const std::string& table_name_str) {
+  counter = 0;
+  table_ptr = global_table_dict.at(table_name_str);
+  eof = false;
 };
 
-
-
-void disk_buffer::contar_datos_en_ram_todas_tablas(){
-
-   // iteramos por todas las tablas:
-   for (const auto& [table_name, table_ptr] : global_table_dict){
-      // Contamos el numero de filas en RAM viva:
-      uint32_t n_rows = static_cast<uint32_t>(table_ptr->data_ptr->columns.size());
-   table_ptr->metadata_ptr->n_filas_ram = n_rows;
-   };
-
+// == EOF query ======================================
+bool disk_buffer::tableRowIterator_only_disk_part::is_eof() const {
+  return eof;
 };
 
-   // ==========================================
-   // == FUNCION PRINCIPAL: ITERADOR FILAS =====
-   // ==========================================
+// For obtaining the next row ========================
+std::map<std::string, Values>
+disk_buffer::tableRowIterator_only_disk_part::get_next_row_only_disk_part(
+    disk_in::read_table_iterator* table_reader_obj) {
+  // Perform the read:
+  Logger::flush();
+  Logger::log(LogLevel::DEBUG, "<<<<<<<< INSIDE DISK ITERATOR >>>>>>>>>>", true,
+              false);
+  Logger::flush();
+  std::map<std::string, Values> map_row_returned;
+  uint32_t n_f_disk = table_reader_obj->current_partition_n_rows;
+  Logger::log(LogLevel::DEBUG, "Reading ", false, true);
+  Logger::log(LogLevel::DEBUG, n_f_disk, false, false);
+  Logger::log(LogLevel::DEBUG, " rows in total", true, false);
+  Logger::log(LogLevel::DEBUG, "Counter value is: ", false, true);
+  Logger::log(LogLevel::DEBUG, counter, true, false);
 
+  std::vector<std::string>& col_names = table_ptr->metadata_ptr->column_names;
+  // Guard conditions, to save checks:
+  if (counter >= n_f_disk) {
+    this->eof = true;
+    Logger::log(LogLevel::DEBUG,
+                "Row will return empty ('get_next_row_only_disk_part')");
+    return map_row_returned;
+  };
+  table_data_buffer*& ptr_data = this->table_ptr->data_buffer_ptr;
+  if (!ptr_data) {
+    this->eof = true;
+    Logger::log(
+        LogLevel::ERROR,
+        "'data_buffer_ptr' pointer does NOT exist within the table object");
+    return map_row_returned;
+  }
+  std::map<std::string, std::vector<Values>>& columns_map = ptr_data->columns;
+  if (columns_map.empty()) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR, "Column map is empty");
+    return map_row_returned;
+  };
 
-// Metodo constructor
-disk_buffer::tableRowIterator::tableRowIterator(std::string tabla_nombre){
-   contador = 0;
-   tabla_ptr = global_table_dict.at(tabla_nombre);
-   // Solo en caso de tenerlo, contamos las filas en RAM viva:
-   if(tabla_ptr->data_ptr){
-      contar_datos_ram_una_tabla(tabla_nombre);
-   };
-   Logger::log(LogLevel::DEBUG, "Se han contado las filas en la RAM viva");
-   if(Logger::level == LogLevel::OUTPUT){
-      Logger::flush(false);
-   } else {
-      Logger::flush();
-   };
-   // Aqui deberismos cargar los dstos desde el disco:
-   if(!tabla_ptr->data_buffer_ptr){
-      // Solo leemos si existe el archivo:
-      Logger::log(LogLevel::DEBUG, "NO EXISTE EL APARTADO EN RAM DE DATOS EN DISCO, ENTRAMOS A LEERLO SI EL ARCHIVO EXISTE");
-      if (fs::exists("data/" + tabla_nombre + "_data.bin")){
-         Logger::log(LogLevel::DEBUG, "LEEMOS LOS DATOS EN DISCO:", true, true);
-         // Antes de leer, creamos la región de la RAM para los datos en disco:
-         tabla_ptr->data_buffer_ptr = new table_data_buffer();
-         disk_io::read_table_data(tabla_ptr); // Esta funcion ya actusliza el conteo en disco
-      } else {
-         Logger::log(LogLevel::DEBUG, "LOS DATOS DE LA TABLA: "+tabla_nombre+ " no existen en disco", true, true);
-      }
-   };
-   this->eof = (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram == 0);
-   Logger::log(LogLevel::DEBUG, "Se ha construido tableRowIterator hasta 'eof'");
-   Logger::log(LogLevel::DEBUG, "El booleano 'eof' nos sale :", false, true);
-   if(this->eof){
-      Logger::log(LogLevel::DEBUG, "true", true, false);
-   } else {
-            Logger::log(LogLevel::DEBUG, "false", true, false);
-   };
-   Logger::log(LogLevel::DEBUG, "Hemos leido con exito los datos en disco");
-   if(Logger::level == LogLevel::OUTPUT){
-      Logger::flush(false);
-   } else {
-      Logger::flush();
-   };
+  // Iterate through each column:
+
+  for (const std::string& col_name : col_names) {
+    Logger::log(LogLevel::DEBUG, "Reading from the info retrieved from disk");
+    Logger::log(LogLevel::DEBUG, "Counter value: ", false, true);
+    Logger::log(LogLevel::DEBUG, counter, true, false);
+    Logger::log(LogLevel::DEBUG, "Column name: ", false, true);
+    Logger::log(LogLevel::DEBUG, col_name, true, false);
+
+    Logger::log(LogLevel::DEBUG, "We write the value in <<<row to return>>>");
+    Logger::log(LogLevel::DEBUG, "Column name: ", false, true);
+    Logger::log(LogLevel::DEBUG, col_name, true, false);
+    Logger::log(LogLevel::DEBUG, "Counter value: ", false, true);
+    Logger::log(LogLevel::DEBUG, counter, true, false);
+    map_row_returned[col_name] = columns_map.at(col_name)[counter];
+
+    Logger::log(LogLevel::DEBUG,
+                "Row retrieved data read from disk successfully");
+
+  };  // End of column iteration
+  counter += 1;
+  if (counter >= (n_f_disk)) {
+    this->eof = true;
+  };
+  return map_row_returned;
+};  // End of 'get_next_row' method*/
+
+//====================================================
+//== tableRowIterator only RAM =======================
+//====================================================
+
+// == Constructor method =============================
+disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(
+    const std::string& table_name_str) {
+  /*
+  Constructor of the 'tableRowIterator_only_ram' class
+  */
+  counter = 0;
+  table_ptr = global_table_dict.at(table_name_str);
+  // Only count rows in live RAM if available:
+
+  this->n_rows_total = table_ptr->metadata_ptr->n_rows_ram;
+  this->eof = (n_rows_total == 0);
 };
 
-// Para consultar eof:
-bool disk_buffer::tableRowIterator::is_eof() {
-   return eof;
+// == EOF query ======================================
+bool disk_buffer::tableRowIterator_only_ram::is_eof() const {
+  /*
+  Simple function to return the boolean attribute 'eof'
+  */
+  return eof;
 };
 
-// Para devolver la prox fila:
-std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row(){
-   std::map<std::string, Values> map_fila_retornar;
-   uint32_t n_f_disk = tabla_ptr->metadata_ptr->n_filas_disco;
-   uint32_t n_f_ram = tabla_ptr->metadata_ptr->n_filas_ram;
-   uint32_t n_f_total = n_f_disk + n_f_ram;
-   Logger::log(LogLevel::DEBUG, "N filas disco: ", false, true);
-   Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
-   Logger::log(LogLevel::DEBUG, "N filas RAM: ", false, true);
-   Logger::log(LogLevel::DEBUG, n_f_ram, true, false);
-   //std::map<std::string, std::vector<Values>> columnas = tabla_ptr->data_buffer_ptr->columns;
-   if(Logger::level == LogLevel::OUTPUT){
-      Logger::flush(false);
-   } else {
-      Logger::flush();
-   };
-   // Iteramos por cada columna:
-   for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
-      Logger::log(LogLevel::DEBUG, "Nombre de la columna a leer de la RAM: ", false, true);
-      Logger::log(LogLevel::DEBUG, nombre_col, true, false);
-      if(contador < n_f_disk){
-         // Leemos primero desde disco:
-         Logger::log(LogLevel::DEBUG, "Leemos desde el disco");
-         if(Logger::level == LogLevel::OUTPUT){
-            Logger::flush(false);
-         } else {
-            Logger::flush();
-         };
-         if(this->tabla_ptr->data_buffer_ptr->columns.find(nombre_col) != this->tabla_ptr->data_buffer_ptr->columns.end()){
-            Logger::log(LogLevel::DEBUG, "SI existe: ", false, true);
-            Logger::log(LogLevel::DEBUG, nombre_col, false, false);
-            Logger::log(LogLevel::DEBUG, " en 'tabla_ptr->data_buffer_ptr->columns'", true, false);
-         } else {
-            Logger::log(LogLevel::DEBUG, "NO existe: ", false, true);
-            Logger::log(LogLevel::DEBUG, nombre_col, false, false);
-            Logger::log(LogLevel::DEBUG, " en 'tabla_ptr->data_buffer_ptr->columns'", true, false); 
-         };
-         map_fila_retornar[nombre_col] = this->tabla_ptr->data_buffer_ptr->columns.at(nombre_col)[contador];
-      } else if(contador < n_f_total) {
-         uint32_t indice_relativo_ram = contador - n_f_disk;
-         // Leemos desde la RAM viva:
-         Logger::log(LogLevel::DEBUG, "Leemos desde RAM viva");
-         if(Logger::level == LogLevel::OUTPUT){
-            Logger::flush(false);
-         } else {
-            Logger::flush();
-         };
-         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[indice_relativo_ram];
+// For obtaining the next row ('RAM') ================
+std::map<std::string, Values>
+disk_buffer::tableRowIterator_only_ram::get_next_row_ram() {
+  /*
+  Method similar to 'get_next_row' of tableRowIterator. Here, only
+  data from the same session or live RAM will be returned.
+  Works as follows:
+     1. Iterate through each column of the table.
+     2. Given the 'counter' attribute, extract the corresponding element from
+  each vector of columns, always from the live RAM data.
+     3. Once the loop is completed, update the 'eof' attribute.
+     4. Increment the row counter by one.
+  */
+  std::map<std::string, Values> map_row_returned;
+
+  std::vector<std::string>& col_names = table_ptr->metadata_ptr->column_names;
+  // Guard conditions, to save checks:
+  if (counter >= this->n_rows_total) {
+    this->eof = true;
+    Logger::log(LogLevel::DEBUG, "Row will return empty ('get_next_row_ram')");
+    return map_row_returned;
+  };
+  table_data*& ptr_data = this->table_ptr->data_ptr;
+  if (!ptr_data) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR,
+                "'data_ptr' pointer does NOT exist within the table object");
+    return map_row_returned;
+  };
+  std::map<std::string, std::vector<Values>>& columns_map = ptr_data->columns;
+  if (columns_map.empty()) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR, "Column map is empty");
+    return map_row_returned;
+  };
+
+  // Iterate through each column:
+  for (const std::string& col_name : col_names) {
+    // Read from live RAM:
+    map_row_returned[col_name] = columns_map.at(col_name)[counter];
+  };
+  counter += 1;
+  if (counter >= this->n_rows_total) {
+    this->eof = true;
+  };
+  return map_row_returned;
+};  // End of 'get_next_row_ram' method
+
+//====================================================
+//========= FSM iterator for disk and RAM ============
+//====================================================
+
+// == Constructor method =============================
+disk_buffer::tableRowIterator::tableRowIterator(
+    const std::string& table_name_str) {
+  /*
+  Constructor of the 'tableRowIterator' class
+  */
+
+  Logger::flush();
+  Logger::log(LogLevel::DEBUG,
+              "////////////////////////////////////////////////");
+  Logger::log(LogLevel::DEBUG, "FSM iterator (RAM and disk) initialized");
+
+  // Get the table pointer:
+  table_ptr = global_table_dict.at(table_name_str);
+  first_execution = true;
+  eof = false;  // This is the general false, only if both are true this will be
+                // true
+  eof_ram = false;
+  eof_partition =
+      true;  // Starts being true so that it only reads from disk once
+  eof_disk = false;
+  fsm_state = 0;
+  table_name = this->table_ptr->metadata_ptr->name;
+
+  // Auxiliary iterators:
+  this->iterator_ram = nullptr;
+  this->table_reader_obj = nullptr;
+  this->disk_iterator = nullptr;
+  Logger::log(LogLevel::DEBUG, "Variables have been initialized successfully");
+};
+
+bool disk_buffer::tableRowIterator::is_eof() const { return eof; };
+
+// == Control Unit method =============================
+std::map<std::string, Values> disk_buffer::tableRowIterator::control_unit() {
+  /*
+  This method is the Control Unit of the Finite State Machine
+  that retrieves all rows, whether from the same session in memory
+  or from previous sessions that come from disk.
+
+  The auxiliary iterators and disk reading are created on the HEAP,
+  so the finite state machine itself is responsible for deleting them.
+  */
+  Logger::log(LogLevel::DEBUG, "CU cycle");
+  std::map<std::string, Values> map_row_returned = {};
+  switch (this->fsm_state) {
+    case 0: {
+      Logger::log(LogLevel::DEBUG, "State 0. FSM just started");
+      Logger::log(LogLevel::DEBUG, "RAM reading");
+      // Check if there is data in RAM:
+      if (this->table_ptr->data_ptr &&
+          !(this->table_ptr->data_ptr->columns.empty())) {
+        Logger::log(LogLevel::DEBUG, "There is data in the table's 'RAM'");
+        Logger::log(LogLevel::DEBUG, "Creating RAM iterator:");
+        this->iterator_ram =
+            new disk_buffer::tableRowIterator_only_ram(this->table_name);
+        Logger::log(LogLevel::DEBUG, "RAM iterator created successfully");
+        this->fsm_state = 1;
+        break;
       };
-   }; // Termina la iteracion de columna
-   contador += 1;
-   if(contador >= (tabla_ptr->metadata_ptr->n_filas_disco + tabla_ptr->metadata_ptr->n_filas_ram)){
-      this-> eof = true;
-   };
-   return map_fila_retornar;
-}; // Termina el metodo 'get_next_row'
-   
-   
-   //====================================================
-   //== tableRowIterator pero solo para RAM =============
-   //====================================================
+      // In case there is no data in RAM, switch directly to disk reading
+      Logger::log(
+          LogLevel::DEBUG,
+          "There is NO data inside the 'RAM'. Switching to 'disk' reading");
+      this->eof_ram = true;
+      this->fsm_state = 2;
+      break;
+    };
+    case 1: {
+      // Row iteration only in RAM
+      Logger::log(LogLevel::DEBUG, "State 1. Reading a 'RAM' row:");
+      map_row_returned = this->iterator_ram->get_next_row_ram();
+      Logger::log(LogLevel::DEBUG, "RAM row retrieved successfully");
 
-   disk_buffer::tableRowIterator_only_ram::tableRowIterator_only_ram(std::string tabla_nombre){
-   contador = 0;
-   tabla_ptr = global_table_dict.at(tabla_nombre);
-   // Solo en caso de tenerlo, contamos las filas en RAM viva:
-   if(tabla_ptr->data_ptr){
-      contar_datos_ram_una_tabla(tabla_nombre);
-   };
-   Logger::log(LogLevel::DEBUG, "Se han contado las filas en la RAM viva");
-   if(Logger::level == LogLevel::OUTPUT){
-      Logger::flush(false);
-   } else {
-      Logger::flush();
-   };
-   // Aqui deberismos cargar los dstos desde el disco:
-   /*if(!tabla_ptr->data_buffer_ptr){
-      // Solo leemos si existe el archivo:
-      Logger::log(LogLevel::DEBUG, "NO EXISTE EL APARTADO EN RAM DE DATOS EN DISCO, ENTRAMOS A LEERLO SI EL ARCHIVO EXISTE");
-      if (fs::exists("data/" + tabla_nombre + "_data.bin")){
-         Logger::log(LogLevel::DEBUG, "LEEMOS LOS DATOS EN DISCO:", true, true);
-         // Antes de leer, creamos la región de la RAM para los datos en disco:
-         tabla_ptr->data_buffer_ptr = new table_data_buffer();
-         disk_io::read_table_data(tabla_ptr); // Esta funcion ya actusliza el conteo en disco
-      } else {
-         Logger::log(LogLevel::DEBUG, "LOS DATOS DE LA TABLA: "+tabla_nombre+ " no existen en disco", true, true);
-      }
-   };*/
-   this->eof = (tabla_ptr->metadata_ptr->n_filas_ram == 0);
-   Logger::log(LogLevel::DEBUG, "Se ha construido tableRowIterator hasta 'eof'");
-   Logger::log(LogLevel::DEBUG, "El booleano 'eof' nos sale :", false, true);
-   if(this->eof){
-      Logger::log(LogLevel::DEBUG, "true", true, false);
-   } else {
-      Logger::log(LogLevel::DEBUG, "false", true, false);
-   };
+      // Check if what was returned is empty:
+      if (map_row_returned.empty()) {
+        Logger::log(LogLevel::DEBUG, "RAM row has returned empty.");
+        Logger::log(
+            LogLevel::DEBUG,
+            "This means there is no more data left within the table's 'RAM'");
+        this->eof_ram = true;
+        // Change state:
+        this->fsm_state = 2;
+        // Delete the RAM iterator:
+        delete this->iterator_ram;
+        this->iterator_ram = nullptr;
+        Logger::log(LogLevel::DEBUG, "RAM iterator deletion completed");
+        break;
+      };
+      this->fsm_state = 1;
+      break;
+    };
+    case 2: {
+      // Check beforehand if there is data on DISK:
+      Logger::log(LogLevel::DEBUG, "State 2. Starting 'disk' reading");
+      Logger::log(LogLevel::DEBUG,
+                  "Inspecting beforehand if there is data within the disk");
+      if (std::filesystem::exists("data/" + this->table_name)) {
+        Logger::log(LogLevel::DEBUG, "There is data in the disk");
+        this->fsm_state = 3;
+        Logger::log(
+            LogLevel::DEBUG,
+            "Proceeding to create iterator for both reading and 'disk'");
+        // In that case create the disk read object:
+        this->table_reader_obj =
+            new disk_in::read_table_iterator(this->table_ptr);
+        // Also initialize the disk iterator:
+        this->disk_iterator =
+            new disk_buffer::tableRowIterator_only_disk_part(this->table_name);
+
+        break;
+      };
+      Logger::log(LogLevel::DEBUG, "There is NO data within the disk");
+      this->eof_disk = true;
+      this->eof = true;  // Because RAM was already explored
+      this->fsm_state = 255;
+      break;
+    };
+    case 3: {
+      // Partition reading
+      Logger::log(LogLevel::DEBUG, "State 3. Partition reading:");
+      // Before reading the partition,
+      this->eof_disk = this->table_reader_obj->read_table();
+      Logger::log(LogLevel::DEBUG, "Disk partition read successfully");
+      Logger::log(LogLevel::DEBUG, "Restarting disk iterator counter");
+      this->disk_iterator->counter = 0;
+      Logger::log(LogLevel::DEBUG,
+                  "Disk iterator counter will be restarted each time a new "
+                  "partition is read");
+      if (this->eof_disk) {
+        Logger::log(
+            LogLevel::DEBUG,
+            "All partitions have been read (disk EOF has been reached)");
+        this->fsm_state = 255;  // This means we have reached the end
+        this->eof = true;  // Because RAM also reached its end or does not exist
+        // When reaching the end, delete the read and disk iterators:
+        Logger::log(LogLevel::DEBUG, "Deleting reading and disk iterators");
+        delete this->table_reader_obj;
+        this->table_reader_obj = nullptr;
+        delete this->disk_iterator;
+        this->disk_iterator = nullptr;
+        break;
+      };
+      this->fsm_state = 4;
+      break;
+    };
+    case 4: {
+      // Row iteration only disk
+      Logger::log(LogLevel::DEBUG, "State 4. Row reading:");
+      map_row_returned =
+          this->disk_iterator->get_next_row_only_disk_part(table_reader_obj);
+      Logger::log(LogLevel::DEBUG, "Row read from disk successfully");
+      if (map_row_returned.empty()) {
+        Logger::log(LogLevel::DEBUG, "Row has returned empty from disk.");
+        // End of partition reached:
+        this->eof_partition = true;
+        // Clear table data from disk:
+        this->table_reader_obj->disk_data_ptr->columns.clear();
+        // Change state:
+        this->fsm_state = 3;
+        break;
+      };
+      this->fsm_state = 4;
+      break;
+    };
+  };
+  // Update general eof:
+  this->eof = this->eof_ram && this->eof_disk;
+  return map_row_returned;
 };
 
-// Para consultar eof:
-bool disk_buffer::tableRowIterator_only_ram::is_eof() {
-   return eof;
+// == Method to return the next row =============================
+std::map<std::string, Values> disk_buffer::tableRowIterator::get_next_row() {
+  /*
+  This is the method that executes the finite state machine.
+  It advances the state of the machine until it returns
+  a row that is not empty or the final state is reached.
+  */
+  Logger::flush();
+  Logger::log(LogLevel::DEBUG, "Another row has been requested");
+  std::map<std::string, Values> map_row_returned;
+
+  while (map_row_returned.empty() && this->fsm_state != 255) {
+    Logger::log(LogLevel::DEBUG, "Making a Control Unit call");
+    map_row_returned = this->control_unit();
+  };
+
+  if (this->fsm_state == 255) {
+    this->eof = true;
+    Logger::log(LogLevel::DEBUG, "FSM end condition has been reached");
+  };
+  return map_row_returned;
 };
 
-// == PARA OBTENER LA PROXIMA FILA de la ram viva:
-std::map<std::string, Values> disk_buffer::tableRowIterator_only_ram::get_next_row_ram_viva(){
-   std::map<std::string, Values> map_fila_retornar;
-   // uint32_t n_f_disk = tabla_ptr->metadata_ptr->n_filas_disco;
-   uint32_t n_f_total = tabla_ptr->metadata_ptr->n_filas_ram;
-   // uint32_t n_f_total = n_f_disk + n_f_ram;
-   // Logger::log(LogLevel::DEBUG, "N filas disco: ", false, true);
-   // Logger::log(LogLevel::DEBUG, n_f_disk, true, false);
-   Logger::log(LogLevel::DEBUG, "N filas RAM: ", false, true);
-   Logger::log(LogLevel::DEBUG, n_f_total, true, false);
-   if(Logger::level == LogLevel::OUTPUT){
-      Logger::flush(false);
-   } else {
-      Logger::flush();
-   };
-   // Iteramos por cada columna:
-   for (const std::string& nombre_col : tabla_ptr->metadata_ptr->column_names) {
-      Logger::log(LogLevel::DEBUG, "Nombre de la columna a leer de la RAM: ", false, true);
-      Logger::log(LogLevel::DEBUG, nombre_col, true, false);
+//====================================================
+//== tableRowIterator only WAL (inverse insertion order)
+//====================================================
 
-      if(contador < n_f_total){
-         // Leemos desde la RAM viva:
-         Logger::log(LogLevel::DEBUG, "Leemos desde RAM viva");
-         if(Logger::level == LogLevel::OUTPUT){
-            Logger::flush(false);
-         } else {
-            Logger::flush();
-         };
-         map_fila_retornar[nombre_col] = tabla_ptr->data_ptr->columns.at(nombre_col)[contador];
-         Logger::log(LogLevel::DEBUG, "Valor recuperado de la tabla en RAM viva");
-         if(Logger::level == LogLevel::OUTPUT){
-            Logger::flush(false);
-         } else {
-            Logger::flush();
-         };
-      }; 
-   };
-   contador += 1;
-   if(contador >= (tabla_ptr->metadata_ptr->n_filas_ram)){
-      this-> eof = true;
-   };
-   return map_fila_retornar;
-}; // Termina el metodo 'get_next_row_ram_viva'
+disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::
+    tableRowIterator_only_ram_for_wal_inverse_order(
+        const std::string& table_name_str, const int num_rows_to_insert) {
+  /*
+  Constructor of the 'tableRowIterator_only_ram_for_wal_inverse_order' class
+  */
+  this->n_rows_inserted = num_rows_to_insert;
 
-// }; // Cierre del namespace 'disk_buffer'
+  table_ptr = global_table_dict.at(table_name_str);
+  /*
+  Do not count rows in live RAM because we will only retrieve
+  the last inserted data, and if the insertion was successful,
+  those rows are guaranteed to be in live RAM
+  */
+  this->n_rows_total = table_ptr->metadata_ptr->n_rows_ram;
+  this->counter = this->n_rows_total - 1;
+  this->lower_limit = this->n_rows_total - this->n_rows_inserted + 1;
+
+  this->eof = (this->counter < 0);
+};  // End of 'tableRowIterator_only_ram_for_wal_inverse_order' method
+
+// == EOF query ======================================
+bool disk_buffer::tableRowIterator_only_ram_for_wal_inverse_order::is_eof()
+    const {
+  /*
+  Simple function to return the boolean attribute 'eof'
+  */
+  Logger::log(LogLevel::DEBUG,
+              "Writing EOF has been reached for rows in WAL file");
+  return eof;
+};
+
+// For obtaining the last next row ('RAM') ===========
+std::map<std::string, Values> disk_buffer::
+    tableRowIterator_only_ram_for_wal_inverse_order::get_next_row_ram() {
+  /*
+  Method similar to 'get_next_row' of tableRowIterator. Here, only
+  data from the same session or live RAM will be returned.
+  Works as follows:
+     1. Iterate through each column of the table.
+     2. Given the 'counter' attribute, extract the corresponding element from
+  each vector of columns, always from the live RAM data.
+     3. Once the loop is completed, update the 'eof' attribute.
+     4. Decrement the row counter by one.
+  */
+  std::map<std::string, Values> map_row_returned;
+
+  std::vector<std::string>& col_names = table_ptr->metadata_ptr->column_names;
+  // Guard conditions, to save checks:
+  if (this->counter < this->n_rows_total) {
+    this->eof = true;
+    Logger::log(LogLevel::DEBUG,
+                "Row will return empty "
+                "('tableRowIterator_only_ram_for_wal_inverse_order::get_next_"
+                "row_ram')");
+    return map_row_returned;
+  };
+  table_data*& ptr_data = this->table_ptr->data_ptr;
+  if (!ptr_data) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR,
+                "'data_ptr' pointer does NOT exist within the table object");
+    return map_row_returned;
+  }
+  std::map<std::string, std::vector<Values>>& columns_map = ptr_data->columns;
+  if (columns_map.empty()) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR, "Column map is empty");
+    return map_row_returned;
+  };
+
+  // Iterate through each column:
+  for (const std::string& col_name : col_names) {
+    Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+    Logger::log(LogLevel::DEBUG, "Counter: ", false, true);
+    Logger::log(LogLevel::DEBUG, this->counter, true, false);
+    Logger::log(LogLevel::DEBUG, "n_rows_total: ", false, true);
+    Logger::log(LogLevel::DEBUG, this->n_rows_total, true, false);
+    Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+    // Read from live RAM:
+    Logger::log(LogLevel::DEBUG, "Proceeding to fill the WAL row std::map");
+    map_row_returned[col_name] = columns_map.at(col_name)[this->counter];
+  };
+  // General boundary conditions:
+  if (this->counter < 0 || this->counter > this->n_rows_total ||
+      this->counter < this->lower_limit) {
+    this->eof = true;
+  };
+
+  this->counter -= 1;
+  return map_row_returned;
+};  // End of 'get_next_row_ram' method
+
+//====================================================
+//== tableRowIterator only WAL =======================
+//====================================================
+
+disk_buffer::tableRowIterator_only_ram_for_wal::
+    tableRowIterator_only_ram_for_wal(const std::string& table_name_str,
+                                      const int num_rows_to_insert) {
+  /*
+  Constructor of the 'tableRowIterator_only_ram_for_wal' class
+  */
+  this->n_rows_inserted = num_rows_to_insert;
+
+  table_ptr = global_table_dict.at(table_name_str);
+  /*
+  Do not count rows in live RAM because we will only retrieve
+  the last inserted data, and if the insertion was successful,
+  those rows are guaranteed to be in live RAM
+  */
+
+  this->n_rows_total = table_ptr->metadata_ptr->n_rows_ram;
+  this->counter = this->n_rows_total - num_rows_to_insert;
+
+  this->eof = (this->counter >= this->n_rows_total);
+};  // End of 'tableRowIterator_only_ram_for_wal' method
+
+// == EOF query ======================================
+bool disk_buffer::tableRowIterator_only_ram_for_wal::is_eof() const {
+  /*
+  Simple function to return the boolean attribute 'eof'
+  */
+  Logger::log(LogLevel::DEBUG,
+              "Writing EOF has been reached for rows in WAL file");
+  return eof;
+};
+
+// For obtaining the next row ('RAM') ================
+std::map<std::string, Values>
+disk_buffer::tableRowIterator_only_ram_for_wal::get_next_row_ram() {
+  /*
+  Method similar to 'get_next_row' of tableRowIterator. Here, only
+  data from the same session or live RAM will be returned.
+  Works as follows:
+     1. Iterate through each column of the table.
+     2. Given the 'counter' attribute, extract the corresponding element from
+  each vector of columns, always from the live RAM data.
+     3. Once the loop is completed, update the 'eof' attribute.
+     4. Increment the row counter by one.
+  */
+  std::map<std::string, Values> map_row_returned;
+
+  std::vector<std::string>& col_names = table_ptr->metadata_ptr->column_names;
+  // Guard condition, to save checks:
+  if (this->counter >= this->n_rows_total) {
+    this->eof = true;
+    Logger::log(LogLevel::DEBUG,
+                "Row will return empty "
+                "('tableRowIterator_only_ram_for_wal::get_next_row_ram')");
+    return map_row_returned;
+  };
+  table_data*& ptr_data = this->table_ptr->data_ptr;
+  if (!ptr_data) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR,
+                "'data_ptr' pointer does NOT exist within the table object");
+    return map_row_returned;
+  }
+  std::map<std::string, std::vector<Values>>& columns_map = ptr_data->columns;
+  if (columns_map.empty()) {
+    this->eof = true;
+    Logger::log(LogLevel::ERROR, "Column map is empty");
+    return map_row_returned;
+  };
+
+  // Iterate through each column:
+  for (const std::string& col_name : col_names) {
+    Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+    Logger::log(LogLevel::DEBUG, "Counter: ", false, true);
+    Logger::log(LogLevel::DEBUG, this->counter, true, false);
+    Logger::log(LogLevel::DEBUG, "n_rows_total: ", false, true);
+    Logger::log(LogLevel::DEBUG, this->n_rows_total, true, false);
+    Logger::log(LogLevel::DEBUG, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+    // Read from live RAM:
+    Logger::log(LogLevel::DEBUG, "Proceeding to fill the WAL row std::map");
+    map_row_returned[col_name] = columns_map.at(col_name)[this->counter];
+  };
+  this->counter += 1;
+  // General boundary conditions:
+  if (this->counter < 0 || this->counter >= this->n_rows_total) {
+    this->eof = true;
+  };
+  return map_row_returned;
+};  // End of 'get_next_row_ram' method

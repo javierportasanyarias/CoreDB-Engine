@@ -1,56 +1,69 @@
 #include "logging.h"
+
 #include <iostream>
 
-// Definición del miembro estático
-LogLevel Logger::level = LogLevel::INFO;
+// Static member definition:
+TestlogLevel TestLogger::level = TestlogLevel::INFO;
 
-// Sobrecarga string
-void Logger::log(LogLevel msgLevel,
-                 const std::string& msg,
-                 bool flush_bool,
-                 bool flag)
-{
-    if (msgLevel < level) return;
+// String overload:
+void TestLogger::log(TestlogLevel msgLevel, const std::string& msg,
+                     bool flush_bool, bool flag) {
+  if (msgLevel < level) return;
 
-    if (flag) {
-        switch (msgLevel) {
-            case LogLevel::DEBUG: std::cout << "[DEBUG] "; break;
-            case LogLevel::INFO:  std::cout << "[INFO] ";  break;
-            case LogLevel::WARN:  std::cout << "[WARN] ";  break;
-            case LogLevel::ERROR: std::cout << "[ERROR] "; break;
-            case LogLevel::OUTPUT: break;
-        }
+  if (flag) {
+    switch (msgLevel) {
+      case TestlogLevel::DEBUG:
+        std::cout << "[DEBUG] ";
+        break;
+      case TestlogLevel::INFO:
+        std::cout << "[INFO] ";
+        break;
+      case TestlogLevel::WARN:
+        std::cout << "[WARN] ";
+        break;
+      case TestlogLevel::ERROR:
+        std::cout << "[ERROR] ";
+        break;
+      case TestlogLevel::OUTPUT:
+        break;
     }
+  }
 
-    std::cout << msg;
-    if (flush_bool) std::cout << std::endl;
+  std::cout << msg;
+  if (flush_bool) std::cout << std::endl;
 }
 
-// Sobrecarga int
-void Logger::log(LogLevel msgLevel,
-                 int msg,
-                 bool flush_bool,
-                 bool flag)
-{
-    if (msgLevel < level) return;
+// Int overload:
+void TestLogger::log(TestlogLevel msgLevel, int msg, bool flush_bool,
+                     bool flag) {
+  if (msgLevel < level) return;
 
-    if (flag) {
-        switch (msgLevel) {
-            case LogLevel::DEBUG: std::cout << "[DEBUG] "; break;
-            case LogLevel::INFO:  std::cout << "[INFO] ";  break;
-            case LogLevel::WARN:  std::cout << "[WARN] ";  break;
-            case LogLevel::ERROR: std::cout << "[ERROR] "; break;
-            case LogLevel::OUTPUT: break;
-        }
+  if (flag) {
+    switch (msgLevel) {
+      case TestlogLevel::DEBUG:
+        std::cout << "[DEBUG] ";
+        break;
+      case TestlogLevel::INFO:
+        std::cout << "[INFO] ";
+        break;
+      case TestlogLevel::WARN:
+        std::cout << "[WARN] ";
+        break;
+      case TestlogLevel::ERROR:
+        std::cout << "[ERROR] ";
+        break;
+      case TestlogLevel::OUTPUT:
+        break;
     }
+  }
 
-    std::cout << msg;
-    if (flush_bool) std::cout << std::endl;
+  std::cout << msg;
+  if (flush_bool) std::cout << std::endl;
 }
 
-void Logger::flush(bool endl) {
-    if(endl){
-       std::cout << std::endl;
-    };
-    std::cout.flush();
+void TestLogger::flush(bool endl) {
+  if (endl) {
+    std::cout << std::endl;
+  };
+  std::cout.flush();
 }

@@ -4,23 +4,19 @@
 #include <iostream>
 #include <string>
 
-enum class LogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
+enum class TestlogLevel { DEBUG, INFO, WARN, ERROR, OUTPUT };
 
-class Logger {
-public:
-    static LogLevel level;
+class TestLogger {
+ public:
+  static TestlogLevel level;
 
-    static void log(LogLevel msgLevel,
-                    const std::string& msg,
-                    bool flush_bool = true,
-                    bool flag = true);
+  static void log(TestlogLevel msgLevel, const std::string& msg,
+                  bool flush_bool = true, bool flag = true);
 
-    static void log(LogLevel msgLevel,
-                    int msg,
-                    bool flush_bool = true,
-                    bool flag = true);
+  static void log(TestlogLevel msgLevel, int msg, bool flush_bool = true,
+                  bool flag = true);
 
-    static void flush(bool endl = true);
+  static void flush(bool endl = true);
 };
 
 #endif
